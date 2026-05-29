@@ -1,26 +1,137 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fbf8f3;
+  --foreground: #1a0e14;
+  --surface: #ffffff;
+  --surface-2: #f4ede4;
+  --muted: #6b5560;
+  --muted-2: #9a8a92;
+  --border: #ece3da;
+  --border-strong: #d9ccc1;
+
+  --brand-50: #fff1f0;
+  --brand-100: #ffe0dd;
+  --brand-200: #ffc4be;
+  --brand-300: #ff9d92;
+  --brand-400: #ff7466;
+  --brand-500: #ff5840;
+  --brand-600: #e8412a;
+  --brand-700: #c0301d;
+  --brand-800: #95251b;
+  --brand-900: #66180f;
+
+  --gold-300: #e9c79a;
+  --gold-400: #d4a574;
+  --gold-500: #b8895c;
+  --gold-600: #9a6f44;
+
+  --plum-500: #6a2c5a;
+  --plum-700: #4a1f3d;
+  --plum-900: #2a0f24;
+
+  --ink: #0d0608;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-muted: var(--muted);
+  --color-muted-2: var(--muted-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+
+  --color-gold-300: var(--gold-300);
+  --color-gold-400: var(--gold-400);
+  --color-gold-500: var(--gold-500);
+  --color-gold-600: var(--gold-600);
+
+  --color-plum-500: var(--plum-500);
+  --color-plum-700: var(--plum-700);
+  --color-plum-900: var(--plum-900);
+
+  --color-ink: var(--ink);
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-jakarta);
+  --font-serif: var(--font-instrument);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--brand-500);
+  color: white;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .custom-cursor-active,
+  .custom-cursor-active *,
+  .custom-cursor-active a,
+  .custom-cursor-active button,
+  .custom-cursor-active input,
+  .custom-cursor-active textarea,
+  .custom-cursor-active [role="button"] {
+    cursor: none !important;
+  }
+}
+
+.hero-char {
+  opacity: 0;
+  transform: translateY(40px) rotateX(-30deg);
+}
+
+.hero-fade-element {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-char,
+  .hero-fade-element {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--brand-600);
+}
+
+.eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 1.5rem;
+  height: 1px;
+  background: var(--brand-500);
 }
