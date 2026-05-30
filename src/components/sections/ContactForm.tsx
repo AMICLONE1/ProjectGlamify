@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { contactSchema, type ContactInput } from "@/lib/schemas";
 import { FieldShell, Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { track } from "@/lib/track";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -36,9 +37,11 @@ export function ContactForm() {
         const data = await res.json().catch(() => null);
         throw new Error(data?.error?.message ?? "Submission failed");
       }
+      track("contact_submitted", { topic: values.topic });
       setStatus("success");
       reset();
     } catch (err) {
+      track("contact_failed", { reason: err instanceof Error ? err.message : "unknown" });
       setStatus("error");
       setErrorMessage(err instanceof Error ? err.message : "Something went wrong");
     }

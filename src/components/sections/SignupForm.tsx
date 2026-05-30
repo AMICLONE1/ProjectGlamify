@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signupSchema, type SignupInput } from "@/lib/schemas";
 import { FieldShell, Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { track } from "@/lib/track";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -36,9 +37,15 @@ export function SignupForm() {
         const data = await res.json().catch(() => null);
         throw new Error(data?.error?.message ?? "Signup failed");
       }
+      track("signup_submitted", {
+        businessType: values.businessType,
+        teamSize: values.teamSize,
+        city: values.city,
+      });
       setStatus("success");
       reset();
     } catch (err) {
+      track("signup_failed", { reason: err instanceof Error ? err.message : "unknown" });
       setStatus("error");
       setErrorMessage(err instanceof Error ? err.message : "Something went wrong");
     }

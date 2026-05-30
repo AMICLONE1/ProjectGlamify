@@ -27,17 +27,16 @@ const floatingDots = [
 
 function SplitLine({ words, tone }: { words: string[]; tone?: string }) {
   return (
-    <span className="inline-flex flex-wrap justify-center gap-x-[0.28em] gap-y-2">
+    <>
       {words.map((word, index) => (
-        <span
-          key={`${word}-${index}`}
-          data-hero-word
-          className={`hero-word ${tone ?? ""}`}
-        >
-          {word}
+        <span key={`${word}-${index}`} className="inline-block whitespace-nowrap">
+          <span data-hero-word className={`hero-word ${tone ?? ""}`}>
+            {word}
+          </span>
+          {index < words.length - 1 ? " " : ""}
         </span>
       ))}
-    </span>
+    </>
   );
 }
 
@@ -119,7 +118,7 @@ export function Hero() {
   return (
     <section
       ref={rootRef}
-      className="relative isolate overflow-hidden pt-10 pb-20 sm:pt-16 sm:pb-24 lg:min-h-[calc(100svh-4.5rem)] lg:flex lg:items-center"
+      className="relative isolate overflow-hidden pt-10 pb-20 sm:pt-16 sm:pb-24 lg:pt-20 lg:pb-28"
     >
       <div aria-hidden className="absolute inset-0 -z-30 bg-background" />
       <div
@@ -170,7 +169,7 @@ export function Hero() {
           </div>
 
           <h1
-            className="max-w-5xl font-display uppercase text-ink leading-[0.88] tracking-tighter text-[clamp(3rem,8vw,7.1rem)]"
+            className="max-w-5xl font-display font-extrabold uppercase text-ink leading-[0.92] tracking-[-0.02em] text-[clamp(2.5rem,7vw,6.25rem)]"
             style={{ perspective: "1000px" }}
           >
             <span className="block">

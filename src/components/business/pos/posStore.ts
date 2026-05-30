@@ -1,0 +1,226 @@
+"use client";
+
+import { create } from "zustand";
+import {
+  findClient,
+  findProduct,
+  findService,
+  type Client,
+  type Product,
+  type Service,
+} from "@/lib/business-seed";
+
+export type CartItem = {
+  key: string;
+  kind: "service" | "product";
+  id: string;
+  name: string;
+  unitPrice: number;
+  taxRate: number;
+  quantity: number;
+  staffId?: string;
+};
+
+export type PaymentMethod = "cash" | "upi" | "card";
+
+export type Payment = {
+  id: string;
+  method: PaymentMethod;
+  amount: number;
+  reference?: string;
+};
+
+type PosState = {
+  clientId: string | null;
+  items: CartItem[];
+  discountPercent: number;
+  tip: number;
+  payments: Payment[];
+  notes: string;
+};
+
+type PosActions = {
+  setClient: (id: string | null) => void;
+  addService: (service: Service) => void;
+  addProduct: (product: Product) => void;
+  updateQuantity: (key: string, delta: number) => void;
+  removeItem: (key: string) => void;
+  setDiscountPercent: (value: number) => void;
+  setTip: (value: number) => void;
+  addPayment: (payment: Omit<Payment, "id">) => void;
+  removePayment: (id: string) => void;
+  setNotes: (value: string) => void;
+  reset: () => void;
+};
+
+const initialState: PosState = {
+  clientId: null,
+  items: [],
+  discountPercent: 0,
+  tip: 0,
+  payments: [],
+  notes: "",
+};
+
+let nextKey = 1;
+function makeKey() {
+  return `i-${Date.now().toString(36)}-${(nextKey++).toString(36)}`;
+}
+
+export const usePosStore = create<PosState & PosActions>((set) => ({
+  ...initialState,
+
+  setClient: (id) => set({ clientId: id }),
+
+  addService: (service) =>
+    set((state) => {
+      const existing = state.items.find(
+        (it) => it.kind === "service" && it.id === service.id
+      );
+      if (existing) {
+        return {
+          items: state.items.map((it) =>
+            it === existing ? { ...it, quantity: it.quantity + 1 } : it
+          ),
+        };
+      }
+      return {
+        items: [
+          ...state.items,
+          {
+            key: makeKey(),
+            kind: "service",
+            id: service.id,
+            name: service.name,
+            unitPrice: service.price,
+            taxRate: service.taxRate,
+            quantity: 1,
+          },
+        ],
+      };
+    }),
+
+  addProduct: (product) =>
+    set((state) => {
+      const existing = state.items.find(
+        (it) => it.kind === "product" && it.id === product.id
+      );
+      if (existing) {
+        return {
+          items: state.items.map((it) =>
+            it === existing ? { ...it, quantity: it.quantity + 1 } : it
+          ),
+        };
+      }
+      return {
+        items: [
+          ...state.items,
+          {
+            key: makeKey(),
+            kind: "product",
+            id: product.id,
+            name: product.name,
+            unitPrice: product.retailPrice,
+            taxRate: product.taxRate,
+            quantity: 1,
+          },
+        ],
+      };
+    }),
+
+  updateQuantity: (key, delta) =>
+    set((state) => ({
+      items: state.items
+        .map((it) => (it.key === key ? { ...it, quantity: it.quantity + delta } : it))
+        .filter((it) => it.quantity > 0),
+    })),
+
+  removeItem: (key) => set((state) => ({ items: state.items.filter((it) => it.key !== key) })),
+
+  setDiscountPercent: (value) =>
+    set({ discountPercent: Math.max(0, Math.min(100, value)) }),
+
+  setTip: (value) => set({ tip: Math.max(0, value) }),
+
+  addPayment: (payment) =>
+    set((state) => ({
+      payments: [...state.payments, { ...payment, id: `p-${Date.now().toString(36)}` }],
+    })),
+
+  removePayment: (id) =>
+    set((state) => ({ payments: state.payments.filter((p) => p.id !== id) })),
+
+  setNotes: (value) => set({ notes: value }),
+
+  reset: () =>
+    set({
+      clientId: null,
+      items: [],
+      discountPercent: 0,
+      tip: 0,
+      payments: [],
+      notes: "",
+    }),
+}));
+
+export type CartTotals = {
+  subtotal: number;
+  discountAmount: number;
+  taxableBase: number;
+  cgst: number;
+  sgst: number;
+  totalTax: number;
+  tip: number;
+  grandTotal: number;
+  paid: number;
+  due: number;
+};
+
+export function calculateTotals(
+  items: CartItem[],
+  discountPercent: number,
+  tip: number,
+  payments: Payment[]
+): CartTotals {
+  const subtotal = items.reduce((sum, it) => sum + it.unitPrice * it.quantity, 0);
+  const discountAmount = (subtotal * discountPercent) / 100;
+  const taxableBase = Math.max(0, subtotal - discountAmount);
+
+  let totalTax = 0;
+  for (const it of items) {
+    const linePostDiscount =
+      it.unitPrice * it.quantity * (1 - discountPercent / 100);
+    totalTax += (linePostDiscount * it.taxRate) / 100;
+  }
+
+  const cgst = totalTax / 2;
+  const sgst = totalTax / 2;
+  const grandTotal = taxableBase + totalTax + tip;
+  const paid = payments.reduce((sum, p) => sum + p.amount, 0);
+  const due = grandTotal - paid;
+
+  return {
+    subtotal,
+    discountAmount,
+    taxableBase,
+    cgst,
+    sgst,
+    totalTax,
+    tip,
+    grandTotal,
+    paid,
+    due,
+  };
+}
+
+export function getCartClient(clientId: string | null): Client | undefined {
+  return findClient(clientId);
+}
+
+export function getServiceById(id: string): Service | undefined {
+  return findService(id);
+}
+
+export function getProductById(id: string): Product | undefined {
+  return findProduct(id);
+}

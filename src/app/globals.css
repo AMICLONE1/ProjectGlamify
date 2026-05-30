@@ -65,6 +65,43 @@
 
   --color-ink: var(--ink);
 
+  /* Business app palette (purple + orange) */
+  --color-biz-bg: #f4f4f8;
+  --color-biz-surface: #ffffff;
+  --color-biz-surface-2: #fafafd;
+  --color-biz-ink: #1a1530;
+  --color-biz-muted: #6b6580;
+  --color-biz-muted-2: #9c95b3;
+  --color-biz-border: #ebe9f1;
+  --color-biz-border-strong: #d8d4e3;
+
+  --color-biz-violet-50: #f5f0ff;
+  --color-biz-violet-100: #ede4ff;
+  --color-biz-violet-200: #d4c2ff;
+  --color-biz-violet-300: #b497ff;
+  --color-biz-violet-400: #9061ff;
+  --color-biz-violet-500: #7c3aed;
+  --color-biz-violet-600: #6d28d9;
+  --color-biz-violet-700: #5b21b6;
+  --color-biz-magenta-500: #c026d3;
+  --color-biz-magenta-600: #a21caf;
+
+  --color-biz-orange-300: #fdba74;
+  --color-biz-orange-400: #fb923c;
+  --color-biz-orange-500: #f97316;
+  --color-biz-orange-600: #ea580c;
+
+  --color-biz-yellow-300: #fde047;
+  --color-biz-yellow-400: #facc15;
+  --color-biz-yellow-500: #eab308;
+
+  --color-biz-pink-200: #fbcfe8;
+  --color-biz-pink-300: #f9a8d4;
+  --color-biz-pink-500: #ec4899;
+
+  --color-biz-green-400: #4ade80;
+  --color-biz-green-500: #22c55e;
+
   --font-sans: var(--font-inter);
   --font-display: var(--font-jakarta);
   --font-serif: var(--font-instrument);
@@ -99,9 +136,13 @@ body {
   }
 }
 
-.hero-char {
+.hero-char,
+.hero-word {
+  display: inline-block;
   opacity: 0;
   transform: translateY(40px) rotateX(-30deg);
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
 }
 
 .hero-fade-element {
@@ -109,11 +150,52 @@ body {
   transform: translateY(20px);
 }
 
+.hero-grid {
+  background-image:
+    linear-gradient(to right, rgba(13, 6, 8, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(13, 6, 8, 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: center;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 0%, transparent 75%);
+}
+
+.hero-dot-layer {
+  pointer-events: none;
+}
+
+.hero-float-dot {
+  animation-name: hero-dot-float;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform;
+}
+
+@keyframes hero-dot-float {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate3d(8px, -14px, 0) scale(1.15);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(-6px, 10px, 0) scale(0.95);
+    opacity: 0.7;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-char,
+  .hero-word,
   .hero-fade-element {
     opacity: 1 !important;
     transform: none !important;
+  }
+  .hero-float-dot {
+    animation: none !important;
   }
 }
 

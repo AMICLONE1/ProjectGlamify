@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { gsap } from "gsap";
 
 export function CustomCursor() {
   const dotRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (pathname.startsWith("/business")) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     if (window.matchMedia("(hover: none)").matches) return;
 
@@ -56,7 +59,7 @@ export function CustomCursor() {
         el.removeEventListener("mouseleave", onLeaveInteractive);
       });
     };
-  }, []);
+  }, [pathname]);
 
   return (
     <>
