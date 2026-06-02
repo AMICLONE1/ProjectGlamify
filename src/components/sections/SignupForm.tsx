@@ -3,19 +3,10 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { FieldShell, Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { track } from "@/lib/track";
-
-const waitlistSchema = z.object({
-  fullName: z.string().min(2, "Name must be at least 2 characters").max(80),
-  phone: z.string().regex(/^[0-9+\-\s()]{8,18}$/, "Enter a valid phone number"),
-  businessName: z.string().min(2, "Business name is required").max(120),
-  businessType: z.enum(["salon", "spa", "clinic", "barbershop", "tattoo", "other"]),
-  city: z.string().min(2, "City is required").max(80),
-});
-type WaitlistInput = z.infer<typeof waitlistSchema>;
+import { waitlistSchema, type WaitlistInput } from "@/lib/schemas";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -40,7 +31,7 @@ export function SignupForm() {
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: "signup", payload: { ...values, email: "", teamSize: "1" } }),
+        body: JSON.stringify({ kind: "waitlist", payload: values }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);

@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { signupSchema, demoSchema, contactSchema } from "@/lib/schemas";
+import { signupSchema, demoSchema, contactSchema, waitlistSchema } from "@/lib/schemas";
 import { db } from "@/lib/db";
 
 const schemas = {
   signup: signupSchema,
+  waitlist: waitlistSchema,
   demo: demoSchema,
   contact: contactSchema,
 } as const;
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error: { code: "INVALID_KIND", message: "kind must be signup|demo|contact" },
+        error: { code: "INVALID_KIND", message: "kind must be signup|waitlist|demo|contact" },
       },
       { status: 400 }
     );

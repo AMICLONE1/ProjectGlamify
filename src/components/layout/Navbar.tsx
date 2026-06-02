@@ -112,11 +112,11 @@ export function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
-          <Button href="/book-demo" variant="ghost" size="sm">
-            Book demo
+          <Button href="/login" variant="ghost" size="sm">
+            Log in
           </Button>
           <Button href="/signup" variant="primary" size="sm">
-            Start free
+            Get started
           </Button>
         </div>
 
@@ -159,18 +159,18 @@ export function Navbar() {
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <Link
-                href="/book-demo"
+                href="/login"
                 onClick={closeMenu}
                 className="inline-flex h-11 items-center justify-center rounded-full border border-border-strong bg-white px-5 text-sm font-semibold text-ink transition-colors hover:border-ink"
               >
-                Book a demo
+                Log in
               </Link>
               <Link
                 href="/signup"
                 onClick={closeMenu}
                 className="inline-flex h-11 items-center justify-center rounded-full bg-brand-500 px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-600"
               >
-                Start free
+                Get started
               </Link>
             </div>
           </div>

@@ -409,7 +409,7 @@ function StepPublish({
         </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <a href={liveUrl} target="_blank" rel="noopener noreferrer" className={btnCls}>View my storefront →</a>
-          <button onClick={() => router.push("/dashboard")} className={backBtnCls}>Go to dashboard</button>
+          <button onClick={() => router.push("/business/dashboard")} className={backBtnCls}>Go to dashboard</button>
         </div>
       </div>
     );
