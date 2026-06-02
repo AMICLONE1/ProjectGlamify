@@ -19,14 +19,14 @@ export function FinalCTA() {
           className="rounded-[2rem] bg-ink text-white p-12 sm:p-20 text-center"
         >
           <p className="text-[11px] uppercase tracking-[0.2em] font-semibold text-brand-300 mb-6">
-            Ready when you are
+            Your storefront is waiting
           </p>
           <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-[-0.02em] leading-[0.95] max-w-3xl mx-auto">
-            Glamify your business today.
+            Get online. Take bookings. Own your customers.
           </h2>
           <p className="mt-6 text-base sm:text-lg text-white/70 max-w-xl mx-auto">
-            Free forever for solo professionals. 14-day trial on every paid plan.
-            No card required to start.
+            Free storefront for every salon. OTP-verified bookings from day one.
+            No commission. No app needed for customers.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button href="/signup" size="lg" variant="primary">

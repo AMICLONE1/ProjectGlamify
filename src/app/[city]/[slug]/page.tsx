@@ -1,0 +1,171 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import {
+  getStorefrontBySlug,
+  getAllStorefrontSlugs,
+  isOpenNow,
+  formatPrice,
+  type Storefront,
+} from "@/content/storefronts";
+import { StorefrontPage } from "@/components/storefront/StorefrontPage";
+import { db } from "@/lib/db";
+
+// ISR: revalidate every hour; on-demand via /api/revalidate
+export const revalidate = 3600;
+
+type Params = { city: string; slug: string };
+
+export async function generateStaticParams(): Promise<Params[]> {
+  return getAllStorefrontSlugs();
+}
+
+// Build a Storefront shape from the DB record + related data
+async function getStorefrontFromDB(city: string, slug: string): Promise<Storefront | null> {
+  try {
+    const sf = await db.storefront.findFirst({
+      where: { city, slug, isPublished: true },
+      include: {
+        tenant: {
+          include: {
+            locations: { take: 1 },
+            services: {
+              where: { isActive: true },
+              include: { category: true },
+              orderBy: { createdAt: "asc" },
+            },
+          },
+        },
+      },
+    });
+    if (!sf) return null;
+
+    const tenant = sf.tenant;
+    const location = tenant.locations[0];
+
+    // Group services by category
+    const categoryMap: Record<string, { id: string; name: string }> = {};
+    const services = tenant.services.map(svc => {
+      const catName = svc.category?.name ?? "Other";
+      const catId = svc.categoryId ?? catName.toLowerCase();
+      if (!categoryMap[catId]) categoryMap[catId] = { id: catId, name: catName };
+      return {
+        id: svc.id,
+        categoryId: catId,
+        name: svc.name,
+        durationMins: svc.durationMinutes,
+        price: svc.price,
+        description: svc.description ?? undefined,
+      };
+    });
+
+    return {
+      tenantId: tenant.id,
+      slug: sf.slug,
+      city: sf.city,
+      area: sf.area,
+      name: tenant.name,
+      tagline: sf.tagline ?? "",
+      description: sf.description ?? "",
+      phone: location?.phone ?? tenant.phone ?? "",
+      address: location?.address ?? "",
+      geoLat: sf.geoLat ?? 0,
+      geoLng: sf.geoLng ?? 0,
+      rating: 0,
+      reviewCount: 0,
+      photos: [],
+      businessType: tenant.businessType,
+      priceRange: "₹₹",
+      hours: (sf.openingHours as Storefront["hours"] | null) ?? {
+        mon: { open: "10:00", close: "20:00" },
+        tue: { open: "10:00", close: "20:00" },
+        wed: { open: "10:00", close: "20:00" },
+        thu: { open: "10:00", close: "20:00" },
+        fri: { open: "10:00", close: "21:00" },
+        sat: { open: "09:00", close: "21:00" },
+        sun: { open: "10:00", close: "18:00" },
+      },
+      serviceCategories: Object.values(categoryMap),
+      services,
+      team: [],
+      offers: [],
+      reviews: [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function resolveStorefront(city: string, slug: string): Promise<Storefront | null> {
+  // Try seed data first (instant, no DB needed)
+  const seed = getStorefrontBySlug(city, slug);
+  if (seed) return seed;
+  // Fall back to DB for dynamically published storefronts
+  return getStorefrontFromDB(city, slug);
+}
+
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
+  const { city, slug } = await params;
+  const storefront = await resolveStorefront(city, slug);
+  if (!storefront) return {};
+
+  const topServices = storefront.services.slice(0, 3).map(s => s.name).join(", ");
+  const areaLabel = storefront.area.split("-").map(w => w[0].toUpperCase() + w.slice(1)).join(" ");
+  const cityLabel = city[0].toUpperCase() + city.slice(1);
+
+  return {
+    title: `${storefront.name} — ${topServices || "Beauty & Wellness"} in ${areaLabel}, ${cityLabel}`,
+    description: `Book at ${storefront.name} in ${areaLabel} ${cityLabel}. OTP-verified bookings. Book online now.`,
+    openGraph: {
+      title: storefront.name,
+      description: storefront.tagline,
+      images: storefront.photos[0] ? [storefront.photos[0]] : [],
+      type: "website",
+      locale: "en_IN",
+    },
+    alternates: { canonical: `https://glamify.in/${city}/${slug}` },
+    robots: { index: true, follow: true },
+  };
+}
+
+function buildJsonLd(storefront: Storefront) {
+  const areaLabel = storefront.area.split("-").map(w => w[0].toUpperCase() + w.slice(1)).join(" ");
+  const cityLabel = storefront.city[0].toUpperCase() + storefront.city.slice(1);
+  const daysMap: Record<string, string> = { mon:"Monday",tue:"Tuesday",wed:"Wednesday",thu:"Thursday",fri:"Friday",sat:"Saturday",sun:"Sunday" };
+
+  const openingHours = (Object.entries(storefront.hours) as [keyof typeof storefront.hours, {open:string;close:string;closed?:boolean}][])
+    .filter(([,h]) => !h.closed)
+    .map(([day,h]) => ({ "@type":"OpeningHoursSpecification", dayOfWeek:`https://schema.org/${daysMap[day]}`, opens:h.open, closes:h.close }));
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "BeautySalon",
+    name: storefront.name,
+    description: storefront.description,
+    image: storefront.photos,
+    telephone: storefront.phone,
+    address: { "@type":"PostalAddress", streetAddress:storefront.address, addressLocality:areaLabel, addressRegion:cityLabel, addressCountry:"IN" },
+    geo: { "@type":"GeoCoordinates", latitude:storefront.geoLat, longitude:storefront.geoLng },
+    url: `https://glamify.in/${storefront.city}/${storefront.slug}`,
+    ...(storefront.reviewCount > 0 ? { aggregateRating: { "@type":"AggregateRating", ratingValue:storefront.rating.toString(), reviewCount:storefront.reviewCount.toString() } } : {}),
+    priceRange: storefront.priceRange,
+    openingHoursSpecification: openingHours,
+    hasOfferCatalog: { "@type":"OfferCatalog", name:"Services", itemListElement: storefront.services.map(svc => ({ "@type":"Offer", itemOffered:{"@type":"Service",name:svc.name}, price:svc.price.toString(), priceCurrency:"INR" })) },
+  };
+}
+
+export default async function Page({ params }: { params: Promise<Params> }) {
+  const { city, slug } = await params;
+  const storefront = await resolveStorefront(city, slug);
+  if (!storefront) notFound();
+
+  const jsonLd = buildJsonLd(storefront);
+  const isOpen = isOpenNow(storefront.hours);
+  const pricesFrom = storefront.services.length > 0 ? Math.min(...storefront.services.map(s => s.price)) : 0;
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <StorefrontPage storefront={storefront} isOpen={isOpen} pricesFrom={pricesFrom} pricesFromLabel={formatPrice(pricesFrom)} />
+    </>
+  );
+}

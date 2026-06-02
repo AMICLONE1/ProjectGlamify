@@ -14,30 +14,30 @@ type Feature = {
 
 const features: Feature[] = [
   {
-    eyebrow: "Bookings",
-    title: "A calendar that thinks ahead.",
+    eyebrow: "Online Storefront",
+    title: "Your salon, live on the internet.",
     blurb:
-      "Drag-to-book, walk-in queue, recurring appointments, and AI slot suggestions that fill the gaps in your day.",
+      "A branded public page at glamify.in/your-city/your-salon. Services, prices, photos, reviews, hours — all managed from your dashboard.",
     visual: <BookingVisual />,
     span: "lg:col-span-2",
   },
   {
-    eyebrow: "Point of Sale",
-    title: "30-second checkout.",
-    blurb: "GST-compliant invoices, UPI QR, split bills, tips, refunds.",
+    eyebrow: "OTP Bookings",
+    title: "Verified. Trusted. Confirmed.",
+    blurb: "OTP at booking + check-in code on visit day. No ghost bookings, no no-shows.",
     visual: <POSVisual />,
   },
   {
-    eyebrow: "Client CRM",
-    title: "Remember every client.",
-    blurb: "Visit history, allergies, preferences, family links, spend analytics.",
+    eyebrow: "Google SEO",
+    title: "Rank on 'salon near me'.",
+    blurb: "Auto-generated local SEO pages + Google Business Profile sync. Get the Website button on Google.",
     visual: <CRMVisual />,
   },
   {
-    eyebrow: "Loyalty",
-    title: "Make them come back.",
+    eyebrow: "Rewards & Loyalty",
+    title: "Keep them coming back.",
     blurb:
-      "Points, packages, memberships, gift cards, and referrals — visible in the client app.",
+      "Store-controlled loyalty programs, milestone rewards, and Glamify platform cashback to seed your first bookings.",
     visual: <LoyaltyVisual />,
     span: "lg:col-span-2",
   },
@@ -50,9 +50,9 @@ export function FeatureGallery() {
     <Section className="py-20 sm:py-24 border-t border-border">
       <Container>
         <div className="max-w-3xl mb-12">
-          <p className="eyebrow mb-6">Every module, beautifully built</p>
+          <p className="eyebrow mb-6">Four pillars of growth</p>
           <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-[-0.02em] leading-[0.95]">
-            One platform. Every workflow.
+            From invisible to fully booked.
           </h2>
         </div>
 

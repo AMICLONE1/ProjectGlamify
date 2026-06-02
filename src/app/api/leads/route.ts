@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { signupSchema, demoSchema, contactSchema } from "@/lib/schemas";
+import { db } from "@/lib/db";
 
 const schemas = {
   signup: signupSchema,
@@ -56,8 +57,22 @@ export async function POST(request: Request) {
     );
   }
 
-  // TODO(week-4): insert into Supabase `leads` table
-  console.log(`[lead:${kind}]`, parsed.data);
+  const d = parsed.data as Record<string, string | undefined>;
+
+  await db.lead.create({
+    data: {
+      kind,
+      fullName:     d.fullName     ?? "",
+      phone:        d.phone        ?? null,
+      email:        d.email        ?? null,
+      businessName: d.businessName ?? null,
+      businessType: d.businessType ?? null,
+      city:         d.city         ?? null,
+      teamSize:     d.teamSize     ?? null,
+      message:      d.message      ?? null,
+      topic:        d.topic        ?? null,
+    },
+  });
 
   return NextResponse.json({ success: true, data: { received: true } }, { status: 201 });
 }

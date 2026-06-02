@@ -18,7 +18,7 @@ export function Intro() {
             transition={{ duration: 0.6 }}
             className="eyebrow mb-8"
           >
-            The Glamify philosophy
+            Why we built Glamify
           </motion.p>
 
           <motion.h2
@@ -28,7 +28,7 @@ export function Intro() {
             transition={{ duration: 0.8 }}
             className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-[-0.02em] leading-[0.95] text-ink"
           >
-            Software as serious as your business.
+            Rasper and Dingg give you a POS. We give you customers.
           </motion.h2>
 
           <motion.div
@@ -39,14 +39,14 @@ export function Intro() {
             className="mt-10 grid sm:grid-cols-2 gap-8 text-muted"
           >
             <p className="text-base leading-relaxed">
-              Most salons run on WhatsApp groups, paper registers, and clunky billing apps.
-              The few that use software are stuck with outdated interfaces, hidden costs,
-              and zero intelligence about their own business.
+              India&apos;s 1.2 million salons are invisible online. When someone searches
+              &ldquo;salon near me&rdquo; on Google, the results go to Justdial or Urban Company —
+              not the salon itself. You lose customers to platforms that charge 25–30% commission.
             </p>
             <p className="text-base leading-relaxed">
-              Glamify replaces all of it. One platform for booking, billing, clients,
-              inventory, marketing, loyalty — with an AI that actually understands the
-              rhythm of a beauty business. Free for solo professionals. Built in India.
+              Glamify gives every salon a branded public storefront, a Google-indexed local page,
+              and OTP-verified bookings — without taking commission. Customers book directly from
+              your link. You own the relationship. Built in India, for India.
             </p>
           </motion.div>
         </div>

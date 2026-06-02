@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { getBlogPostSlugs } from "@/content/blog";
 import { getFeatureSlugs } from "@/content/features";
 import { getSolutionSlugs } from "@/content/solutions";
+import { getAllStorefrontSlugs } from "@/content/storefronts";
 
 const SITE_URL = "https://glamify.in";
 
@@ -47,5 +48,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.5,
   }));
 
-  return [...staticRoutes, ...featureRoutes, ...solutionRoutes, ...blogRoutes];
+  const storefrontRoutes: MetadataRoute.Sitemap = getAllStorefrontSlugs().map(({ city, slug }) => ({
+    url: `${SITE_URL}/${city}/${slug}`,
+    lastModified: now,
+    changeFrequency: "daily",
+    priority: 0.9,
+  }));
+
+  return [...staticRoutes, ...featureRoutes, ...solutionRoutes, ...blogRoutes, ...storefrontRoutes];
 }

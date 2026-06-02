@@ -7,27 +7,27 @@ import Link from "next/link";
 
 const services = [
   {
-    eyebrow: "Glamify Business",
-    title: "For Owners & Managers",
+    eyebrow: "Branded Storefront",
+    title: "Your salon, online in 15 minutes.",
     blurb:
-      "Web dashboard with revenue analytics, multi-location control, staff performance, inventory, and AI insights that flag what needs your attention.",
-    bullets: ["Real-time KPIs", "Staff & commission engine", "AI churn alerts", "GST reports"],
+      "Every salon gets a public page at glamify.in/your-city/your-salon — shareable link, bookable instantly, no app download needed for customers.",
+    bullets: ["Services menu with prices", "Photo gallery", "Customer reviews", "Offers & loyalty"],
     href: "/features",
   },
   {
-    eyebrow: "Staff Mobile App",
-    title: "For Stylists & Front Desk",
+    eyebrow: "OTP-Verified Bookings",
+    title: "Trusted bookings, zero no-shows.",
     blurb:
-      "Today's schedule, walk-in queue, quick checkout, attendance, and personal performance — all on the phone in your apron pocket.",
-    bullets: ["Today view", "1-tap billing", "Commission tracker", "Push reminders"],
+      "Customers verify their phone number at booking and receive a check-in code on the day. Real visits, real accountability, real revenue.",
+    bullets: ["OTP at booking", "Check-in code on day", "WhatsApp confirmations", "24h reminders"],
     href: "/features",
   },
   {
-    eyebrow: "Glamify Consumer App",
-    title: "For Your Clients",
+    eyebrow: "Google Growth Engine",
+    title: "Show up when they search.",
     blurb:
-      "A beautiful app for clients to book, pay, collect loyalty points, view receipts, and rebook in one tap. White-labelled on paid plans.",
-    bullets: ["OTP login", "1-tap rebook", "Loyalty wallet", "Digital receipts"],
+      "Auto-generated SEO pages + Google Business Profile sync puts your salon in front of people searching 'salon near me' — without paying Urban Company.",
+    bullets: ["Local SEO pages", "GBP sync", "Booking button on Google", "Review requests"],
     href: "/features",
   },
 ];
@@ -40,9 +40,9 @@ export function Services() {
       <Container>
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">
           <div className="max-w-2xl">
-            <p className="eyebrow mb-6">Three apps, one ecosystem</p>
+            <p className="eyebrow mb-6">Everything in one platform</p>
             <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-[-0.02em] leading-[0.95]">
-              Built for everyone in your salon.
+              Your storefront. Your customers. Your growth.
             </h2>
           </div>
         </div>

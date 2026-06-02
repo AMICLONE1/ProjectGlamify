@@ -10,8 +10,8 @@ import { HeroPreview } from "./HeroPreview";
 import { TrustStrip } from "./TrustStrip";
 
 const HERO_LINES = [
-  ["Run", "your", "salon."],
-  ["Bill,", "book,", "grow."],
+  ["Your", "salon.", "Online."],
+  ["Book.", "Rank.", "Grow."],
 ];
 
 const floatingDots = [
@@ -162,9 +162,9 @@ export function Hero() {
               <span className="inline-flex h-5 items-center rounded-full bg-brand-500 px-2 text-[10px] uppercase tracking-[0.2em] text-white">
                 New
               </span>
-              <span className="hidden sm:inline">Built for salons, spas & clinics in India</span>
-              <span className="sm:hidden">Built for beauty businesses</span>
-              <span className="text-brand-500">Book a demo →</span>
+              <span className="hidden sm:inline">Your branded storefront, live on Google in minutes</span>
+              <span className="sm:hidden">Get your salon online today</span>
+              <span className="text-brand-500">See how it works →</span>
             </Link>
           </div>
 
@@ -185,8 +185,8 @@ export function Hero() {
               data-hero-element="subtext"
               className="hero-fade-element text-base leading-relaxed text-muted sm:text-lg lg:text-xl"
             >
-              Bookings, billing, CRM, loyalty, and AI insights built for India&apos;s salons,
-              spas, and clinics. Replace your messy stack with one beautiful platform.
+              Give your salon a branded online storefront, OTP-verified bookings, and a
+              Google-visible presence — in under 15 minutes. No app needed for your customers.
             </p>
 
             <div
@@ -209,7 +209,7 @@ export function Hero() {
               data-hero-element="note"
               className="hero-fade-element mt-6 text-xs uppercase tracking-[0.2em] text-muted-2"
             >
-              Free forever for solo professionals · 15-minute setup · No card required
+              Free storefront · OTP-verified bookings · Ranks on Google · No app needed
             </p>
 
             <div data-hero-element="trust" className="hero-fade-element mt-8">

@@ -1,0 +1,581 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum BusinessType {
+  salon
+  spa
+  clinic
+  barbershop
+  tattoo
+  other
+}
+
+enum UserRole {
+  owner
+  manager
+  staff
+  receptionist
+}
+
+enum AppointmentStatus {
+  pending
+  confirmed
+  in_progress
+  completed
+  cancelled
+  no_show
+}
+
+enum InvoiceStatus {
+  draft
+  issued
+  paid
+  refunded
+  void
+}
+
+enum PaymentMethod {
+  cash
+  upi
+  card
+  wallet
+  gift_card
+  complimentary
+}
+
+enum StockMovementType {
+  purchase
+  adjustment
+  waste
+  sale
+  transfer
+}
+
+enum CampaignChannel {
+  push
+  sms
+  email
+  whatsapp
+}
+
+enum CampaignStatus {
+  draft
+  scheduled
+  sending
+  sent
+  failed
+  cancelled
+}
+
+enum LoyaltyTransactionType {
+  earn
+  redeem
+  expire
+  bonus
+  referral
+}
+
+// ─── Tenant (top-level account) ──────────────────────────────────────────────
+
+model Tenant {
+  id           String       @id @default(cuid())
+  name         String
+  slug         String       @unique
+  businessType BusinessType @default(salon)
+  gstin        String?
+  phone        String?
+  email        String?
+  logoUrl      String?
+  timezone     String       @default("Asia/Kolkata")
+  currency     String       @default("INR")
+  plan         String       @default("trial")
+  trialEndsAt  DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  locations    Location[]
+  users        User[]
+  clients      Client[]
+  services     Service[]
+  serviceCategories ServiceCategory[]
+  products     Product[]
+  campaigns    Campaign[]
+  storefront   Storefront?
+
+  @@map("tenants")
+}
+
+// ─── Location (branch) ───────────────────────────────────────────────────────
+
+model Location {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  address   String?
+  city      String?
+  pincode   String?
+  phone     String?
+  lat       Float?
+  lng       Float?
+  timezone  String   @default("Asia/Kolkata")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staff        StaffDetail[]
+  appointments Appointment[]
+  invoices     Invoice[]
+  stockMovements StockMovement[]
+
+  @@map("locations")
+}
+
+// ─── User (staff account) ────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  tenantId     String
+  supabaseUid  String?   @unique
+  email        String
+  phone        String?
+  fullName     String
+  role         UserRole  @default(staff)
+  avatarUrl    String?
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staffDetail StaffDetail?
+  auditLogs   AuditLog[]
+
+  @@unique([tenantId, email])
+  @@map("users")
+}
+
+// ─── StaffDetail ─────────────────────────────────────────────────────────────
+
+model StaffDetail {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  locationId      String
+  speciality      String?
+  bio             String?
+  commissionPct   Float     @default(0)
+  workingHours    Json?
+  isBookable      Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location        Location        @relation(fields: [locationId], references: [id])
+  appointments    Appointment[]
+  onlineBookings  OnlineBooking[]
+
+  @@map("staff_details")
+}
+
+// ─── Client ──────────────────────────────────────────────────────────────────
+
+model Client {
+  id              String    @id @default(cuid())
+  tenantId        String
+  fullName        String
+  phone           String?
+  email           String?
+  dob             DateTime?
+  gender          String?
+  allergies       String[]
+  notes           String?
+  tags            String[]
+  loyaltyPoints   Int       @default(0)
+  totalVisits     Int       @default(0)
+  totalSpend      Float     @default(0)
+  preferredStaffId String?
+  lastVisitAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  invoices     Invoice[]
+  loyaltyTxns  LoyaltyTransaction[]
+
+  @@unique([tenantId, phone])
+  @@map("clients")
+}
+
+// ─── ServiceCategory ─────────────────────────────────────────────────────────
+
+model ServiceCategory {
+  id        String    @id @default(cuid())
+  tenantId  String
+  name      String
+  icon      String?
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  services Service[]
+
+  @@map("service_categories")
+}
+
+// ─── Service ─────────────────────────────────────────────────────────────────
+
+model Service {
+  id              String    @id @default(cuid())
+  tenantId        String
+  categoryId      String?
+  name            String
+  description     String?
+  durationMinutes Int       @default(60)
+  price           Float
+  taxPct          Float     @default(18)
+  isActive        Boolean   @default(true)
+  photoUrl        String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category         ServiceCategory?  @relation(fields: [categoryId], references: [id])
+  appointmentItems AppointmentItem[]
+  invoiceLineItems InvoiceLineItem[]
+
+  @@map("services")
+}
+
+// ─── Appointment ─────────────────────────────────────────────────────────────
+
+model Appointment {
+  id          String            @id @default(cuid())
+  tenantId    String
+  locationId  String
+  clientId    String
+  staffId     String?
+  status      AppointmentStatus @default(pending)
+  startsAt    DateTime
+  endsAt      DateTime
+  notes       String?
+  reminderSentAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  location Location      @relation(fields: [locationId], references: [id])
+  client   Client        @relation(fields: [clientId], references: [id])
+  staff    StaffDetail?  @relation(fields: [staffId], references: [id])
+  items    AppointmentItem[]
+  invoice  Invoice?
+
+  @@index([tenantId, startsAt])
+  @@index([tenantId, clientId])
+  @@index([tenantId, staffId])
+  @@map("appointments")
+}
+
+model AppointmentItem {
+  id            String  @id @default(cuid())
+  appointmentId String
+  serviceId     String
+  price         Float
+  durationMinutes Int
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  service     Service     @relation(fields: [serviceId], references: [id])
+
+  @@map("appointment_items")
+}
+
+// ─── Invoice ─────────────────────────────────────────────────────────────────
+
+model Invoice {
+  id            String        @id @default(cuid())
+  tenantId      String
+  locationId    String
+  clientId      String
+  appointmentId String?       @unique
+  invoiceNumber String
+  status        InvoiceStatus @default(draft)
+  subtotal      Float
+  discountAmt   Float         @default(0)
+  taxableAmt    Float
+  cgstAmt       Float
+  sgstAmt       Float
+  totalAmt      Float
+  tipAmt        Float         @default(0)
+  paymentMethod PaymentMethod @default(cash)
+  paidAt        DateTime?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  location    Location         @relation(fields: [locationId], references: [id])
+  client      Client           @relation(fields: [clientId], references: [id])
+  appointment Appointment?     @relation(fields: [appointmentId], references: [id])
+  lineItems   InvoiceLineItem[]
+  loyaltyTxns LoyaltyTransaction[]
+
+  @@unique([tenantId, invoiceNumber])
+  @@index([tenantId, clientId])
+  @@index([tenantId, createdAt])
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id        String  @id @default(cuid())
+  invoiceId String
+  serviceId String?
+  label     String
+  qty       Int     @default(1)
+  unitPrice Float
+  discountPct Float @default(0)
+  taxPct    Float   @default(18)
+  lineTotal Float
+
+  invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  service Service? @relation(fields: [serviceId], references: [id])
+
+  @@map("invoice_line_items")
+}
+
+// ─── Product / Inventory ─────────────────────────────────────────────────────
+
+model Product {
+  id             String    @id @default(cuid())
+  tenantId       String
+  name           String
+  sku            String?
+  category       String?
+  unit           String    @default("pc")
+  costPrice      Float     @default(0)
+  sellPrice      Float     @default(0)
+  stockQty       Float     @default(0)
+  reorderLevel   Float     @default(0)
+  supplier       String?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stockMovements StockMovement[]
+
+  @@unique([tenantId, sku])
+  @@map("products")
+}
+
+model StockMovement {
+  id         String            @id @default(cuid())
+  productId  String
+  locationId String
+  type       StockMovementType
+  qty        Float
+  note       String?
+  createdBy  String?
+  createdAt  DateTime          @default(now())
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  location Location @relation(fields: [locationId], references: [id])
+
+  @@map("stock_movements")
+}
+
+// ─── Campaign ─────────────────────────────────────────────────────────────────
+
+model Campaign {
+  id          String          @id @default(cuid())
+  tenantId    String
+  name        String
+  channel     CampaignChannel @default(push)
+  status      CampaignStatus  @default(draft)
+  segment     Json
+  subject     String?
+  body        String
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  recipientCount Int          @default(0)
+  openCount   Int             @default(0)
+  clickCount  Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@map("campaigns")
+}
+
+// ─── Loyalty ─────────────────────────────────────────────────────────────────
+
+model LoyaltyTransaction {
+  id        String                 @id @default(cuid())
+  clientId  String
+  invoiceId String?
+  type      LoyaltyTransactionType
+  points    Int
+  note      String?
+  expiresAt DateTime?
+  createdAt DateTime               @default(now())
+
+  client  Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+
+  @@index([clientId])
+  @@map("loyalty_transactions")
+}
+
+// ─── Storefront (public salon page) ──────────────────────────────────────────
+
+model Storefront {
+  id              String   @id @default(cuid())
+  tenantId        String   @unique
+  slug            String   @unique
+  city            String
+  area            String
+  tagline         String?
+  description     String?
+  openingHours    Json?
+  accentColour    String?
+  hideBranding    Boolean  @default(false)
+  isPublished     Boolean  @default(false)
+  publishedAt     DateTime?
+  geoLat          Float?
+  geoLng          Float?
+  gbpLocationId   String?
+  gbpConnected    Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bookings  OnlineBooking[]
+  photos    StorefrontPhoto[]
+  reviews   StorefrontReview[]
+
+  @@index([city, slug])
+  @@map("storefronts")
+}
+
+model StorefrontPhoto {
+  id           String   @id @default(cuid())
+  storefrontId String
+  url          String
+  altText      String?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  storefront Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
+
+  @@index([storefrontId, sortOrder])
+  @@map("storefront_photos")
+}
+
+model StorefrontReview {
+  id           String   @id @default(cuid())
+  storefrontId String
+  authorName   String
+  rating       Int      // 1-5
+  text         String
+  date         String   // ISO date string
+  verified     Boolean  @default(false)
+  source       String   @default("manual") // manual | google | glamify
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  storefront Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
+
+  @@index([storefrontId])
+  @@map("storefront_reviews")
+}
+
+// ─── OnlineBooking (customer self-booked via storefront) ─────────────────────
+
+enum OnlineBookingStatus {
+  pending_otp
+  confirmed
+  visited
+  no_show
+  cancelled
+}
+
+model OnlineBooking {
+  id               String              @id @default(cuid())
+  tenantId         String
+  storefrontId     String
+  customerName     String
+  customerPhone    String
+  staffDetailId    String?
+  serviceIds       String[]
+  scheduledAt      DateTime
+  durationMins     Int
+  totalAmount      Float
+  status           OnlineBookingStatus @default(pending_otp)
+  bookingOtpSentAt DateTime?
+  confirmedAt      DateTime?
+  checkinCode      String?
+  checkinCodeSentAt DateTime?
+  checkedInAt      DateTime?
+  cancelledAt      DateTime?
+  notes            String?
+  source           String              @default("storefront")
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  storefront  Storefront   @relation(fields: [storefrontId], references: [id])
+  staffDetail StaffDetail? @relation(fields: [staffDetailId], references: [id])
+
+  @@index([tenantId, scheduledAt])
+  @@index([customerPhone])
+  @@map("online_bookings")
+}
+
+// ─── Audit log ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String?
+  action     String
+  resource   String
+  resourceId String?
+  diff       Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}
+
+// ─── Lead (waitlist / early-access requests) ─────────────────────────────────
+
+model Lead {
+  id           String   @id @default(cuid())
+  kind         String   // signup | demo | contact
+  fullName     String
+  phone        String?
+  email        String?
+  businessName String?
+  businessType String?
+  city         String?
+  teamSize     String?
+  message      String?
+  topic        String?
+  status       String   @default("new") // new | contacted | converted | rejected
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([kind, createdAt])
+  @@map("leads")
+}

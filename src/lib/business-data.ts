@@ -27,10 +27,11 @@ export type BusinessAlert = {
 };
 
 export const businessNavigation: BusinessNavItem[] = [
-  { href: "/business", label: "Dashboard", description: "Command center" },
+  { href: "/business/dashboard", label: "Dashboard", description: "Command center" },
   { href: "/business/calendar", label: "Calendar", description: "Staff columns & waitlist" },
   { href: "/business/clients", label: "Clients", description: "CRM, tags, history" },
   { href: "/business/pos", label: "POS", description: "Checkout & billing" },
+  { href: "/business/storefront", label: "Storefront", description: "Public page, bookings & SEO" },
   { href: "/business/inventory", label: "Inventory", description: "Stock, alerts, PO" },
   { href: "/business/campaigns", label: "Campaigns", description: "Segments & push" },
   { href: "/business/reports", label: "Reports", description: "Analytics & exports" },

@@ -1,10 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans, Instrument_Serif } from "next/font/google";
 import "./globals.css";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { SmoothScroll } from "@/components/effects/SmoothScroll";
-import { CustomCursor } from "@/components/effects/CustomCursor";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -76,11 +72,7 @@ export default function RootLayout({
       className={`${inter.variable} ${jakarta.variable} ${instrument.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <SmoothScroll />
-        <CustomCursor />
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        {children}
         <Analytics />
         <SpeedInsights />
       </body>

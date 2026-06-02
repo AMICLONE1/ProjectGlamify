@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
   agenda,
@@ -9,8 +10,45 @@ import {
   type CalEvent,
   type EventColor,
 } from "@/lib/calendar-seed";
+import { appointmentsApi, type UpcomingAppointment } from "@/lib/api-client";
 import { cn } from "@/lib/cn";
 import { SearchIcon } from "../icons";
+
+const STATUS_COLOR: Record<string, EventColor> = {
+  confirmed: "violet",
+  in_progress: "green",
+  pending: "yellow",
+  completed: "gray",
+  cancelled: "gray",
+  no_show: "pink",
+};
+
+function aptToCalEvent(apt: UpcomingAppointment, weekSunday: Date): CalEvent | null {
+  const start = new Date(apt.startsAt);
+  const end = new Date(apt.endsAt);
+  const dayIndex = Math.floor((start.getTime() - weekSunday.getTime()) / 86_400_000);
+  if (dayIndex < 0 || dayIndex > 6) return null;
+  const startMinutes = start.getHours() * 60 + start.getMinutes();
+  const endMinutes = end.getHours() * 60 + end.getMinutes();
+  const svcName = apt.items[0]?.service?.name ?? "Appointment";
+  const staffFirst = apt.staff?.user.fullName?.split(" ")[0];
+  return {
+    id: apt.id,
+    dayIndex,
+    startMinutes,
+    endMinutes,
+    title: `${apt.client.fullName} · ${svcName}`,
+    subtitle: staffFirst ?? undefined,
+    color: STATUS_COLOR[apt.status] ?? "violet",
+  };
+}
+
+function getWeekSunday(): Date {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
 
 const DAY_START_HOUR = 7;
 const DAY_END_HOUR = 18;
@@ -81,16 +119,36 @@ type View = "Day" | "Week" | "Month" | "Year";
 
 export function CalendarBoard() {
   const [view, setView] = useState<View>("Week");
+  const weekSunday = useMemo(getWeekSunday, []);
+
+  const { data: liveData } = useQuery({
+    queryKey: ["appointments", "week", weekSunday.toISOString()],
+    queryFn: () =>
+      appointmentsApi.list({
+        from: weekSunday.toISOString(),
+        to: new Date(weekSunday.getTime() + 7 * 86_400_000).toISOString(),
+      }),
+    retry: false,
+  });
 
   const eventsByDay = useMemo(() => {
     const map = new Map<number, CalEvent[]>();
     for (let i = 0; i < 7; i++) map.set(i, []);
-    for (const e of calendarEvents) {
+
+    const source: CalEvent[] =
+      liveData?.appointments && liveData.appointments.length > 0
+        ? liveData.appointments.flatMap((apt) => {
+            const e = aptToCalEvent(apt, weekSunday);
+            return e ? [e] : [];
+          })
+        : calendarEvents;
+
+    for (const e of source) {
       const arr = map.get(e.dayIndex);
       if (arr) arr.push(e);
     }
     return map;
-  }, []);
+  }, [liveData, weekSunday]);
 
   return (
     <div className="rounded-3xl bg-biz-surface shadow-sm">

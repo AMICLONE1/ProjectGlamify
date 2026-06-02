@@ -3,17 +3,17 @@ import { Container } from "@/components/ui/Container";
 import { SignupForm } from "@/components/sections/SignupForm";
 
 export const metadata: Metadata = {
-  title: "Start free — Create your Glamify account",
+  title: "Get early access — Glamify",
   description:
-    "Free forever for solo professionals. Operational in 15 minutes. No card required.",
+    "Request early access to Glamify. We set up your storefront for you — live within 48 hours.",
   robots: { index: false, follow: true },
   alternates: { canonical: "/signup" },
 };
 
 const benefits = [
-  { title: "Free forever for solo pros", body: "One staff seat, 50 appointments/month, basic billing." },
-  { title: "Operational in 15 minutes", body: "Guided wizard. Real humans on chat if you get stuck." },
-  { title: "Cancel anytime", body: "No long-term contracts. Your data exports in one click." },
+  { title: "We set up everything", body: "Our team configures your storefront, services, and hours. You just review and approve." },
+  { title: "Live within 48 hours", body: "From your first WhatsApp to your first online booking in under 2 days." },
+  { title: "No tech skills needed", body: "We handle it all. You get login credentials and a ready-to-share link." },
 ];
 
 export default function SignupPage() {
@@ -22,13 +22,14 @@ export default function SignupPage() {
       <Container>
         <div className="grid lg:grid-cols-[1fr_1.1fr] gap-12 lg:gap-16 items-start">
           <div className="lg:sticky lg:top-28">
-            <p className="eyebrow mb-8">Start free</p>
+            <p className="eyebrow mb-8">Early access</p>
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-[-0.02em] leading-[0.95] text-ink">
-              Create your Glamify account.
+              Get your storefront live.
             </h1>
             <p className="mt-6 text-base sm:text-lg text-muted leading-relaxed max-w-md">
-              Two minutes to sign up. Thirteen to set up your services, staff, and
-              working hours. You&apos;ll be taking bookings before lunch.
+              Tell us about your business. Our team reaches out within 24 hours,
+              sets up your storefront, and hands you the keys. You start taking
+              bookings — we handle the rest.
             </p>
 
             <ul className="mt-10 space-y-5">

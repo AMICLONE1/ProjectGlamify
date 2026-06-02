@@ -5,6 +5,8 @@ import { track as vercelTrack } from "@vercel/analytics";
 export type AppEvent =
   | "signup_submitted"
   | "signup_failed"
+  | "waitlist_submitted"
+  | "waitlist_failed"
   | "demo_submitted"
   | "demo_failed"
   | "contact_submitted"
