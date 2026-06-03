@@ -115,7 +115,7 @@ async function sendBookingOtp(
     body: JSON.stringify({ tenantId, storefrontSlug, serviceIds, staffDetailId: staffId, date, time, customerName, customerPhone }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data?.error ?? "Failed to create booking");
+  if (!res.ok) throw new Error(data?.message ?? data?.error ?? "Failed to create booking");
   return data.bookingId as string;
 }
 

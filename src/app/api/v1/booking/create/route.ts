@@ -28,7 +28,13 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid request", details: parsed.error.flatten() }, { status: 422 });
+    const issues = parsed.error.flatten();
+    console.error("[booking/create] Validation failed:", JSON.stringify(issues), "body:", JSON.stringify(body));
+    return NextResponse.json({
+      error: "Invalid request",
+      details: issues,
+      message: Object.entries(issues.fieldErrors).map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`).join(" | "),
+    }, { status: 422 });
   }
 
   const { tenantId, storefrontSlug, serviceIds, staffDetailId, date, time, customerName, customerPhone } = parsed.data;
