@@ -11,7 +11,7 @@ const schema = z.object({
   tenantId:      z.string(),
   storefrontSlug: z.string(),
   serviceIds:    z.array(z.string()).min(1),
-  staffDetailId: z.string().optional(),
+  staffDetailId: z.string().nullable().optional(),
   date:          z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   time:          z.string().regex(/^\d{2}:\d{2}$/),
   customerName:  z.string().min(2).max(100),
