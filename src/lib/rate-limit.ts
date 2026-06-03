@@ -1,12 +1,14 @@
-// Sliding-window rate limiter with two backends:
+// Sliding-window rate limiter — two backends:
 //
-//   Production (Vercel): uses @vercel/kv (Redis) — accurate across all serverless instances.
-//   Dev / no KV env:     falls back to an in-process Map — accurate on a single process.
+//   Production (Vercel + Upstash Redis):
+//     Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN in Vercel dashboard.
+//     Accurate across all serverless instances.
 //
-// The backend is selected automatically at runtime based on whether KV_REST_API_URL is set.
-// No code change needed when deploying; just add the KV env vars in Vercel dashboard.
+//   Dev / no Redis env:
+//     Falls back to an in-process Map — accurate on a single process.
+//     Automatically selected when UPSTASH_REDIS_REST_URL is absent.
 
-import { kv } from "@vercel/kv";
+import { Redis } from "@upstash/redis";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,54 +40,51 @@ function rateLimitMem(key: string, limit: number, windowMs: number): RateLimitRe
   return { allowed: true };
 }
 
-// ─── Vercel KV backend (production) ──────────────────────────────────────────
-//
-// Uses a Redis sorted set as a sliding-log counter:
-//   INCR  rl:{key}
-//   EXPIRE rl:{key} windowSecs   (only on first request in window)
-//
-// This is a fixed-window approach (not true sliding) but is accurate enough
-// for the limits we apply (15 min / 1 hr windows). True sliding log requires
-// ZADD + ZREMRANGEBYSCORE which costs more round-trips.
+// ─── Upstash Redis backend (production) ──────────────────────────────────────
+// Fixed-window INCR + EXPIRE — one round-trip per request.
 
-async function rateLimitKv(key: string, limit: number, windowMs: number): Promise<RateLimitResult> {
+let redis: Redis | null = null;
+
+function getRedis(): Redis | null {
+  if (redis) return redis;
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+  redis = new Redis({ url, token });
+  return redis;
+}
+
+async function rateLimitRedis(key: string, limit: number, windowMs: number): Promise<RateLimitResult> {
+  const client = getRedis()!;
   const redisKey = `rl:${key}`;
   const windowSecs = Math.ceil(windowMs / 1000);
 
-  // INCR returns the new count. If it's 1 this is the first request — set TTL.
-  const count = await kv.incr(redisKey);
-  if (count === 1) {
-    await kv.expire(redisKey, windowSecs);
-  }
+  const count = await client.incr(redisKey);
+  if (count === 1) await client.expire(redisKey, windowSecs);
 
   if (count > limit) {
-    const ttl = await kv.ttl(redisKey);
+    const ttl = await client.ttl(redisKey);
     return { allowed: false, retryAfter: ttl > 0 ? ttl : windowSecs };
   }
-
   return { allowed: true };
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-const useKv = !!process.env.KV_REST_API_URL;
-
 /**
- * Rate limit a request.
- *
- * @param key      Bucket identifier (e.g. `booking:ip:1.2.3.4`)
+ * Rate limit a request bucket.
+ * @param key      e.g. `booking:ip:1.2.3.4`
  * @param limit    Max requests allowed per window
  * @param windowMs Window size in milliseconds
  */
 export async function rateLimit(key: string, limit: number, windowMs: number): Promise<RateLimitResult> {
+  const client = getRedis();
+  if (!client) return rateLimitMem(key, limit, windowMs);
   try {
-    return useKv
-      ? await rateLimitKv(key, limit, windowMs)
-      : rateLimitMem(key, limit, windowMs);
+    return await rateLimitRedis(key, limit, windowMs);
   } catch (err) {
-    // If KV is unavailable, fail open (allow the request) and log the error.
-    // Better to let a request through than to block all traffic on a KV outage.
-    console.error("[rate-limit] KV error, failing open:", err);
+    // Fail open on Redis errors — better to let a request through than block all traffic.
+    console.error("[rate-limit] Redis error, failing open:", err);
     return { allowed: true };
   }
 }
@@ -115,10 +114,7 @@ export function rateLimitResponse(retryAfter: number): Response {
     },
     {
       status: 429,
-      headers: {
-        "Retry-After": String(retryAfter),
-        "X-RateLimit-Limit": "10",
-      },
+      headers: { "Retry-After": String(retryAfter) },
     }
   );
 }
