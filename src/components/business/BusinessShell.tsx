@@ -141,13 +141,24 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
 
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex items-center gap-3 rounded-3xl bg-biz-surface px-4 py-3 shadow-sm sm:px-5">
+            {/* Mobile brand mark (drawer is opened from the bottom "More" tab) */}
+            <Link
+              href="/business/dashboard"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-biz-bg lg:hidden"
+              aria-label="Clitell dashboard"
+            >
+              <ClitellMark className="h-6 w-auto" />
+            </Link>
+
+            {/* Mobile search trigger */}
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-biz-bg text-biz-ink transition-colors hover:bg-biz-border lg:hidden"
-              aria-label={menuOpen ? "Close navigation" : "Open navigation"}
-              onClick={() => setMenuOpen((v) => !v)}
+              onClick={() => setSearchOpen(true)}
+              className="flex flex-1 items-center gap-2 rounded-2xl bg-biz-bg px-3 py-2.5 text-sm text-biz-muted-2 transition-colors hover:bg-biz-border md:hidden"
+              aria-label="Search"
             >
-              {menuOpen ? <CloseSvg /> : <MenuSvg />}
+              <SearchIcon className="h-4 w-4 shrink-0" />
+              <span className="truncate">Search…</span>
             </button>
 
             <div className="hidden min-w-0 flex-1 items-center md:flex">
@@ -260,22 +271,30 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
             </div>
           </header>
 
+          {/* "More" drawer — slides up from the bottom on mobile (opened by the More tab) */}
           {menuOpen && (
-            <div className="fixed inset-0 z-40 bg-black/30 px-4 py-4 backdrop-blur-sm lg:hidden">
-              <div className="mx-auto flex h-full max-w-sm flex-col rounded-3xl bg-biz-surface p-4 shadow-2xl">
-                <div className="flex items-center justify-between border-b border-biz-border pb-4">
-                  <p className="font-semibold text-biz-ink">Navigation</p>
+            <div
+              className="fixed inset-0 z-40 flex flex-col justify-end bg-black/40 backdrop-blur-sm lg:hidden"
+              onClick={() => setMenuOpen(false)}
+            >
+              <div
+                className="max-h-[85vh] overflow-y-auto rounded-t-3xl bg-biz-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl animate-[slideUp_0.2s_ease-out]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-biz-border" />
+                <div className="mb-3 flex items-center justify-between px-1">
+                  <p className="text-sm font-semibold text-biz-ink">All sections</p>
                   <button
                     type="button"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-biz-bg text-biz-ink"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-biz-bg text-biz-ink"
                     aria-label="Close"
                     onClick={() => setMenuOpen(false)}
                   >
                     <CloseSvg />
                   </button>
                 </div>
-                <nav className="mt-4 space-y-1 overflow-y-auto pr-1">
-                  {businessNavigation.map((item) => {
+                <nav className="grid grid-cols-2 gap-2">
+                  {moreNavItems.map((item) => {
                     const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
                     return (
                       <Link
@@ -283,54 +302,103 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
                         href={item.href}
                         onClick={() => setMenuOpen(false)}
                         className={cn(
-                          "flex items-center gap-3 rounded-2xl px-4 py-3 transition-colors",
+                          "flex items-center gap-3 rounded-2xl border px-3.5 py-3.5 transition-colors",
                           active
-                            ? "bg-biz-violet-50 text-biz-violet-700"
-                            : "text-biz-ink hover:bg-biz-bg"
+                            ? "border-biz-violet-200 bg-biz-violet-50 text-biz-violet-700"
+                            : "border-biz-border bg-biz-bg text-biz-ink active:bg-biz-border"
                         )}
                       >
-                        <NavIcon name={item.label as IconName} />
-                        <span className="text-sm font-semibold">{item.label}</span>
+                        <NavIcon name={item.label as IconName} className="h-5 w-5 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold leading-tight">{item.label}</p>
+                          <p className="truncate text-[11px] text-biz-muted-2">{item.description}</p>
+                        </div>
                       </Link>
                     );
                   })}
                 </nav>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="mt-3 w-full rounded-2xl bg-red-50 py-3 text-sm font-semibold text-red-600 transition-colors active:bg-red-100"
+                >
+                  Sign out
+                </button>
               </div>
             </div>
           )}
 
-          <main className="mt-4 flex-1 pb-20 lg:pb-0">{children}</main>
+          <main className="mt-4 flex-1 pb-24 lg:pb-0">{children}</main>
         </div>
       </div>
 
-      {/* Mobile bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-biz-border bg-biz-surface px-2 py-2 lg:hidden">
-        {[
-          { href: "/business/dashboard", label: "Home",     icon: "Dashboard" },
-          { href: "/business/calendar",  label: "Calendar", icon: "Calendar" },
-          { href: "/business/clients",   label: "Clients",  icon: "Clients" },
-          { href: "/business/pos",       label: "POS",      icon: "POS" },
-          { href: "/business/settings",  label: "More",     icon: "Settings" },
-        ].map((item) => {
+      {/* Mobile bottom tab bar */}
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-30 flex items-stretch justify-around border-t border-biz-border bg-biz-surface/95 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-md lg:hidden"
+        aria-label="Primary"
+      >
+        {bottomNavItems.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
-            <Link key={item.href} href={item.href}
-              className={cn("flex flex-col items-center gap-0.5 rounded-2xl px-3 py-1.5 transition-colors",
-                active ? "text-biz-violet-600" : "text-biz-muted-2 hover:text-biz-ink")}>
-              <NavIcon name={item.icon as IconName} className="h-5 w-5" />
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 transition-colors",
+                active ? "text-biz-violet-600" : "text-biz-muted-2 active:text-biz-ink"
+              )}
+            >
+              <span
+                className={cn(
+                  "flex h-8 w-12 items-center justify-center rounded-full transition-colors",
+                  active && "bg-biz-violet-50"
+                )}
+              >
+                <NavIcon name={item.icon as IconName} className="h-5 w-5" />
+              </span>
               <span className="text-[10px] font-semibold">{item.label}</span>
             </Link>
           );
         })}
+        {/* More — opens the drawer */}
+        <button
+          type="button"
+          onClick={() => setMenuOpen(true)}
+          className={cn(
+            "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 transition-colors",
+            menuOpen ? "text-biz-violet-600" : "text-biz-muted-2 active:text-biz-ink"
+          )}
+          aria-label="More sections"
+          aria-expanded={menuOpen}
+        >
+          <span className={cn("flex h-8 w-12 items-center justify-center rounded-full transition-colors", menuOpen && "bg-biz-violet-50")}>
+            <MoreSvg />
+          </span>
+          <span className="text-[10px] font-semibold">More</span>
+        </button>
       </nav>
     </div>
   );
 }
 
-function MenuSvg() {
+// Bottom tab bar: the 4 highest-frequency destinations. The rest live in the "More" drawer.
+const bottomNavItems = [
+  { href: "/business/dashboard", label: "Home", icon: "Dashboard" },
+  { href: "/business/calendar", label: "Calendar", icon: "Calendar" },
+  { href: "/business/clients", label: "Clients", icon: "Clients" },
+  { href: "/business/pos", label: "POS", icon: "POS" },
+] as const;
+
+// "More" drawer: everything not in the bottom bar.
+const bottomHrefs = new Set<string>(bottomNavItems.map((i) => i.href));
+const moreNavItems = businessNavigation.filter((i) => !bottomHrefs.has(i.href));
+
+function MoreSvg() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden className="h-5 w-5">
-      <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="5" cy="12" r="1.6" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.6" fill="currentColor" />
+      <circle cx="19" cy="12" r="1.6" fill="currentColor" />
     </svg>
   );
 }

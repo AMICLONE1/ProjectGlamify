@@ -7,6 +7,19 @@ import { getSupabaseBrowser } from "@/lib/supabase/client";
 
 const TOKEN_KEY = "glm_token";
 const USER_KEY = "glm_user";
+const REMEMBERED_EMAIL_KEY = "clitell_email";
+
+// Remembered login email — pre-fills the login form on the next visit.
+export function getRememberedEmail(): string {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem(REMEMBERED_EMAIL_KEY) ?? "";
+}
+
+export function setRememberedEmail(email: string) {
+  if (typeof window === "undefined") return;
+  if (email.trim()) localStorage.setItem(REMEMBERED_EMAIL_KEY, email.trim().toLowerCase());
+  else localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+}
 
 export interface SessionUser {
   id: string;

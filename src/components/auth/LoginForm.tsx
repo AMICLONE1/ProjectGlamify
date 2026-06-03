@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getSupabaseBrowser } from "@/lib/supabase/client";
-import { setToken, setUser } from "@/lib/session";
+import {
+  getSupabaseBrowser,
+  resetSupabaseBrowser,
+  getRememberPreference,
+  setRememberPreference,
+} from "@/lib/supabase/client";
+import { setToken, setUser, getRememberedEmail, setRememberedEmail } from "@/lib/session";
 
 type Status = "idle" | "submitting" | "error";
 type ResetStatus = "idle" | "sending" | "sent" | "error";
@@ -12,7 +17,15 @@ export function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Pre-fill the remembered email + the remember preference on mount.
+  useEffect(() => {
+    const saved = getRememberedEmail();
+    if (saved) setEmail(saved);
+    setRemember(getRememberPreference());
+  }, []);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [resetStatus, setResetStatus] = useState<ResetStatus>("idle");
@@ -41,7 +54,11 @@ export function LoginForm() {
     setErrorMessage(null);
 
     try {
-      const supabase = getSupabaseBrowser();
+      // Apply the remember-me preference, then rebuild the client so the session
+      // is written to the correct storage (localStorage vs sessionStorage).
+      setRememberPreference(remember);
+      setRememberedEmail(remember ? email : "");
+      const supabase = resetSupabaseBrowser();
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
@@ -125,6 +142,19 @@ export function LoginForm() {
           </button>
         </div>
       </div>
+
+      <label className="flex items-center gap-2.5 cursor-pointer select-none py-0.5">
+        <input
+          type="checkbox"
+          checked={remember}
+          onChange={(e) => setRemember(e.target.checked)}
+          className="h-4 w-4 rounded border-border-strong text-brand-500 accent-brand-500 focus:ring-2 focus:ring-brand-500/30"
+        />
+        <span className="text-sm text-muted">
+          Remember me
+          <span className="block text-xs text-muted-2">Stay signed in on this device</span>
+        </span>
+      </label>
 
       {errorMessage && (
         <p className="text-sm text-brand-600 font-medium" role="alert">

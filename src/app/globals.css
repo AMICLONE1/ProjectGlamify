@@ -172,6 +172,15 @@ body {
   will-change: transform;
 }
 
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
 @keyframes hero-dot-float {
   0% {
     transform: translate3d(0, 0, 0) scale(1);

@@ -105,6 +105,7 @@ export const viewport: Viewport = {
   colorScheme: "light",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover", // enables env(safe-area-inset-*) on notched devices
 };
 
 export default function RootLayout({
