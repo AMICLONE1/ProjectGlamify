@@ -9,6 +9,7 @@ import {
 } from "@/content/storefronts";
 import { StorefrontPage } from "@/components/storefront/StorefrontPage";
 import { db } from "@/lib/db";
+import { absoluteUrl } from "@/lib/site";
 
 // ISR: revalidate every hour; on-demand via /api/revalidate
 export const revalidate = 3600;
@@ -139,7 +140,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
       type: "website",
       locale: "en_IN",
     },
-    alternates: { canonical: `https://clitell.in/${city}/${slug}` },
+    alternates: { canonical: absoluteUrl(`/${city}/${slug}`) },
     robots: { index: true, follow: true },
   };
 }
@@ -162,7 +163,7 @@ function buildJsonLd(storefront: Storefront) {
     telephone: storefront.phone,
     address: { "@type":"PostalAddress", streetAddress:storefront.address, addressLocality:areaLabel, addressRegion:cityLabel, addressCountry:"IN" },
     geo: { "@type":"GeoCoordinates", latitude:storefront.geoLat, longitude:storefront.geoLng },
-    url: `https://clitell.in/${storefront.city}/${storefront.slug}`,
+    url: absoluteUrl(`/${storefront.city}/${storefront.slug}`),
     ...(storefront.reviewCount > 0 ? { aggregateRating: { "@type":"AggregateRating", ratingValue:storefront.rating.toString(), reviewCount:storefront.reviewCount.toString() } } : {}),
     priceRange: storefront.priceRange,
     openingHoursSpecification: openingHours,

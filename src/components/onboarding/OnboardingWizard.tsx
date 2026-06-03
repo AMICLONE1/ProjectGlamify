@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getToken, getUser, getFreshToken } from "@/lib/session";
 import { ClitellWordmark } from "@/components/layout/Logo";
+import { SITE_URL } from "@/lib/site";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -372,7 +373,7 @@ function StepPublish({
   }
 
   if (published && liveUrl) {
-    const fullUrl = `${typeof window !== "undefined" ? window.location.origin : "https://clitell.in"}${liveUrl}`;
+    const fullUrl = `${typeof window !== "undefined" ? window.location.origin : SITE_URL}${liveUrl}`;
     return (
       <div className="text-center space-y-6">
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">

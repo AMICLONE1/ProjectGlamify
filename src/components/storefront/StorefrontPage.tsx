@@ -34,7 +34,7 @@ export function StorefrontPage({ storefront, isOpen, pricesFromLabel }: Props) {
       {/* Top Clitell attribution strip */}
       <div className="sticky top-0 z-40 border-b border-border bg-white/95 backdrop-blur-sm py-2 text-center text-[11px] text-muted-2">
         Powered by{" "}
-        <a href="https://clitell.in" className="font-semibold text-brand-500 hover:underline">
+        <a href="/" className="font-semibold text-brand-500 hover:underline">
           Clitell
         </a>
         <span className="mx-1.5 text-border-strong">·</span>
@@ -80,7 +80,7 @@ export function StorefrontPage({ storefront, isOpen, pricesFromLabel }: Props) {
         <p className="mt-0.5">{storefront.address}</p>
         <p className="mt-3">
           Bookings powered by{" "}
-          <a href="https://clitell.in" className="font-semibold text-brand-500 hover:underline">
+          <a href="/" className="font-semibold text-brand-500 hover:underline">
             Clitell
           </a>
           {" "}· India&apos;s beauty &amp; wellness platform

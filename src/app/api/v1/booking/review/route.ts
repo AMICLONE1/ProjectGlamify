@@ -7,6 +7,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 import { sendWhatsApp } from "@/lib/whatsapp";
+import { SITE_URL } from "@/lib/site";
 
 const schema = z.object({
   bookingId: z.string(),
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
   const sf = booking.storefront;
 
   // Build the review link — Google Maps if slug available, else storefront page
-  const reviewLink = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://clitell.in"}/${sf.city}/${sf.slug}`;
+  const reviewLink = `${SITE_URL}/${sf.city}/${sf.slug}`;
 
   await sendWhatsApp({
     type: "review_request",

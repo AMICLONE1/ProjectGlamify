@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { SITE_URL } from "@/lib/site";
 import { Inter, Plus_Jakarta_Sans, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
@@ -25,7 +26,7 @@ const instrument = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://clitell.in"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Clitell — The AI-first operating system for beauty & wellness",
     template: "%s · Clitell",
@@ -55,7 +56,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: "https://clitell.in",
+    url: SITE_URL,
     siteName: "Clitell",
     title: "Clitell — The AI-first operating system for beauty & wellness",
     description:

@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { FinalCTA } from "@/components/sections/FinalCTA";
 import { getSolution, getSolutionSlugs } from "@/content/solutions";
 import { getFeatureBySlug } from "@/content/features";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbSchema } from "@/lib/seo";
 
 type Params = Promise<{ type: string }>;
 
@@ -37,6 +39,13 @@ export default async function SolutionPage({ params }: { params: Params }) {
 
   return (
     <>
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Solutions", path: "/solutions" },
+          { name: solution.hero, path: `/solutions/${type}` },
+        ])}
+      />
       <section className="relative pt-16 pb-10 sm:pt-20 sm:pb-12">
         <Container>
           <div className="mx-auto max-w-4xl">

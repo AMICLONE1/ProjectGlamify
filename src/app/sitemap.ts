@@ -3,8 +3,7 @@ import { getBlogPostSlugs } from "@/content/blog";
 import { getFeatureSlugs } from "@/content/features";
 import { getSolutionSlugs } from "@/content/solutions";
 import { getAllStorefrontSlugs } from "@/content/storefronts";
-
-const SITE_URL = "https://clitell.in";
+import { SITE_URL } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

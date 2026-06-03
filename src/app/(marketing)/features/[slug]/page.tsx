@@ -10,6 +10,8 @@ import {
   getFeatureSlugs,
   getRelatedFeatures,
 } from "@/content/features";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbSchema } from "@/lib/seo";
 
 type Params = Promise<{ slug: string }>;
 
@@ -38,6 +40,13 @@ export default async function FeatureDetailPage({ params }: { params: Params }) 
 
   return (
     <>
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Home", path: "/" },
+          { name: "Features", path: "/features" },
+          { name: feature.eyebrow, path: `/features/${slug}` },
+        ])}
+      />
       <section className="relative pt-16 pb-10 sm:pt-20 sm:pb-12">
         <Container>
           <div className="mx-auto max-w-4xl">

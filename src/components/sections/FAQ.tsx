@@ -4,41 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
-
-const faqs = [
-  {
-    q: "Is there really a free plan?",
-    a: "Yes. The Starter plan is free forever for solo professionals — one staff seat, basic booking and billing, and up to 50 appointments a month. No card needed. Upgrade only when you need more.",
-  },
-  {
-    q: "How long does setup take?",
-    a: "Most businesses are live in under 15 minutes. Our guided wizard walks you through services, staff, working hours, and GST settings. We import data from spreadsheets too — message us and we'll do it for you.",
-  },
-  {
-    q: "Do I need separate apps for my staff and my clients?",
-    a: "Yes, and they're both included. Staff get the Clitell Business app for schedule and quick billing. Your clients get the Clitell consumer app — branded with your salon's name on paid plans.",
-  },
-  {
-    q: "Does Clitell handle GST invoicing?",
-    a: "Built in. Configure your GSTIN once and every invoice is GST-compliant with HSN codes, CGST/SGST breakup, and digital signatures. Export reports for your CA in one click.",
-  },
-  {
-    q: "Which payment methods do you support?",
-    a: "UPI via Razorpay is integrated at launch — QR codes, payment links, and webhook reconciliation. Cash, card, and wallet tracking is also available. International payments are on the roadmap.",
-  },
-  {
-    q: "What about my existing client list?",
-    a: "Upload a CSV or Excel file and Clitell will import it with phone numbers, visit history, notes, and tags. Or we'll migrate from Dingg, Zenoti, or any other software for free during onboarding.",
-  },
-  {
-    q: "Is my client data safe?",
-    a: "Yes. Clitell is fully DPDPA-compliant. Client PII is encrypted at rest, payment data never touches our servers (PCI compliance via Razorpay), and you can export or delete data at any time.",
-  },
-  {
-    q: "Can I switch plans later?",
-    a: "Anytime, up or down. No long-term contracts, no exit fees. If you cancel, you keep read-only access to your data for 90 days and a full export anytime.",
-  },
-];
+import { homeFaqs as faqs } from "@/content/faqs";
 
 export function FAQ() {
   const reduceMotion = useReducedMotion();

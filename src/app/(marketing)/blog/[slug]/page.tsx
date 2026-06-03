@@ -6,6 +6,8 @@ import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { FinalCTA } from "@/components/sections/FinalCTA";
 import { blogPosts, getBlogPostBySlug, getBlogPostSlugs, getRelatedBlogPosts } from "@/content/blog";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { articleSchema, breadcrumbSchema } from "@/lib/seo";
 
 type Params = Promise<{ slug: string }>;
 
@@ -22,6 +24,15 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     title: `${post.title} — Clitell Blog`,
     description: post.description,
     alternates: { canonical: `/blog/${slug}` },
+    openGraph: {
+      type: "article",
+      title: post.title,
+      description: post.description,
+      url: `/blog/${slug}`,
+      publishedTime: post.publishedAt,
+      authors: [post.author],
+      section: post.category,
+    },
   };
 }
 
@@ -35,6 +46,22 @@ export default async function BlogPostPage({ params }: { params: Params }) {
 
   return (
     <>
+      <JsonLd
+        data={[
+          articleSchema({
+            title: post.title,
+            description: post.description,
+            slug: post.slug,
+            publishedAt: post.publishedAt,
+            author: post.author,
+          }),
+          breadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: "Blog", path: "/blog" },
+            { name: post.title, path: `/blog/${post.slug}` },
+          ]),
+        ]}
+      />
       <section className="relative pt-16 pb-10 sm:pt-20 sm:pb-12">
         <Container>
           <div className="mx-auto grid max-w-5xl gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
