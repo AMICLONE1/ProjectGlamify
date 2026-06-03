@@ -1,11 +1,6 @@
-import type { Metadata } from "next";
-import { DashboardLive } from "@/components/business/dashboard/DashboardLive";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Dashboard — Glamify Business",
-  description: "Live command center for bookings, billing, clients, inventory, campaigns, and staff.",
-};
-
-export default function BusinessDashboardPage() {
-  return <DashboardLive />;
+// /business is the authenticated area; canonical dashboard lives at /business/dashboard.
+export default function BusinessIndexPage() {
+  redirect("/business/dashboard");
 }

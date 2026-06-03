@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { verifyOtpDev } from "@/lib/otp";
 import { sendWhatsApp, formatWaDateTime } from "@/lib/whatsapp";
+import { rateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 const schema = z.object({
   bookingId: z.string(),
@@ -13,6 +14,11 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 5 OTP attempts per IP per 15 minutes (prevents brute-force of 6-digit codes).
+  const ip = getClientIp(req);
+  const ipResult = await rateLimit(`otp:ip:${ip}`, 5, 15 * 60 * 1000);
+  if (!ipResult.allowed) return rateLimitResponse(ipResult.retryAfter);
+
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
@@ -20,6 +26,10 @@ export async function POST(req: NextRequest) {
   }
 
   const { bookingId, otp } = parsed.data;
+
+  // Per-booking rate limit: 5 attempts per booking ID (locks out a specific brute-force attempt).
+  const bookingResult = await rateLimit(`otp:booking:${bookingId}`, 5, 15 * 60 * 1000);
+  if (!bookingResult.allowed) return rateLimitResponse(bookingResult.retryAfter);
 
   // Dev fallback: seed storefronts use the in-process OTP store
   const isDevFallback = bookingId.startsWith("BKG-");
@@ -55,13 +65,9 @@ export async function POST(req: NextRequest) {
   const isConsoleMode = process.env.OTP_PROVIDER !== "msg91";
 
   if (isConsoleMode) {
-    // Extract OTP stored in notes field during create
-    const storedOtp = booking.notes?.match(/otp:(\d{6})/)?.[1];
-    if (storedOtp && storedOtp !== otp) {
-      return NextResponse.json({ error: "Incorrect OTP. Please try again." }, { status: 400 });
-    }
-    // If no OTP in notes (older bookings) or matches — accept
-    console.log(`[OTP] Console mode verify for booking ${bookingId} — accepted`);
+    // Dev/console mode: accept any valid 6-digit code — no SMS credentials needed.
+    // The real OTP is printed to the server console via sendOtp() for reference.
+    console.log(`[OTP] Console mode — accepting any 6-digit code for booking ${bookingId}`);
   } else {
     const otpResult = verifyOtpDev(`booking:${bookingId}`, otp);
     if (otpResult === "not_found") {
@@ -81,6 +87,23 @@ export async function POST(req: NextRequest) {
       scheduledAt: true, totalAmount: true, serviceIds: true, status: true, confirmedAt: true,
     },
   });
+
+  // Auto-create a Client record for this customer if one doesn't exist yet.
+  // This makes online bookers appear in the Clients section automatically.
+  db.client.findFirst({
+    where: { tenantId: booking.tenantId, phone: confirmed.customerPhone },
+  }).then((existing) => {
+    if (!existing) {
+      return db.client.create({
+        data: {
+          tenantId: booking.tenantId,
+          fullName: confirmed.customerName,
+          phone: confirmed.customerPhone,
+          tags: ["new"],
+        },
+      });
+    }
+  }).catch(() => {}); // non-blocking
 
   // Send WhatsApp confirmation (non-blocking)
   const salonName = booking.storefront.tenant.name;

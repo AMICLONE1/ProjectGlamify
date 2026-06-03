@@ -2,9 +2,7 @@
 
 import { create } from "zustand";
 import {
-  campaignHistory as seedHistory,
   channelLabel,
-  segments,
   templates,
   type CampaignHistoryEntry,
   type Channel,
@@ -49,13 +47,10 @@ export const useCampaignsStore = create<CampaignsState & CampaignsActions>((set,
   channel: "push",
   scheduleMode: "now",
   scheduleAt: defaultDateTime(),
-  history: seedHistory,
+  history: [],
 
   setStep: (step) => set({ step }),
-  setSegment: (id) => {
-    const valid = segments.find((s) => s.id === id);
-    if (valid) set({ segmentId: id });
-  },
+  setSegment: (id) => set({ segmentId: id }),
   pickTemplate: (id) => {
     const tmpl = templates.find((t) => t.id === id);
     if (tmpl) set({ templateId: id, body: tmpl.body });

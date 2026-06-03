@@ -1,5 +1,6 @@
 import { BusinessShell } from "@/components/business/BusinessShell";
 import { QueryProvider } from "@/components/business/QueryProvider";
+import { BusinessAuthGuard } from "@/components/business/BusinessAuthGuard";
 
 export default function BusinessLayout({
   children,
@@ -7,8 +8,10 @@ export default function BusinessLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <QueryProvider>
-      <BusinessShell>{children}</BusinessShell>
-    </QueryProvider>
+    <BusinessAuthGuard>
+      <QueryProvider>
+        <BusinessShell>{children}</BusinessShell>
+      </QueryProvider>
+    </BusinessAuthGuard>
   );
 }

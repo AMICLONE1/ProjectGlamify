@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Area,
   AreaChart,
@@ -16,24 +17,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  clientMix,
-  paymentMix,
-  rangeLabel,
-  revenue30Days,
-  serviceMix,
-  staffPerformance,
-  type ReportRange,
-} from "@/lib/reports-seed";
+import { reportsApi } from "@/lib/api-client";
 import { formatINR } from "@/lib/business-seed";
 import { cn } from "@/lib/cn";
 
-const RANGE_DAYS: Record<ReportRange, number> = {
-  "7d": 7,
-  "30d": 30,
-  mtd: 28,
-  qtd: 30,
-};
+type ReportRange = "7d" | "30d" | "mtd" | "qtd";
+const rangeLabel: Record<ReportRange, string> = { "7d": "7 days", "30d": "30 days", mtd: "MTD", qtd: "QTD" };
+const RANGE_KEYS: ReportRange[] = ["7d", "30d", "mtd", "qtd"];
 
 const tooltipStyle = {
   background: "#1a1530",
@@ -52,21 +42,17 @@ const PIE_CLIENT = ["#7c3aed", "#f97316", "#facc15"];
 export function ReportsBoard() {
   const [range, setRange] = useState<ReportRange>("30d");
 
-  const series = useMemo(() => {
-    const days = RANGE_DAYS[range];
-    return revenue30Days.slice(-days);
-  }, [range]);
+  const { data, isLoading } = useQuery({
+    queryKey: ["reports", range],
+    queryFn: () => reportsApi.get(range),
+  });
 
-  const totals = useMemo(() => {
-    const revenue = series.reduce((sum, d) => sum + d.revenue, 0);
-    const bookings = series.reduce((sum, d) => sum + d.bookings, 0);
-    const avgTicket = bookings > 0 ? revenue / bookings : 0;
-    return { revenue, bookings, avgTicket };
-  }, [series]);
-
-  function handleExport(kind: "csv" | "pdf") {
-    console.log(`[report:export]`, { kind, range, revenue: totals.revenue, bookings: totals.bookings });
-  }
+  const series = data?.revenueTrend ?? [];
+  const serviceMix = data?.serviceMix ?? [];
+  const paymentMix = data?.paymentMix ?? [];
+  const clientMix = data?.clientMix ?? [];
+  const totals = data?.kpis ?? { revenue: 0, bookings: 0, avgTicket: 0, totalClients: 0 };
+  const hasData = data?.hasData ?? false;
 
   return (
     <div className="space-y-4">
@@ -80,7 +66,7 @@ export function ReportsBoard() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1 rounded-full bg-biz-bg p-1">
-            {(Object.keys(RANGE_DAYS) as ReportRange[]).map((r) => (
+            {RANGE_KEYS.map((r) => (
               <button
                 key={r}
                 type="button"
@@ -94,28 +80,40 @@ export function ReportsBoard() {
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => handleExport("csv")}
-            className="rounded-full bg-biz-bg px-4 py-2 text-xs font-semibold text-biz-ink hover:bg-biz-border"
-          >
-            Export CSV
-          </button>
-          <button
-            type="button"
-            onClick={() => handleExport("pdf")}
-            className="rounded-full bg-biz-violet-500 px-4 py-2 text-xs font-semibold text-white hover:bg-biz-violet-600"
-          >
-            Export PDF
-          </button>
+          {hasData && (
+            <button
+              type="button"
+              onClick={() => exportCsv({ range, rangeLabel: rangeLabel[range], series, serviceMix, paymentMix, totals })}
+              className="rounded-full border border-biz-border bg-biz-surface px-4 py-1.5 text-xs font-semibold text-biz-ink hover:bg-biz-bg"
+            >
+              ↓ Export CSV
+            </button>
+          )}
         </div>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <KpiCard label="Revenue" value={formatINR(totals.revenue)} hint={`${rangeLabel[range]} · ↑ 12%`} tone="violet" />
-        <KpiCard label="Bookings" value={totals.bookings.toLocaleString("en-IN")} hint="Confirmed + walk-in" tone="orange" />
-        <KpiCard label="Average ticket" value={formatINR(Math.round(totals.avgTicket))} hint="Up ₹85 vs prior" tone="yellow" />
+        {isLoading ? (
+          <>
+            <ReportKpiSkeleton /><ReportKpiSkeleton /><ReportKpiSkeleton />
+          </>
+        ) : (
+          <>
+            <KpiCard label="Revenue" value={formatINR(totals.revenue)} hint={rangeLabel[range]} tone="violet" />
+            <KpiCard label="Paid bookings" value={totals.bookings.toLocaleString("en-IN")} hint="Paid invoices" tone="orange" />
+            <KpiCard label="Average ticket" value={formatINR(Math.round(totals.avgTicket))} hint="Per paid invoice" tone="yellow" />
+          </>
+        )}
       </section>
+
+      {!hasData && !isLoading && (
+        <div className="rounded-3xl border border-dashed border-biz-border bg-biz-surface p-10 text-center">
+          <p className="text-sm font-medium text-biz-ink">No report data yet</p>
+          <p className="mt-1 text-xs text-biz-muted">Record sales in POS — your revenue, service mix, and client breakdown will populate here.</p>
+        </div>
+      )}
+
+      {hasData && (
 
       <div className="grid gap-4 xl:grid-cols-2">
         <ChartCard title="Revenue trend" subtitle={`${rangeLabel[range]} · in ₹`}>
@@ -190,69 +188,41 @@ export function ReportsBoard() {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Staff utilization" subtitle="% of working hours booked">
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={staffPerformance} layout="vertical" margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
-              <CartesianGrid stroke="#ebe9f1" strokeDasharray="3 6" horizontal={false} />
-              <XAxis
-                type="number"
-                domain={[0, 100]}
-                stroke="#9c95b3"
-                tick={{ fill: "#9c95b3", fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                type="category"
-                dataKey="name"
-                stroke="#9c95b3"
-                tick={{ fill: "#6b6580", fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-                width={72}
-              />
-              <Tooltip
-                cursor={{ fill: "rgba(124,58,237,0.06)" }}
-                contentStyle={tooltipStyle}
-                labelStyle={tooltipLabelStyle}
-                formatter={(value, _name, item) => {
-                  const p = item?.payload as { services: number; revenue: number } | undefined;
-                  return [
-                    `${Number(value)}% · ${p?.services ?? 0} services · ${formatINR(p?.revenue ?? 0)}`,
-                    "Utilization",
-                  ];
-                }}
-              />
-              <Bar dataKey="utilization" fill="#22c55e" radius={[0, 8, 8, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard title="Payment & client mix" subtitle="Donut split of how revenue lands">
+        <ChartCard title="Payment & client mix" subtitle="How revenue & clients break down">
           <div className="grid h-[260px] gap-4 sm:grid-cols-2">
-            <DonutBlock label="Payment method" data={paymentMix} palette={PIE_PAYMENT} />
-            <DonutBlock label="Client mix" data={clientMix} palette={PIE_CLIENT} />
+            {paymentMix.length > 0 ? (
+              <DonutBlock label="Payment method" data={paymentMix} palette={PIE_PAYMENT} />
+            ) : (
+              <EmptyMini label="Payment method" />
+            )}
+            {clientMix.length > 0 ? (
+              <DonutBlock label="Client mix" data={clientMix} palette={PIE_CLIENT} />
+            ) : (
+              <EmptyMini label="Client mix" />
+            )}
           </div>
         </ChartCard>
       </div>
+      )}
+    </div>
+  );
+}
 
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-biz-violet-500 to-biz-magenta-600 p-6 text-white shadow-lg shadow-biz-violet-500/20">
-        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_45%)]" />
-        <div className="relative">
-          <p className="text-xs font-medium text-white/80">AI insights · last 7 days</p>
-          <ul className="mt-3 space-y-3 text-sm leading-relaxed">
-            <li>
-              <span className="font-semibold">Tuesday underbooked by 23%.</span> Push a Tuesday-only bundle 8–11 AM. Estimated lift: +₹18k weekly.
-            </li>
-            <li>
-              <span className="font-semibold">Hair color revenue trending +14%.</span> Stock Wella Koleston Brown (only 4 left, lead time 2 days).
-            </li>
-            <li>
-              <span className="font-semibold">Priya at 92% utilization.</span> Cap her bookings 14:00–16:00 to avoid burnout, route walk-ins to Aanya (58%).
-            </li>
-          </ul>
-        </div>
-      </section>
+function ReportKpiSkeleton() {
+  return (
+    <div className="rounded-3xl bg-biz-surface p-5 shadow-sm">
+      <div className="h-3 w-20 animate-pulse rounded-full bg-biz-bg" />
+      <div className="mt-3 h-7 w-28 animate-pulse rounded-xl bg-biz-bg" />
+      <div className="mt-2 h-3 w-16 animate-pulse rounded-full bg-biz-bg" />
+    </div>
+  );
+}
+
+function EmptyMini({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center">
+      <p className="text-[10px] uppercase tracking-wider text-biz-muted-2">{label}</p>
+      <p className="mt-2 text-xs text-biz-muted">No data yet</p>
     </div>
   );
 }
@@ -300,6 +270,48 @@ function ChartCard({
       <div className="mt-4">{children}</div>
     </div>
   );
+}
+
+function exportCsv({ range, rangeLabel, series, serviceMix, paymentMix, totals }: {
+  range: string;
+  rangeLabel: string;
+  series: { date: string; revenue: number }[];
+  serviceMix: { name: string; revenue: number }[];
+  paymentMix: { name: string; value: number }[];
+  totals: { revenue: number; bookings: number; avgTicket: number };
+}) {
+  const rows: string[][] = [];
+
+  rows.push([`Glamify Reports — ${rangeLabel}`, "", "", ""]);
+  rows.push([]);
+  rows.push(["Summary", "", "", ""]);
+  rows.push(["Total Revenue", String(totals.revenue), "", ""]);
+  rows.push(["Paid Bookings", String(totals.bookings), "", ""]);
+  rows.push(["Avg Ticket", String(Math.round(totals.avgTicket)), "", ""]);
+
+  rows.push([]);
+  rows.push(["Revenue Trend", "", "", ""]);
+  rows.push(["Date", "Revenue (₹)", "", ""]);
+  series.forEach((r) => rows.push([r.date, String(r.revenue), "", ""]));
+
+  rows.push([]);
+  rows.push(["Service Mix", "", "", ""]);
+  rows.push(["Service", "Revenue (₹)", "", ""]);
+  serviceMix.forEach((r) => rows.push([r.name, String(r.revenue), "", ""]));
+
+  rows.push([]);
+  rows.push(["Payment Mix", "", "", ""]);
+  rows.push(["Method", "Share (%)", "", ""]);
+  paymentMix.forEach((r) => rows.push([r.name, String(r.value), "", ""]));
+
+  const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `glamify-report-${range}-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function DonutBlock({

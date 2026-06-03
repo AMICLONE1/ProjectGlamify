@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { getToken, getUser, getFreshToken } from "@/lib/session";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -45,18 +46,8 @@ const STEP_LABELS = ["Your Business", "Services", "Hours", "Go Live"];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("glamify_token");
-}
-
-function getUser(): { fullName?: string; tenantId?: string } | null {
-  if (typeof window === "undefined") return null;
-  try { return JSON.parse(localStorage.getItem("glamify_user") ?? "null"); } catch { return null; }
-}
-
 async function apiPost(path: string, body: unknown) {
-  const token = getToken();
+  const token = await getFreshToken();
   const res = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },

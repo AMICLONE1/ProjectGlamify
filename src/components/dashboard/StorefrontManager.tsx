@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
+import { getFreshToken } from "@/lib/session";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,13 +32,8 @@ type StorefrontData = {
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
 
-function token() {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("glamify_token");
-}
-
 async function apiFetch(url: string, options?: RequestInit) {
-  const t = token();
+  const t = await getFreshToken();
   const res = await fetch(url, {
     ...options,
     headers: {
@@ -611,29 +607,136 @@ function TabReviews({ reviews: initial, onChanged }: { reviews: Review[]; onChan
   );
 }
 
+// ─── Create storefront (first-time setup) ─────────────────────────────────────
+
+function CreateStorefront({ onCreated }: { onCreated: () => void }) {
+  const [form, setForm] = useState({ area: "", tagline: "", description: "", phone: "", address: "" });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function create() {
+    if (!form.area.trim()) { setError("Area / locality is required"); return; }
+    setSaving(true); setError(null);
+    try {
+      await apiFetch("/api/v1/onboarding/storefront", { method: "POST", body: JSON.stringify(form) });
+      onCreated();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not create storefront");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-xl">
+      <div className="text-center mb-6">
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-500">
+          <SfStoreIcon className="h-7 w-7" />
+        </div>
+        <p className="eyebrow mb-1">Storefront</p>
+        <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-ink">Create your storefront</h2>
+        <p className="mt-2 text-sm text-muted">
+          Start with your business profile. You&apos;ll add services, photos, and a description next —
+          then activate to go live.
+        </p>
+      </div>
+
+      <div className="space-y-5 rounded-3xl border border-border bg-white p-6">
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="label">Area / locality *</label>
+            <input value={form.area} onChange={e => setForm(f => ({ ...f, area: e.target.value }))} placeholder="Bandra West" className={iCls} />
+          </div>
+          <div>
+            <label className="label">Phone</label>
+            <div className="flex rounded-xl border border-border-strong bg-white overflow-hidden focus-within:ring-2 focus-within:ring-brand-500/30">
+              <span className="flex items-center px-3 text-sm text-muted border-r border-border-strong bg-surface-2 shrink-0">+91</span>
+              <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, "").slice(0, 10) }))} placeholder="98765 43210" className="flex-1 bg-transparent px-3 py-2.5 text-sm text-ink focus:outline-none" />
+            </div>
+          </div>
+        </div>
+        <div>
+          <label className="label">Address</label>
+          <input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Shop 4, Linking Road, Mumbai 400050" className={iCls} />
+        </div>
+        <div>
+          <label className="label">Tagline <span className="text-muted-2 font-normal normal-case tracking-normal text-[11px]">({form.tagline.length}/160)</span></label>
+          <input value={form.tagline} onChange={e => setForm(f => ({ ...f, tagline: e.target.value.slice(0, 160) }))} placeholder="Your neighbourhood beauty destination" className={iCls} />
+        </div>
+        <div>
+          <label className="label">About <span className="text-muted-2 font-normal normal-case tracking-normal text-[11px]">({form.description.length}/600)</span></label>
+          <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value.slice(0, 600) }))} rows={4} placeholder="Tell customers about your salon…" className={iCls + " resize-none"} />
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <button onClick={create} disabled={saving} className={btnPrimary + " w-full"}>
+          {saving ? "Creating…" : "Create storefront →"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main StorefrontManager ───────────────────────────────────────────────────
 
 type Tab = "overview" | "services" | "photos" | "reviews";
 
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "overview",  label: "Profile",  icon: "🏪" },
-  { id: "services",  label: "Services", icon: "✂️" },
-  { id: "photos",    label: "Photos",   icon: "📸" },
-  { id: "reviews",   label: "Reviews",  icon: "⭐" },
+const TABS: { id: Tab; label: string; Icon: (p: { className?: string }) => React.ReactElement }[] = [
+  { id: "overview",  label: "Profile",  Icon: SfStoreIcon },
+  { id: "services",  label: "Services", Icon: SfScissorsIcon },
+  { id: "photos",    label: "Photos",   Icon: SfPhotoIcon },
+  { id: "reviews",   label: "Reviews",  Icon: SfStarIcon },
 ];
+
+// Premium line icons for the storefront editor tabs
+function SfStoreIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M4 9.5 5.2 4h13.6L20 9.5M4 9.5h16M4 9.5v9.5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9.5M4 9.5a2.2 2.2 0 0 0 4 0 2.2 2.2 0 0 0 4 0 2.2 2.2 0 0 0 4 0 2.2 2.2 0 0 0 4 0" />
+    </svg>
+  );
+}
+function SfScissorsIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="6" cy="6" r="2.6" /><circle cx="6" cy="18" r="2.6" /><path d="M8 8l12 8M8 16 20 8" />
+    </svg>
+  );
+}
+function SfPhotoIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="3" y="4.5" width="18" height="15" rx="2.5" /><circle cx="8.5" cy="10" r="1.6" /><path d="m4 17 5-4 4 3 3-2.5 5 4" />
+    </svg>
+  );
+}
+function SfStarIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="m12 3.5 2.6 5.3 5.9.9-4.25 4.15 1 5.85L12 17.8l-5.25 2.75 1-5.85L3.5 9.7l5.9-.9z" />
+    </svg>
+  );
+}
 
 export function StorefrontManager() {
   const [tab, setTab] = useState<Tab>("overview");
   const [data, setData] = useState<StorefrontData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const res = await apiFetch("/api/v1/manage/storefront");
       setData(res.storefront);
+      setNotFound(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load storefront data");
+      // A missing storefront is an expected state — show the create flow, not an error.
+      const msg = e instanceof Error ? e.message : "Failed to load storefront data";
+      if (/not found/i.test(msg)) setNotFound(true);
+      else setError(msg);
     } finally {
       setLoading(false);
     }
@@ -641,27 +744,63 @@ export function StorefrontManager() {
 
   useEffect(() => { load(); }, [load]);
 
+  async function togglePublish() {
+    if (!data) return;
+    setPublishing(true); setPublishError(null);
+    try {
+      if (data.isPublished) {
+        await apiFetch("/api/v1/manage/storefront", { method: "PATCH", body: JSON.stringify({ isPublished: false }) });
+      } else {
+        // Activate: requires at least one service (enforced server-side)
+        await apiFetch("/api/v1/onboarding/storefront/publish", { method: "POST", body: JSON.stringify({}) });
+      }
+      await load();
+    } catch (e) {
+      setPublishError(e instanceof Error ? e.message : "Could not update storefront status");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
   if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="h-8 w-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+    <div className="animate-pulse space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-2">
+          <div className="h-3 w-20 rounded-full bg-gray-200" />
+          <div className="h-6 w-48 rounded-xl bg-gray-200" />
+          <div className="h-4 w-32 rounded-full bg-gray-100" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-8 w-20 rounded-full bg-gray-200" />
+          <div className="h-8 w-32 rounded-full bg-gray-200" />
+        </div>
+      </div>
+      <div className="flex gap-4 border-b border-gray-100 pb-4">
+        {[...Array(4)].map((_, i) => <div key={i} className="h-8 w-20 rounded-full bg-gray-100" />)}
+      </div>
+      <div className="space-y-4">
+        {[...Array(5)].map((_, i) => <div key={i} className="h-12 rounded-2xl bg-gray-100" />)}
+      </div>
     </div>
   );
+
+  if (notFound) return <CreateStorefront onCreated={load} />;
 
   if (error) return (
     <div className="rounded-2xl border border-red-100 bg-red-50 p-6 text-center">
       <p className="text-sm text-red-700 font-medium">{error}</p>
-      <p className="text-xs text-red-500 mt-1">Make sure you&apos;ve completed onboarding first.</p>
     </div>
   );
 
   if (!data) return null;
 
   const storefrontUrl = `/${data.city}/${data.slug}`;
+  const canPublish = data.tenant.services.length > 0;
 
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <p className="eyebrow mb-1">Storefront</p>
           <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-ink">
@@ -677,10 +816,25 @@ export function StorefrontManager() {
             </a>
           </div>
         </div>
-        <a href={storefrontUrl} target="_blank" rel="noopener noreferrer" className={btnSecondary + " shrink-0 text-xs"}>
-          Preview →
-        </a>
+        <div className="flex items-center gap-2 shrink-0">
+          <a href={storefrontUrl} target="_blank" rel="noopener noreferrer" className={btnSecondary + " text-xs"}>
+            Preview →
+          </a>
+          <button onClick={togglePublish} disabled={publishing || (!data.isPublished && !canPublish)} className={btnPrimary + " text-xs"}>
+            {publishing ? "…" : data.isPublished ? "Unpublish" : "Activate storefront"}
+          </button>
+        </div>
       </div>
+
+      {/* Activation guidance */}
+      {!data.isPublished && (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {canPublish
+            ? "Your storefront is a draft. Fill in your profile, photos, and services below, then click “Activate storefront” to go live."
+            : "Add at least one service (Services tab) before you can activate your storefront."}
+        </div>
+      )}
+      {publishError && <p className="mb-4 text-sm text-red-600">{publishError}</p>}
 
       {/* Tab bar */}
       <div className="flex border-b border-border mb-6 -mx-1 overflow-x-auto scrollbar-hide">
@@ -694,7 +848,7 @@ export function StorefrontManager() {
                 : "border-transparent text-muted hover:text-ink"
             }`}
           >
-            <span>{t.icon}</span>
+            <t.Icon className="h-4 w-4" />
             {t.label}
             {t.id === "services" && (
               <span className="ml-1 rounded-full bg-surface-2 text-muted px-1.5 py-0.5 text-[10px] font-semibold">

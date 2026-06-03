@@ -11,15 +11,20 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:wipe": "tsx scripts/wipe-db.ts --yes",
+    "account:create": "tsx scripts/create-account.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "@prisma/adapter-pg": "^7.8.0",
     "@sentry/nextjs": "^10.55.0",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.107.0",
     "@tanstack/react-query": "^5.100.14",
     "@types/pg": "^8.20.0",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/kv": "^3.0.0",
     "@vercel/speed-insights": "^2.0.0",
     "bcryptjs": "^3.0.3",
     "gsap": "^3.15.0",

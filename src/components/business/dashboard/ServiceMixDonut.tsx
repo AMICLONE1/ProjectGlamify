@@ -3,17 +3,24 @@
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { formatINR } from "@/lib/business-seed";
 
-const data = [
-  { name: "Hair color", value: 412800, color: "#7c3aed" },
-  { name: "Cut & blow", value: 286400, color: "#f97316" },
-  { name: "Facial & skin", value: 247600, color: "#facc15" },
-  { name: "Nails", value: 168200, color: "#ec4899" },
-  { name: "Spa", value: 124900, color: "#22c55e" },
-];
+type MixSlice = { name: string; value: number; color: string };
 
-const total = data.reduce((sum, d) => sum + d.value, 0);
+export function ServiceMixDonut({ data = [], hasData = false }: { data?: MixSlice[]; hasData?: boolean }) {
+  const total = data.reduce((sum, d) => sum + d.value, 0);
 
-export function ServiceMixDonut() {
+  if (!hasData || total === 0) {
+    return (
+      <div>
+        <h3 className="text-base font-semibold text-biz-ink">Revenue by service</h3>
+        <p className="mt-0.5 text-xs text-biz-muted">This month</p>
+        <div className="mt-4 flex h-48 flex-col items-center justify-center rounded-2xl bg-biz-bg text-center">
+          <p className="text-sm font-medium text-biz-ink">No sales yet</p>
+          <p className="mt-1 text-xs text-biz-muted">Revenue by service appears once you bill clients.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h3 className="text-base font-semibold text-biz-ink">Revenue by service</h3>

@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { generateOtp, sendOtp, storeOtpDev } from "@/lib/otp";
+import { rateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 const schema = z.object({
   tenantId:      z.string(),
@@ -18,6 +19,12 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 10 booking attempts per IP per 15 minutes.
+  // Per-phone limit: 5 attempts per phone per hour (applied after parsing).
+  const ip = getClientIp(req);
+  const ipResult = await rateLimit(`booking:ip:${ip}`, 10, 15 * 60 * 1000);
+  if (!ipResult.allowed) return rateLimitResponse(ipResult.retryAfter);
+
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
@@ -25,6 +32,10 @@ export async function POST(req: NextRequest) {
   }
 
   const { tenantId, storefrontSlug, serviceIds, staffDetailId, date, time, customerName, customerPhone } = parsed.data;
+
+  // Per-phone rate limit: 5 OTP requests per phone number per hour.
+  const phoneResult = await rateLimit(`booking:phone:${customerPhone}`, 5, 60 * 60 * 1000);
+  if (!phoneResult.allowed) return rateLimitResponse(phoneResult.retryAfter);
 
   // For seed-data storefronts (no DB): skip DB lookup and return a fake booking ID
   // This allows the storefront demo to work without a connected database

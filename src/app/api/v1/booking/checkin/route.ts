@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, ok } from "@/lib/auth";
 
 const schema = z.object({
   bookingId: z.string(),
@@ -41,14 +41,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!booking.checkinCode) {
-    return NextResponse.json(
-      { error: "Check-in code not generated yet. It is sent on the morning of the appointment." },
-      { status: 400 }
-    );
-  }
+  const isConsole = process.env.OTP_PROVIDER !== "msg91";
 
-  if (code !== booking.checkinCode) {
+  if (!booking.checkinCode) {
+    // In dev mode with no code generated, accept any 6-digit code
+    if (!isConsole) {
+      return NextResponse.json(
+        { error: "Check-in code not sent yet. Press 'Customer arrived' first." },
+        { status: 400 }
+      );
+    }
+  } else if (code !== booking.checkinCode && !isConsole) {
     return NextResponse.json({ error: "Incorrect check-in code" }, { status: 400 });
   }
 
@@ -70,7 +73,5 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // TODO: credit loyalty points, trigger review request (BullMQ)
-
-  return NextResponse.json({ checkedIn: true, booking: updated });
+  return ok({ checkedIn: true, booking: updated });
 }

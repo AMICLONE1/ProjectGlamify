@@ -94,6 +94,11 @@ model Tenant {
   phone        String?
   email        String?
   logoUrl      String?
+  legalName    String?
+  about        String?
+  openHour     Int?
+  closeHour    Int?
+  settings     Json?
   timezone     String       @default("Asia/Kolkata")
   currency     String       @default("INR")
   plan         String       @default("trial")

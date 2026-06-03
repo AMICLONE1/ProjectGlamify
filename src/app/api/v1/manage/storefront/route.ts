@@ -14,6 +14,7 @@ const patchSchema = z.object({
   address:     z.string().max(200).optional(),
   geoLat:      z.number().optional(),
   geoLng:      z.number().optional(),
+  isPublished: z.boolean().optional(),
 }).strict();
 
 export async function GET(req: NextRequest) {
@@ -53,7 +54,7 @@ export async function PATCH(req: NextRequest) {
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) return fail("VALIDATION_ERROR", "Invalid input", 422);
 
-  const { tagline, description, area, phone, address, geoLat, geoLng } = parsed.data;
+  const { tagline, description, area, phone, address, geoLat, geoLng, isPublished } = parsed.data;
 
   const sf = await db.storefront.findUnique({ where: { tenantId: auth.tenantId } });
   if (!sf) return fail("NOT_FOUND", "Storefront not found", 404);
@@ -66,6 +67,7 @@ export async function PATCH(req: NextRequest) {
       ...(area        !== undefined ? { area: area.toLowerCase().replace(/\s+/g, "-") } : {}),
       ...(geoLat      !== undefined ? { geoLat }      : {}),
       ...(geoLng      !== undefined ? { geoLng }      : {}),
+      ...(isPublished !== undefined ? { isPublished, publishedAt: isPublished ? new Date() : null } : {}),
       updatedAt: new Date(),
     },
   });

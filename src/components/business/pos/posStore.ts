@@ -1,14 +1,6 @@
 "use client";
 
 import { create } from "zustand";
-import {
-  findClient,
-  findProduct,
-  findService,
-  type Client,
-  type Product,
-  type Service,
-} from "@/lib/business-seed";
 
 export type CartItem = {
   key: string;
@@ -39,10 +31,13 @@ type PosState = {
   notes: string;
 };
 
+export type CartProduct = { id: string; name: string; retailPrice: number; taxRate: number };
+export type CartService = { id: string; name: string; price: number; taxRate: number };
+
 type PosActions = {
   setClient: (id: string | null) => void;
-  addService: (service: Service) => void;
-  addProduct: (product: Product) => void;
+  addService: (service: CartService) => void;
+  addProduct: (product: CartProduct) => void;
   updateQuantity: (key: string, delta: number) => void;
   removeItem: (key: string) => void;
   setDiscountPercent: (value: number) => void;
@@ -213,14 +208,3 @@ export function calculateTotals(
   };
 }
 
-export function getCartClient(clientId: string | null): Client | undefined {
-  return findClient(clientId);
-}
-
-export function getServiceById(id: string): Service | undefined {
-  return findService(id);
-}
-
-export function getProductById(id: string): Product | undefined {
-  return findProduct(id);
-}

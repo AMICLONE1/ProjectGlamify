@@ -5,6 +5,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth, ok, fail } from "@/lib/auth";
+import { revalidateStorefront } from "@/lib/revalidate-storefront";
 
 const createSchema = z.object({
   authorName: z.string().min(1).max(80),
@@ -59,5 +60,6 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  await revalidateStorefront(auth.tenantId);
   return ok({ review }, 201);
 }

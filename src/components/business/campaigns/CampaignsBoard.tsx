@@ -1,17 +1,36 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   channelLabel,
   renderTemplate,
-  segments,
   templates,
   type Channel,
   type SegmentId,
 } from "@/lib/campaigns-seed";
+import { clientsApi, api, type ClientSummary } from "@/lib/api-client";
 import { formatINR } from "@/lib/business-seed";
 import { cn } from "@/lib/cn";
 import { useCampaignsStore } from "./campaignsStore";
+
+type ApiCampaign = {
+  id: string; name: string; channel: Channel; status: string;
+  segment: { id: string; label: string };
+  body: string; recipientCount: number; openCount: number;
+  sentAt: string | null; scheduledAt: string | null; createdAt: string;
+};
+
+// Segment definitions computed from REAL clients (no seed data).
+type SegmentDef = { id: SegmentId; label: string; description: string; match: (c: ClientSummary) => boolean };
+const SEGMENT_DEFS: SegmentDef[] = [
+  { id: "vip", label: "VIP regulars", description: "Loyalty 2000+ points.", match: (c) => c.loyaltyPoints >= 2000 },
+  { id: "at-risk", label: "At-risk clients", description: "No visit in 45+ days.", match: (c) => !!c.lastVisitAt && (Date.now() - +new Date(c.lastVisitAt)) > 45 * 86_400_000 },
+  { id: "birthday", label: "Birthday this month", description: "Tagged 'birthday'.", match: (c) => c.tags.includes("birthday") },
+  { id: "new", label: "New clients", description: "Joined in the last 30 days.", match: (c) => (Date.now() - +new Date(c.createdAt)) <= 30 * 86_400_000 },
+  { id: "high-spend", label: "High lifetime spend", description: "₹20,000+ lifetime.", match: (c) => c.totalSpend >= 20000 },
+  { id: "all", label: "All clients", description: "Everyone in your database.", match: () => true },
+];
 
 const channelTone: Record<Channel, string> = {
   push: "bg-biz-violet-50 text-biz-violet-700",
@@ -38,17 +57,61 @@ export function CampaignsBoard() {
   const setScheduleAt = useCampaignsStore((s) => s.setScheduleAt);
   const launch = useCampaignsStore((s) => s.launch);
 
+  const queryClient = useQueryClient();
+  const [launchError, setLaunchError] = useState<string | null>(null);
+
+  const { data: clientsData } = useQuery({ queryKey: ["clients"], queryFn: () => clientsApi.list({ limit: 1000 }) });
+  const allClients: ClientSummary[] = useMemo(() => clientsData?.clients ?? [], [clientsData]);
+
+  const { data: campaignsData, isLoading: campaignsLoading } = useQuery({
+    queryKey: ["campaigns"],
+    queryFn: () => api.get<{ campaigns: ApiCampaign[] }>("/campaigns"),
+  });
+  const apiHistory: ApiCampaign[] = campaignsData?.campaigns ?? [];
+
   const segment = useMemo(
-    () => segments.find((s) => s.id === segmentId) ?? segments[0],
+    () => SEGMENT_DEFS.find((s) => s.id === segmentId) ?? SEGMENT_DEFS[0],
     [segmentId]
   );
 
-  const audience = segment.match.length;
-  const previewName = segment.match[0]?.name.split(" ")[0] ?? "Friend";
+  // Real per-segment audience counts from the client database.
+  const counts = useMemo(() => {
+    const m = {} as Record<SegmentId, number>;
+    for (const seg of SEGMENT_DEFS) m[seg.id] = allClients.filter(seg.match).length;
+    return m;
+  }, [allClients]);
+
+  const audience = counts[segment.id] ?? 0;
+  const audienceIds = useMemo(
+    () => allClients.filter(segment.match).map((c) => c.id),
+    [allClients, segment]
+  );
+  const previewName = allClients.find(segment.match)?.fullName.split(" ")[0] ?? "Friend";
   const preview = renderTemplate(body, previewName);
 
+  const launchMutation = useMutation({
+    mutationFn: () =>
+      api.post<{ campaign: ApiCampaign }>("/campaigns", {
+        name: `${segment.label} · ${channelLabel[channel]}`,
+        channel,
+        segmentId,
+        segmentLabel: segment.label,
+        body,
+        scheduleMode,
+        scheduleAt: scheduleMode === "later" ? scheduleAt : undefined,
+        recipientIds: audienceIds,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+      launch(audience, segment.label); // update local store history too
+      setLaunchError(null);
+      setStep(1); // reset wizard
+    },
+    onError: (e) => setLaunchError(e instanceof Error ? e.message : "Launch failed"),
+  });
+
   function handleLaunch() {
-    launch(audience, segment.label);
+    launchMutation.mutate();
   }
 
   return (
@@ -73,7 +136,7 @@ export function CampaignsBoard() {
       <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
         <section className="rounded-3xl bg-biz-surface p-6 shadow-sm">
           {step === 1 && (
-            <StepSegment segmentId={segmentId} onPick={setSegment} onNext={() => setStep(2)} />
+            <StepSegment segmentId={segmentId} counts={counts} onPick={setSegment} onNext={() => setStep(2)} />
           )}
           {step === 2 && (
             <StepTemplate
@@ -95,6 +158,8 @@ export function CampaignsBoard() {
               setScheduleAt={setScheduleAt}
               onBack={() => setStep(2)}
               onLaunch={handleLaunch}
+              isPending={launchMutation.isPending}
+              error={launchError}
             />
           )}
         </section>
@@ -135,28 +200,37 @@ export function CampaignsBoard() {
       <section className="rounded-3xl bg-biz-surface p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <p className="text-xs font-medium text-biz-violet-600">Campaign history</p>
-          <span className="text-xs text-biz-muted-2">{history.length} total</span>
+          <span className="text-xs text-biz-muted-2">{apiHistory.length} total</span>
         </div>
+        {campaignsLoading ? (
+          <div className="mt-4 space-y-2">
+            {[...Array(3)].map((_, i) => <div key={i} className="h-10 animate-pulse rounded-xl bg-biz-bg" />)}
+          </div>
+        ) : apiHistory.length === 0 ? (
+          <div className="mt-4 flex h-32 flex-col items-center justify-center rounded-2xl bg-biz-bg text-center">
+            <p className="text-sm font-medium text-biz-ink">No campaigns sent yet</p>
+            <p className="mt-1 text-xs text-biz-muted">Launch your first campaign above — it&apos;ll show here with open and rebooking stats.</p>
+          </div>
+        ) : (
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="w-full min-w-170 text-left text-sm">
             <thead>
               <tr className="border-b border-biz-border text-[10px] uppercase tracking-wider text-biz-muted-2">
                 <th className="px-3 py-3 font-semibold">Campaign</th>
                 <th className="px-3 py-3 font-semibold">Channel</th>
                 <th className="px-3 py-3 font-semibold">Audience</th>
-                <th className="px-3 py-3 font-semibold">Opened</th>
-                <th className="px-3 py-3 font-semibold">Rebooked</th>
-                <th className="px-3 py-3 font-semibold">Revenue</th>
+                <th className="px-3 py-3 font-semibold">Delivered</th>
+                <th className="px-3 py-3 font-semibold">Status</th>
                 <th className="px-3 py-3 font-semibold">Sent</th>
               </tr>
             </thead>
             <tbody>
-              {history.map((c) => (
+              {apiHistory.map((c) => (
                 <tr key={c.id} className="border-b border-biz-border hover:bg-biz-bg">
                   <td className="px-3 py-3">
                     <p className="font-semibold text-biz-ink">{c.name}</p>
                     <p className="text-[10px] uppercase tracking-wider text-biz-muted-2">
-                      {c.id} · {c.segmentLabel}
+                      {c.id.slice(-8)} · {c.segment?.label ?? "—"}
                     </p>
                   </td>
                   <td className="px-3 py-3">
@@ -164,16 +238,30 @@ export function CampaignsBoard() {
                       {channelLabel[c.channel]}
                     </span>
                   </td>
-                  <td className="px-3 py-3 font-semibold text-biz-ink">{c.audience}</td>
-                  <td className="px-3 py-3 text-biz-violet-600">{c.opened}</td>
-                  <td className="px-3 py-3 text-biz-green-500">{c.rebooked}</td>
-                  <td className="px-3 py-3 font-semibold text-biz-ink">{formatINR(c.revenue)}</td>
-                  <td className="px-3 py-3 text-biz-muted">{c.sentAt}</td>
+                  <td className="px-3 py-3 font-semibold text-biz-ink">{c.recipientCount}</td>
+                  <td className="px-3 py-3 text-biz-violet-600">{c.openCount}</td>
+                  <td className="px-3 py-3">
+                    <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+                      c.status === "sent" ? "bg-biz-green-400/15 text-biz-green-500" :
+                      c.status === "scheduled" ? "bg-biz-yellow-300/25 text-biz-yellow-500" :
+                      c.status === "sending" ? "bg-biz-violet-50 text-biz-violet-700" :
+                      "bg-biz-bg text-biz-muted")}>
+                      {c.status}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-biz-muted text-xs">
+                    {c.sentAt
+                      ? new Date(c.sentAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+                      : c.scheduledAt
+                        ? `Scheduled · ${new Date(c.scheduledAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`
+                        : "—"}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        )}
       </section>
     </div>
   );
@@ -217,10 +305,12 @@ function StepCrumb({
 
 function StepSegment({
   segmentId,
+  counts,
   onPick,
   onNext,
 }: {
   segmentId: SegmentId;
+  counts: Record<SegmentId, number>;
   onPick: (id: SegmentId) => void;
   onNext: () => void;
 }) {
@@ -229,7 +319,7 @@ function StepSegment({
       <p className="text-xs font-medium text-biz-violet-600">Step 1 · Segment</p>
       <p className="mt-1 text-sm text-biz-muted">Who should this go to?</p>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        {segments.map((seg) => {
+        {SEGMENT_DEFS.map((seg) => {
           const active = seg.id === segmentId;
           return (
             <button
@@ -244,7 +334,7 @@ function StepSegment({
               <div className="flex items-center justify-between gap-3">
                 <p className="font-semibold text-biz-ink">{seg.label}</p>
                 <span className="rounded-full bg-biz-surface px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-biz-muted">
-                  {seg.match.length}
+                  {counts[seg.id] ?? 0}
                 </span>
               </div>
               <p className="mt-1 text-xs text-biz-muted">{seg.description}</p>
@@ -350,6 +440,8 @@ function StepSchedule({
   setScheduleAt,
   onBack,
   onLaunch,
+  isPending,
+  error,
 }: {
   channel: Channel;
   setChannel: (c: Channel) => void;
@@ -359,6 +451,8 @@ function StepSchedule({
   setScheduleAt: (value: string) => void;
   onBack: () => void;
   onLaunch: () => void;
+  isPending?: boolean;
+  error?: string | null;
 }) {
   return (
     <div>
@@ -413,20 +507,26 @@ function StepSchedule({
         )}
       </div>
 
+      {error && (
+        <p className="mt-4 rounded-2xl bg-biz-pink-200/40 px-4 py-2 text-xs font-medium text-biz-pink-500">{error}</p>
+      )}
+
       <div className="mt-6 flex justify-between gap-3">
         <button
           type="button"
           onClick={onBack}
-          className="rounded-full bg-biz-bg px-5 py-2 text-xs font-semibold text-biz-ink hover:bg-biz-border"
+          disabled={isPending}
+          className="rounded-full bg-biz-bg px-5 py-2 text-xs font-semibold text-biz-ink hover:bg-biz-border disabled:opacity-50"
         >
           ← Template
         </button>
         <button
           type="button"
           onClick={onLaunch}
-          className="rounded-full bg-biz-violet-500 px-5 py-2 text-xs font-semibold text-white hover:bg-biz-violet-600"
+          disabled={isPending}
+          className="rounded-full bg-biz-violet-500 px-5 py-2 text-xs font-semibold text-white hover:bg-biz-violet-600 disabled:opacity-50"
         >
-          Launch campaign
+          {isPending ? "Launching…" : scheduleMode === "now" ? "Launch campaign" : "Schedule campaign"}
         </button>
       </div>
     </div>

@@ -25,6 +25,8 @@ async function getStorefrontFromDB(city: string, slug: string): Promise<Storefro
     const sf = await db.storefront.findFirst({
       where: { city, slug, isPublished: true },
       include: {
+        photos: { orderBy: { sortOrder: "asc" } },
+        reviews: { orderBy: { createdAt: "desc" } },
         tenant: {
           include: {
             locations: { take: 1 },
@@ -41,6 +43,21 @@ async function getStorefrontFromDB(city: string, slug: string): Promise<Storefro
 
     const tenant = sf.tenant;
     const location = tenant.locations[0];
+
+    // Map DB photos (URLs) and reviews into the storefront shape
+    const photos = sf.photos.map(p => p.url);
+    const reviews = sf.reviews.map(r => ({
+      id: r.id,
+      authorName: r.authorName,
+      rating: r.rating,
+      text: r.text,
+      date: r.date,
+      verified: r.verified,
+    }));
+    const reviewCount = reviews.length;
+    const rating = reviewCount > 0
+      ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviewCount) * 10) / 10
+      : 0;
 
     // Group services by category
     const categoryMap: Record<string, { id: string; name: string }> = {};
@@ -70,9 +87,9 @@ async function getStorefrontFromDB(city: string, slug: string): Promise<Storefro
       address: location?.address ?? "",
       geoLat: sf.geoLat ?? 0,
       geoLng: sf.geoLng ?? 0,
-      rating: 0,
-      reviewCount: 0,
-      photos: [],
+      rating,
+      reviewCount,
+      photos,
       businessType: tenant.businessType,
       priceRange: "₹₹",
       hours: (sf.openingHours as Storefront["hours"] | null) ?? {
@@ -88,7 +105,7 @@ async function getStorefrontFromDB(city: string, slug: string): Promise<Storefro
       services,
       team: [],
       offers: [],
-      reviews: [],
+      reviews,
     };
   } catch {
     return null;

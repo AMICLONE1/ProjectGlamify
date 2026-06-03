@@ -11,9 +11,19 @@ export function CustomCursor() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (pathname.startsWith("/business")) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    if (window.matchMedia("(hover: none)").matches) return;
+
+    // The custom cursor (and its `cursor: none` styling) is only for marketing
+    // pages. On /business — or when the device/user prefers no fancy cursor —
+    // make sure the class is removed so the native cursor is never hidden.
+    const disabled =
+      pathname.startsWith("/business") ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      window.matchMedia("(hover: none)").matches;
+
+    if (disabled) {
+      document.documentElement.classList.remove("custom-cursor-active");
+      return;
+    }
 
     const dot = dotRef.current;
     const ring = ringRef.current;
@@ -61,17 +71,22 @@ export function CustomCursor() {
     };
   }, [pathname]);
 
+  // Don't render the cursor elements on the business app at all.
+  if (pathname.startsWith("/business")) return null;
+
   return (
     <>
+      {/* mix-blend-difference keeps the cursor visible on both light and dark
+          sections — it inverts against whatever is behind it. */}
       <div
         ref={ringRef}
         aria-hidden
-        className="hidden md:block pointer-events-none fixed top-0 left-0 z-[9999] h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full border border-ink/70 will-change-transform"
+        className="hidden md:block pointer-events-none fixed top-0 left-0 z-[9999] h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white mix-blend-difference will-change-transform"
       />
       <div
         ref={dotRef}
         aria-hidden
-        className="hidden md:block pointer-events-none fixed top-0 left-0 z-[9999] h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink will-change-transform"
+        className="hidden md:block pointer-events-none fixed top-0 left-0 z-[9999] h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white mix-blend-difference will-change-transform"
       />
     </>
   );

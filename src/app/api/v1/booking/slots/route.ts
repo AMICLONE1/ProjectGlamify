@@ -49,8 +49,32 @@ export async function GET(req: NextRequest) {
     include: { user: { select: { fullName: true } } },
   });
 
+  // No bookable staff yet — generate generic slots for the salon's opening hours
+  // so customers can still book even before staff are configured.
   if (staffList.length === 0) {
-    return NextResponse.json({ slots: [] });
+    const sf = await db.storefront.findUnique({
+      where: { tenantId },
+      select: { openingHours: true },
+    });
+    const hours = sf?.openingHours as Record<string, { open: string; close: string; closed?: boolean }> | null;
+    const dayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+    const dayKey = dayNames[date.getDay()];
+    const dayHours = hours?.[dayKey];
+
+    const start = dayHours && !dayHours.closed ? timeToMins(dayHours.open) : DEFAULT_START;
+    const end   = dayHours && !dayHours.closed ? timeToMins(dayHours.close) : DEFAULT_END;
+
+    const nowIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+    const nowMinsG = nowIST.getHours() * 60 + nowIST.getMinutes();
+    const isTodayG = date.toDateString() === nowIST.toDateString();
+    const cutoffG = isTodayG ? nowMinsG + 30 : -1;
+
+    const genericSlots = [];
+    for (let slotMins = start; slotMins + SLOT_INTERVAL_MINS <= end; slotMins += SLOT_INTERVAL_MINS) {
+      if (slotMins < cutoffG) continue; // skip past slots
+      genericSlots.push({ time: minsToTime(slotMins), staffId: null, staffName: "Any stylist" });
+    }
+    return NextResponse.json({ slots: genericSlots });
   }
 
   // Load existing confirmed online bookings for that day
@@ -75,7 +99,7 @@ export async function GET(req: NextRequest) {
     select: { staffId: true, startsAt: true, endsAt: true },
   });
 
-  const slots: Array<{ time: string; staffDetailId: string; staffName: string }> = [];
+  const slots: Array<{ time: string; staffId: string; staffName: string }> = [];
 
   for (const staff of staffList) {
     // Determine working hours
@@ -110,15 +134,26 @@ export async function GET(req: NextRequest) {
       if (!busy) {
         slots.push({
           time: minsToTime(slotMins),
-          staffDetailId: staff.id,
+          staffId: staff.id,
           staffName: staff.user.fullName,
         });
       }
     }
   }
 
-  // Sort by time then staffName
-  slots.sort((a, b) => a.time.localeCompare(b.time) || a.staffName.localeCompare(b.staffName));
+  // Strip past slots when booking for today (with 30-min buffer in IST)
+  const nowIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  const nowMins = nowIST.getHours() * 60 + nowIST.getMinutes();
+  const isToday = date.toDateString() === nowIST.toDateString();
+  const cutoff = isToday ? nowMins + 30 : -1;
 
-  return NextResponse.json({ slots });
+  const filtered = slots.filter((s) => {
+    const [h, m] = s.time.split(":").map(Number);
+    return h * 60 + m >= cutoff;
+  });
+
+  // Sort by time then staffName
+  filtered.sort((a, b) => a.time.localeCompare(b.time) || a.staffName.localeCompare(b.staffName));
+
+  return NextResponse.json({ slots: filtered });
 }

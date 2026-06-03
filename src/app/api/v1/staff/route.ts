@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { requireAuth, ok, fail, writeAudit } from "@/lib/auth";
 
 const createSchema = z.object({
@@ -60,23 +60,38 @@ export async function POST(req: NextRequest) {
   const existing = await db.user.findFirst({ where: { email, tenantId: auth.tenantId } });
   if (existing) return fail("EMAIL_TAKEN", "A user with this email already exists", 409);
 
-  const passwordHash = await bcrypt.hash(password, 12);
-
-  const user = await db.user.create({
-    data: {
-      tenantId: auth.tenantId,
-      fullName,
-      email,
-      phone: phone ?? null,
-      role: role as never,
-      supabaseUid: passwordHash,
-      staffDetail: {
-        create: { locationId, speciality: speciality ?? null, bio: bio ?? null, commissionPct, isBookable },
-      },
-    },
-    include: { staffDetail: true },
+  // Create a Supabase Auth user so the staff member can log in.
+  const supabase = getSupabaseAdmin();
+  const { data: created, error: authError } = await supabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { fullName },
   });
+  if (authError || !created.user) {
+    return fail("SUPABASE_ERROR", authError?.message ?? "Failed to create auth user", 502);
+  }
 
-  await writeAudit(auth.tenantId, auth.userId, "create", "staff", user.id);
-  return ok({ id: user.id, fullName: user.fullName, email: user.email, role: user.role, staffDetail: user.staffDetail }, 201);
+  try {
+    const user = await db.user.create({
+      data: {
+        tenantId: auth.tenantId,
+        fullName,
+        email,
+        phone: phone ?? null,
+        role: role as never,
+        supabaseUid: created.user.id,
+        staffDetail: {
+          create: { locationId, speciality: speciality ?? null, bio: bio ?? null, commissionPct, isBookable },
+        },
+      },
+      include: { staffDetail: true },
+    });
+
+    await writeAudit(auth.tenantId, auth.userId, "create", "staff", user.id);
+    return ok({ id: user.id, fullName: user.fullName, email: user.email, role: user.role, staffDetail: user.staffDetail }, 201);
+  } catch (e) {
+    await supabase.auth.admin.deleteUser(created.user.id).catch(() => {});
+    return fail("DB_ERROR", e instanceof Error ? e.message : "Failed to create staff", 500);
+  }
 }

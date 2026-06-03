@@ -5,6 +5,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth, ok, fail } from "@/lib/auth";
+import { revalidateStorefront } from "@/lib/revalidate-storefront";
 
 const createSchema = z.object({
   name:            z.string().min(1).max(100),
@@ -62,5 +63,6 @@ export async function POST(req: NextRequest) {
     include: { category: true },
   });
 
+  await revalidateStorefront(auth.tenantId);
   return ok({ service }, 201);
 }

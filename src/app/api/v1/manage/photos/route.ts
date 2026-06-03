@@ -7,6 +7,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth, ok, fail } from "@/lib/auth";
 import { uploadPhoto } from "@/lib/storage";
+import { revalidateStorefront } from "@/lib/revalidate-storefront";
 
 const addSchema = z.object({
   url:     z.string().url().or(z.string().startsWith("data:")),
@@ -69,6 +70,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  await revalidateStorefront(auth.tenantId);
   return ok({ photo }, 201);
 }
 
@@ -95,5 +97,6 @@ export async function PATCH(req: NextRequest) {
     )
   );
 
+  await revalidateStorefront(auth.tenantId);
   return ok({ reordered: true });
 }

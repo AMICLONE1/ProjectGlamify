@@ -11,17 +11,9 @@ import {
   YAxis,
 } from "recharts";
 
-const data = [
-  { day: "Mon", today: 28, yesterday: 24 },
-  { day: "Tue", today: 38, yesterday: 31 },
-  { day: "Wed", today: 32, yesterday: 28 },
-  { day: "Thu", today: 35, yesterday: 30 },
-  { day: "Fri", today: 42, yesterday: 38 },
-  { day: "Sat", today: 51, yesterday: 47 },
-  { day: "Sun", today: 18, yesterday: 22 },
-];
+type BookingsPoint = { day: string; today: number; yesterday: number };
 
-export function BookingsBarChart() {
+export function BookingsBarChart({ data = [], hasData = false }: { data?: BookingsPoint[]; hasData?: boolean }) {
   return (
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -32,7 +24,7 @@ export function BookingsBarChart() {
         <div className="flex items-center gap-4 text-xs">
           <span className="flex items-center gap-1.5">
             <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-biz-orange-500" />
-            <span className="text-biz-muted">Today</span>
+            <span className="text-biz-muted">This week</span>
           </span>
           <span className="flex items-center gap-1.5">
             <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-biz-violet-500" />
@@ -41,6 +33,12 @@ export function BookingsBarChart() {
         </div>
       </div>
 
+      {!hasData ? (
+        <div className="mt-5 flex h-64 w-full flex-col items-center justify-center rounded-2xl bg-biz-bg text-center">
+          <p className="text-sm font-medium text-biz-ink">No bookings yet</p>
+          <p className="mt-1 text-xs text-biz-muted">Weekly booking volume appears once customers book online.</p>
+        </div>
+      ) : (
       <div className="mt-5 h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
@@ -81,6 +79,7 @@ export function BookingsBarChart() {
           </BarChart>
         </ResponsiveContainer>
       </div>
+      )}
     </div>
   );
 }

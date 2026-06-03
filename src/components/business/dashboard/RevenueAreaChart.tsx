@@ -10,21 +10,22 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatINR, revenueLast14Days } from "@/lib/business-seed";
+import { formatINR } from "@/lib/business-seed";
 import { cn } from "@/lib/cn";
 
 type Range = "7d" | "14d";
+type RevenuePoint = { day: string; revenue: number };
 
-export function RevenueAreaChart() {
+export function RevenueAreaChart({ series = [], hasData = false }: { series?: RevenuePoint[]; hasData?: boolean }) {
   const [range, setRange] = useState<Range>("14d");
-  const data = range === "7d" ? revenueLast14Days.slice(-7) : revenueLast14Days;
+  const data = range === "7d" ? series.slice(-7) : series;
 
   return (
     <div>
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-base font-semibold text-biz-ink">Revenue trends</h3>
-          <p className="mt-0.5 text-xs text-biz-muted">Last {range === "7d" ? "7" : "14"} days · bookings + ticket size</p>
+          <p className="mt-0.5 text-xs text-biz-muted">Last {range === "7d" ? "7" : "14"} days · paid invoices</p>
         </div>
         <div className="flex items-center gap-1 rounded-full bg-biz-bg p-1">
           {(["7d", "14d"] as Range[]).map((r) => (
@@ -43,6 +44,12 @@ export function RevenueAreaChart() {
         </div>
       </div>
 
+      {!hasData ? (
+        <div className="mt-6 flex h-64 w-full flex-col items-center justify-center rounded-2xl bg-biz-bg text-center">
+          <p className="text-sm font-medium text-biz-ink">No revenue yet</p>
+          <p className="mt-1 text-xs text-biz-muted">Your daily revenue will appear here once you record sales in POS.</p>
+        </div>
+      ) : (
       <div className="mt-6 h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
@@ -97,16 +104,10 @@ export function RevenueAreaChart() {
               strokeWidth={2.5}
               fill="url(#revenueGradient)"
             />
-            <Area
-              type="monotone"
-              dataKey="bookings"
-              stroke="#f97316"
-              strokeWidth={2}
-              fill="url(#bookingsGradient)"
-            />
           </AreaChart>
         </ResponsiveContainer>
       </div>
+      )}
     </div>
   );
 }

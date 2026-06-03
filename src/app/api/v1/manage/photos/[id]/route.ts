@@ -5,6 +5,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth, ok, fail } from "@/lib/auth";
+import { revalidateStorefront } from "@/lib/revalidate-storefront";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -31,6 +32,7 @@ export async function DELETE(req: NextRequest, ctx: RouteContext) {
     db.storefrontPhoto.update({ where: { id: p.id }, data: { sortOrder: i } })
   ));
 
+  await revalidateStorefront(auth.tenantId);
   return ok({ deleted: true, id });
 }
 

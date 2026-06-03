@@ -10,7 +10,7 @@ type Step = "service" | "slot" | "details" | "otp" | "confirmed";
 
 type TimeSlot = {
   time: string; // "10:00"
-  staffId: string;
+  staffId: string | null;
   staffName: string;
 };
 
@@ -75,13 +75,18 @@ async function fetchSlots(tenantId: string | undefined, date: string, staff: Sta
 
 // Fallback slot generator used for seed-data storefronts (no DB)
 function generateFallbackSlots(date: string, staff: StaffMember[]): TimeSlot[] {
+  // Use a placeholder when team list is empty (seed storefronts)
+  const effectiveStaff: StaffMember[] = staff.length > 0
+    ? staff
+    : [{ id: "any", name: "Any stylist", role: "staff" }];
+
   const slots: TimeSlot[] = [];
   for (let h = 10; h <= 19; h++) {
     for (const m of [0, 30]) {
       const seed = (h * 60 + m + (date.charCodeAt(8) || 0)) % 7;
       if (seed === 0) continue;
       const time = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-      const member = staff[seed % staff.length] ?? staff[0];
+      const member = effectiveStaff[seed % effectiveStaff.length];
       slots.push({ time, staffId: member.id, staffName: member.name });
     }
   }
@@ -93,7 +98,7 @@ async function sendBookingOtp(
   tenantId: string | undefined,
   storefrontSlug: string,
   serviceIds: string[],
-  staffId: string | undefined,
+  staffId: string | null | undefined,
   date: string,
   time: string,
   customerName: string,
@@ -257,6 +262,27 @@ function StepSlotPicker({
   const dates = nextNDays(7);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [nowMinutes, setNowMinutes] = useState(() => {
+    const n = new Date();
+    return n.getHours() * 60 + n.getMinutes();
+  });
+
+  // Tick every 30 seconds to re-evaluate which slots are in the past
+  useEffect(() => {
+    const id = setInterval(() => {
+      const n = new Date();
+      const mins = n.getHours() * 60 + n.getMinutes();
+      setNowMinutes(mins);
+      // If the selected slot has now become past, deselect it
+      if (selectedSlot && selectedDate === todayStr()) {
+        const [h, m] = selectedSlot.time.split(":").map(Number);
+        if (h * 60 + m < mins + 30) {
+          onSlotSelect(null as unknown as TimeSlot); // clear selection
+        }
+      }
+    }, 30_000);
+    return () => clearInterval(id);
+  }, [selectedSlot, selectedDate, onSlotSelect]);
 
   useEffect(() => {
     setLoadingSlots(true);
@@ -265,12 +291,21 @@ function StepSlotPicker({
       .finally(() => setLoadingSlots(false));
   }, [tenantId, selectedDate, staff]);
 
+  const isToday = selectedDate === todayStr();
+  // Add a 30-min buffer — don't allow booking slots within the next 30 minutes
+  const cutoffMinutes = isToday ? nowMinutes + 30 : -1;
+
+  function slotMinutes(time: string) {
+    const [h, m] = time.split(":").map(Number);
+    return h * 60 + m;
+  }
+
   return (
-    <div className="flex flex-col h-full">
-      <h3 className="text-base font-bold text-ink mb-4">Pick a date & time</h3>
+    <div className="flex flex-col h-full min-h-0">
+      <h3 className="text-base font-bold text-ink mb-3 shrink-0">Pick a date & time</h3>
 
       {/* Date row */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-5 shrink-0 scrollbar-hide">
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-4 shrink-0 scrollbar-hide">
         {dates.map((d) => {
           const isSelected = d === selectedDate;
           const dObj = new Date(d + "T00:00:00");
@@ -295,22 +330,26 @@ function StepSlotPicker({
         })}
       </div>
 
-      {/* Slots grid */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Slots grid — scrollable */}
+      <div className="flex-1 min-h-0 overflow-y-auto pr-0.5">
         {loadingSlots && (
           <p className="py-6 text-center text-sm text-muted">Loading available slots…</p>
         )}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2 pb-2">
           {!loadingSlots && slots.map((slot) => {
+            const isPast = slotMinutes(slot.time) < cutoffMinutes;
             const isSelected =
               selectedSlot?.time === slot.time &&
               selectedSlot?.staffId === slot.staffId;
             return (
               <button
                 key={slot.time + slot.staffId}
-                onClick={() => onSlotSelect(slot)}
+                onClick={() => !isPast && onSlotSelect(slot)}
+                disabled={isPast}
                 className={`rounded-xl border py-2.5 text-sm font-medium transition-colors ${
-                  isSelected
+                  isPast
+                    ? "border-border-strong bg-surface-2 text-muted-2 opacity-40 cursor-not-allowed line-through"
+                    : isSelected
                     ? "border-brand-500 bg-brand-500 text-white"
                     : "border-border-strong bg-white text-ink hover:border-brand-300"
                 }`}
@@ -327,27 +366,28 @@ function StepSlotPicker({
         )}
       </div>
 
-      {selectedSlot && (
-        <div className="mt-4 shrink-0 border-t border-border pt-4">
+      <div className="mt-3 shrink-0 border-t border-border pt-3">
+        {selectedSlot && (
           <p className="text-xs text-muted mb-3">
             {formatDateLabel(selectedDate)} · {selectedSlot.time} · with {selectedSlot.staffName}
           </p>
-          <div className="flex gap-3">
-            <button
-              onClick={onBack}
-              className="flex-1 rounded-full border border-border-strong py-3 text-sm font-medium text-ink hover:border-ink transition-colors"
-            >
-              Back
-            </button>
-            <button
-              onClick={onNext}
-              className="flex-[2] rounded-full bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600 transition-colors"
-            >
-              Continue →
-            </button>
-          </div>
+        )}
+        <div className="flex gap-3">
+          <button
+            onClick={onBack}
+            className="flex-1 rounded-full border border-border-strong py-3 text-sm font-medium text-ink hover:border-ink transition-colors"
+          >
+            Back
+          </button>
+          <button
+            onClick={onNext}
+            disabled={!selectedSlot}
+            className="flex-[2] rounded-full bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          >
+            Continue →
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -747,7 +787,7 @@ export function BookingModal({ storefront, preselectedServiceId, onClose }: Prop
         <div className="flex-1 overflow-hidden flex flex-col px-6 py-5">
           <ProgressBar step={step} />
 
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
             {step === "service" && (
               <StepServiceSelect
                 services={storefront.services}
@@ -795,7 +835,11 @@ export function BookingModal({ storefront, preselectedServiceId, onClose }: Prop
                 phone={state.customerPhone}
                 otp={state.otp}
                 bookingId={state.bookingId}
-                isSeedStorefront={!storefront.tenantId}
+                isSeedStorefront={
+                  !storefront.tenantId ||
+                  state.bookingId?.startsWith("BKG-") ||
+                  process.env.NEXT_PUBLIC_OTP_DEV_MODE === "true"
+                }
                 onOtpChange={(v) => update({ otp: v })}
                 onVerify={handleVerifyOtp}
                 onResend={handleResendOtp}

@@ -5,6 +5,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth, ok, fail } from "@/lib/auth";
+import { revalidateStorefront } from "@/lib/revalidate-storefront";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -47,6 +48,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     },
   });
 
+  await revalidateStorefront(auth.tenantId);
   return ok({ review: updated });
 }
 
@@ -63,5 +65,6 @@ export async function DELETE(req: NextRequest, ctx: RouteContext) {
 
   await db.storefrontReview.delete({ where: { id } });
 
+  await revalidateStorefront(auth.tenantId);
   return ok({ deleted: true, id });
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { dashboardApi, type DashboardData, type UpcomingAppointment } from "@/lib/api-client";
+import { dashboardApi, onboardingApi, type DashboardData, type DashboardCharts, type OnboardingProgress, type UpcomingAppointment } from "@/lib/api-client";
 import { RevenueAreaChart } from "./RevenueAreaChart";
 import { ServiceMixDonut } from "./ServiceMixDonut";
 import { BookingsBarChart } from "./BookingsBarChart";
@@ -21,6 +21,12 @@ export function DashboardLive() {
     refetchInterval: 60_000,
   });
 
+  const { data: charts } = useQuery<DashboardCharts>({
+    queryKey: ["dashboard-charts"],
+    queryFn: () => dashboardApi.charts(),
+    refetchInterval: 60_000,
+  });
+
   return (
     <div className="space-y-4">
       {/* Welcome + KPIs */}
@@ -36,47 +42,53 @@ export function DashboardLive() {
         </div>
 
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-          <KpiCard
-            label="Today's bookings"
-            value={isLoading ? "—" : String(data?.kpis.todayAppointments ?? 0)}
-            delta={isLoading ? "" : `${data?.kpis.monthBookings ?? 0} this month`}
-            deltaTone="positive"
-            tone="violet"
-            icon={<CalendarIcon />}
-          />
-          <KpiCard
-            label="Monthly revenue"
-            value={isLoading ? "—" : formatINR(data?.kpis.monthRevenue ?? 0)}
-            delta={isLoading ? "" : `${(data?.kpis.revenueChangePct ?? 0) > 0 ? "+" : ""}${data?.kpis.revenueChangePct ?? 0}% vs last month`}
-            deltaTone={(data?.kpis.revenueChangePct ?? 0) >= 0 ? "positive" : "negative"}
-            tone="orange"
-            icon={<RevenueIcon />}
-          />
-          <KpiCard
-            label="Total clients"
-            value={isLoading ? "—" : String(data?.kpis.totalClients ?? 0)}
-            delta={isLoading ? "" : `+${data?.kpis.newClientsThisMonth ?? 0} this month`}
-            deltaTone="positive"
-            tone="yellow"
-            icon={<ClientIcon />}
-          />
+          {isLoading ? (
+            <>
+              <KpiSkeleton /><KpiSkeleton /><KpiSkeleton />
+            </>
+          ) : (
+            <>
+              <KpiCard
+                label="Today's bookings"
+                value={String(data?.kpis.todayAppointments ?? 0)}
+                delta={`${data?.kpis.monthBookings ?? 0} this month`}
+                deltaTone="positive"
+                tone="violet"
+                icon={<CalendarIcon />}
+              />
+              <KpiCard
+                label="Monthly revenue"
+                value={formatINR(data?.kpis.monthRevenue ?? 0)}
+                delta={`${(data?.kpis.revenueChangePct ?? 0) > 0 ? "+" : ""}${data?.kpis.revenueChangePct ?? 0}% vs last month`}
+                deltaTone={(data?.kpis.revenueChangePct ?? 0) >= 0 ? "positive" : "negative"}
+                tone="orange"
+                icon={<RevenueIcon />}
+              />
+              <KpiCard
+                label="Total clients"
+                value={String(data?.kpis.totalClients ?? 0)}
+                delta={`+${data?.kpis.newClientsThisMonth ?? 0} this month`}
+                deltaTone="positive"
+                tone="yellow"
+                icon={<ClientIcon />}
+              />
+            </>
+          )}
         </div>
       </section>
 
-      {/* Welcome checklist — shown for new accounts with no activity yet */}
-      {!isLoading && (data?.kpis.monthBookings ?? 0) === 0 && (
-        <WelcomeChecklist />
-      )}
+      {/* Getting-started checklist — auto-hides once every step is done */}
+      <WelcomeChecklist />
 
       {/* Charts */}
       <section className="grid gap-4 lg:grid-cols-[1fr_2fr]">
         <GoalCard revenue={data?.kpis.monthRevenue ?? 0} isLoading={isLoading} />
-        <ChartCard><RevenueAreaChart /></ChartCard>
+        <ChartCard><RevenueAreaChart series={charts?.revenueTrends} hasData={charts?.hasRevenue} /></ChartCard>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1fr_2fr]">
-        <ChartCard><ServiceMixDonut /></ChartCard>
-        <ChartCard><BookingsBarChart /></ChartCard>
+        <ChartCard><ServiceMixDonut data={charts?.serviceMix} hasData={charts?.hasServiceMix} /></ChartCard>
+        <ChartCard><BookingsBarChart data={charts?.bookingsThisWeek} hasData={charts?.hasBookings} /></ChartCard>
       </section>
 
       {/* Today's schedule + alerts */}
@@ -94,103 +106,216 @@ export function DashboardLive() {
   );
 }
 
-// ─── Welcome checklist (new accounts) ───────────────────────────────────────
+// ─── Getting-started checklist (real progress) ──────────────────────────────
+
+type ChecklistStep = {
+  key: string;
+  done: boolean;
+  title: string;
+  desc: string;
+  href: string;
+  actionLabel: string;
+  Icon: (p: { className?: string }) => React.ReactElement;
+};
 
 function WelcomeChecklist() {
-  const steps = [
+  const { data, isLoading } = useQuery<OnboardingProgress>({
+    queryKey: ["onboarding-progress"],
+    queryFn: () => onboardingApi.progress(),
+    refetchInterval: 30_000,
+  });
+
+  if (isLoading || !data) return null;
+
+  const s = data.steps;
+  const steps: ChecklistStep[] = [
     {
-      done: true,
-      icon: "✅",
+      key: "account",
+      done: s.account,
       title: "Account created",
       desc: "Your Glamify account is set up and ready.",
-      action: null,
+      href: "/business/settings",
+      actionLabel: "Account",
+      Icon: UserCheckIcon,
     },
     {
-      done: false,
-      icon: "🌐",
-      title: "Set up your storefront",
-      desc: "Add services, photos, and publish your public booking page.",
+      key: "profile",
+      done: s.profile,
+      title: "Complete your business profile",
+      desc: "Add your business name, contact details, hours, and about in Settings.",
+      href: "/business/settings",
+      actionLabel: "Edit profile",
+      Icon: StoreIcon,
+    },
+    {
+      key: "services",
+      done: s.services,
+      title: "Add your services",
+      desc: "List the services customers can book, with prices and durations.",
       href: "/business/storefront",
-      actionLabel: "Set up storefront →",
+      actionLabel: "Add services",
+      Icon: ScissorsIcon,
     },
     {
-      done: false,
-      icon: "📲",
-      title: "Share your storefront link",
-      desc: "Send it to customers on WhatsApp, add to Instagram bio.",
+      key: "photos",
+      done: s.photos,
+      title: "Upload photos",
+      desc: "Show off your space and work — the first photo becomes your cover.",
       href: "/business/storefront",
-      actionLabel: "Get your link →",
+      actionLabel: "Add photos",
+      Icon: PhotoIcon,
     },
     {
-      done: false,
-      icon: "📈",
-      title: "Connect Google Business Profile",
-      desc: "Get the 'Book' button on Google Search and Maps.",
+      key: "published",
+      done: s.published,
+      title: "Publish your storefront",
+      desc: "Activate your public booking page so customers can find and book you.",
       href: "/business/storefront",
-      actionLabel: "Connect GBP →",
+      actionLabel: "Publish",
+      Icon: RocketIcon,
     },
     {
-      done: false,
-      icon: "📅",
+      key: "booking",
+      done: s.booking,
       title: "Take your first booking",
-      desc: "Once your storefront is live, customers can book online.",
+      desc: "Share your link — bookings appear on your calendar automatically.",
       href: "/business/calendar",
-      actionLabel: "View calendar →",
+      actionLabel: "View calendar",
+      Icon: CalendarCheckIcon,
     },
   ];
 
+  const doneCount = steps.filter((x) => x.done).length;
+  const total = steps.length;
+
+  // Fully set up → don't waste space on the checklist anymore.
+  if (doneCount === total) return null;
+
+  // The first not-done step is the "active" one (sequential focus).
+  const activeKey = steps.find((x) => !x.done)?.key;
+
   return (
-    <section className="rounded-3xl bg-biz-surface p-6 shadow-sm">
-      <div className="mb-5 flex items-center justify-between">
+    <section className="overflow-hidden rounded-3xl bg-biz-surface shadow-sm">
+      <div className="flex items-center justify-between gap-4 border-b border-biz-border px-6 py-5">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-biz-violet-500 mb-1">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-biz-violet-500">
             Getting started
           </p>
-          <h2 className="text-lg font-bold text-biz-ink">Welcome to Glamify 👋</h2>
-          <p className="text-sm text-biz-muted mt-0.5">
-            Complete these steps to start taking online bookings.
-          </p>
+          <h2 className="text-lg font-bold text-biz-ink">Finish setting up Glamify</h2>
         </div>
-        <div className="hidden sm:flex items-center gap-2 rounded-2xl bg-biz-violet-50 px-4 py-2">
-          <span className="text-lg font-bold text-biz-violet-600">1</span>
-          <span className="text-xs text-biz-muted">/ {steps.length} done</span>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="mb-5 h-1.5 rounded-full bg-biz-border overflow-hidden">
-        <div className="h-full rounded-full bg-biz-violet-500 transition-all" style={{ width: `${(1 / steps.length) * 100}%` }} />
-      </div>
-
-      <div className="space-y-3">
-        {steps.map((step, i) => (
-          <div
-            key={i}
-            className={`flex items-center gap-4 rounded-2xl border p-4 transition-colors ${
-              step.done
-                ? "border-biz-green-400/30 bg-biz-green-400/5"
-                : "border-biz-border bg-biz-bg hover:border-biz-violet-200"
-            }`}
-          >
-            <span className="text-2xl shrink-0">{step.icon}</span>
-            <div className="flex-1 min-w-0">
-              <p className={`font-semibold text-sm ${step.done ? "line-through text-biz-muted" : "text-biz-ink"}`}>
-                {step.title}
-              </p>
-              <p className="text-xs text-biz-muted mt-0.5">{step.desc}</p>
-            </div>
-            {!step.done && step.href && (
-              <a
-                href={step.href}
-                className="shrink-0 rounded-full bg-biz-violet-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-biz-violet-600 transition-colors"
-              >
-                {step.actionLabel}
-              </a>
-            )}
+        <div className="flex items-center gap-3">
+          <div className="hidden h-2 w-28 overflow-hidden rounded-full bg-biz-border sm:block">
+            <div className="h-full rounded-full bg-biz-violet-500 transition-all duration-500" style={{ width: `${(doneCount / total) * 100}%` }} />
           </div>
-        ))}
+          <span className="rounded-full bg-biz-violet-50 px-3 py-1 text-xs font-semibold text-biz-violet-700">
+            {doneCount} / {total}
+          </span>
+        </div>
       </div>
+
+      <ul className="divide-y divide-biz-border">
+        {steps.map((step) => {
+          const isActive = step.key === activeKey;
+          return (
+            <li
+              key={step.key}
+              className={`flex items-center gap-4 px-6 transition-colors ${
+                step.done ? "py-3" : isActive ? "bg-biz-violet-50/40 py-4" : "py-4"
+              }`}
+            >
+              {/* Status indicator */}
+              {step.done ? (
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-biz-green-500 text-white">
+                  <CheckIcon className="h-4 w-4" />
+                </span>
+              ) : (
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
+                    isActive
+                      ? "border-biz-violet-300 bg-white text-biz-violet-600"
+                      : "border-biz-border bg-biz-bg text-biz-muted-2"
+                  }`}
+                >
+                  <step.Icon className="h-4 w-4" />
+                </span>
+              )}
+
+              <div className="min-w-0 flex-1">
+                <p className={`text-sm font-semibold ${step.done ? "text-biz-muted line-through" : "text-biz-ink"}`}>
+                  {step.title}
+                </p>
+                {!step.done && <p className="mt-0.5 text-xs text-biz-muted">{step.desc}</p>}
+              </div>
+
+              {!step.done && (
+                <a
+                  href={step.href}
+                  className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
+                    isActive
+                      ? "bg-biz-violet-500 text-white hover:bg-biz-violet-600"
+                      : "border border-biz-border text-biz-muted hover:border-biz-violet-200 hover:text-biz-ink"
+                  }`}
+                >
+                  {step.actionLabel}
+                </a>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </section>
+  );
+}
+
+// ─── Checklist icons (premium line set) ──────────────────────────────────────
+
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+function UserCheckIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="9" cy="8" r="3.2" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 12l2 2 4-4" />
+    </svg>
+  );
+}
+function StoreIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M4 9.5 5.2 4h13.6L20 9.5M4 9.5h16M4 9.5v9.5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9.5M4 9.5a2.2 2.2 0 0 0 4 0 2.2 2.2 0 0 0 4 0 2.2 2.2 0 0 0 4 0 2.2 2.2 0 0 0 4 0" />
+    </svg>
+  );
+}
+function ScissorsIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="6" cy="6" r="2.6" /><circle cx="6" cy="18" r="2.6" /><path d="M8 8l12 8M8 16 20 8" />
+    </svg>
+  );
+}
+function PhotoIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="3" y="4.5" width="18" height="15" rx="2.5" /><circle cx="8.5" cy="10" r="1.6" /><path d="m4 17 5-4 4 3 3-2.5 5 4" />
+    </svg>
+  );
+}
+function RocketIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M5 14c-1.5 1.5-2 5-2 5s3.5-.5 5-2M14.5 4.5C17 4 20 5 20 5s1 3 .5 5.5c-1 4-5 7-9 8l-2-2c1-4 4-8 8-9Z" /><circle cx="14.5" cy="9.5" r="1.4" />
+    </svg>
+  );
+}
+function CalendarCheckIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="3" y="4.5" width="18" height="16" rx="2.5" /><path d="M8 3v3m8-3v3M3 10h18M9 15.5l2 2 3.5-3.5" />
+    </svg>
   );
 }
 
@@ -199,6 +324,21 @@ function getGreeting() {
   if (h < 12) return "morning";
   if (h < 17) return "afternoon";
   return "evening";
+}
+
+// ─── KPI skeleton ────────────────────────────────────────────────────────────
+
+function KpiSkeleton() {
+  return (
+    <div className="rounded-3xl bg-biz-surface p-4 sm:p-5 md:p-6 shadow-sm">
+      <div className="flex items-start justify-between gap-2">
+        <div className="h-10 w-10 animate-pulse rounded-2xl bg-biz-bg" />
+        <div className="h-5 w-24 animate-pulse rounded-full bg-biz-bg" />
+      </div>
+      <div className="mt-4 h-7 w-20 animate-pulse rounded-xl bg-biz-bg" />
+      <div className="mt-2 h-3 w-28 animate-pulse rounded-full bg-biz-bg" />
+    </div>
+  );
 }
 
 // ─── KPI card ────────────────────────────────────────────────────────────────

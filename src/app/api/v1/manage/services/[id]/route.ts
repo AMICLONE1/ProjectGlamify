@@ -5,6 +5,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth, ok, fail } from "@/lib/auth";
+import { revalidateStorefront } from "@/lib/revalidate-storefront";
 
 const patchSchema = z.object({
   name:            z.string().min(1).max(100).optional(),
@@ -56,6 +57,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     include: { category: true },
   });
 
+  await revalidateStorefront(auth.tenantId);
   return ok({ service: updated });
 }
 
@@ -71,5 +73,6 @@ export async function DELETE(req: NextRequest, ctx: RouteContext) {
   // Soft delete — keeps history intact
   await db.service.update({ where: { id }, data: { isActive: false } });
 
+  await revalidateStorefront(auth.tenantId);
   return ok({ deleted: true, id });
 }
