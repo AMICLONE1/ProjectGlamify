@@ -3,9 +3,9 @@ import { Container } from "@/components/ui/Container";
 import { SignupForm } from "@/components/sections/SignupForm";
 
 export const metadata: Metadata = {
-  title: "Get early access — Glamify",
+  title: "Get early access — Clitell",
   description:
-    "Request early access to Glamify. We set up your storefront for you — live within 48 hours.",
+    "Request early access to Clitell. We set up your storefront for you — live within 48 hours.",
   robots: { index: false, follow: true },
   alternates: { canonical: "/signup" },
 };

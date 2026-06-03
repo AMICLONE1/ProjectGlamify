@@ -1,4 +1,4 @@
-// POST /api/v1/admin/tenants — Glamify-only account creation.
+// POST /api/v1/admin/tenants — Clitell-only account creation.
 // Guarded by the x-admin-secret header (ADMIN_API_SECRET). Creates a Supabase Auth
 // user + Tenant + owner User (linked via supabaseUid) + default Location.
 
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   const existing = await db.user.findFirst({ where: { email } });
   if (existing) return fail("EMAIL_TAKEN", "An account with this email already exists", 409);
 
-  // 1. Create the Supabase Auth user (email pre-confirmed — Glamify issues credentials)
+  // 1. Create the Supabase Auth user (email pre-confirmed — Clitell issues credentials)
   const supabase = getSupabaseAdmin();
   const { data: created, error: authError } = await supabase.auth.admin.createUser({
     email,

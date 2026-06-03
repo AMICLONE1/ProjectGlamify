@@ -24,7 +24,7 @@ export function AISection() {
               Not a chatbot. A second brain.
             </h2>
             <p className="mt-6 text-base sm:text-lg text-muted leading-relaxed">
-              Glamify&apos;s AI watches your bookings, billing, and client patterns —
+              Clitell&apos;s AI watches your bookings, billing, and client patterns —
               and tells you what to do about it. In plain English. With the numbers behind it.
             </p>
             <ul className="mt-8 grid grid-cols-2 gap-x-4 gap-y-2">

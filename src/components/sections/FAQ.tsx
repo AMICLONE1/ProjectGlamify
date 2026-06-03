@@ -16,10 +16,10 @@ const faqs = [
   },
   {
     q: "Do I need separate apps for my staff and my clients?",
-    a: "Yes, and they're both included. Staff get the Glamify Business app for schedule and quick billing. Your clients get the Glamify consumer app — branded with your salon's name on paid plans.",
+    a: "Yes, and they're both included. Staff get the Clitell Business app for schedule and quick billing. Your clients get the Clitell consumer app — branded with your salon's name on paid plans.",
   },
   {
-    q: "Does Glamify handle GST invoicing?",
+    q: "Does Clitell handle GST invoicing?",
     a: "Built in. Configure your GSTIN once and every invoice is GST-compliant with HSN codes, CGST/SGST breakup, and digital signatures. Export reports for your CA in one click.",
   },
   {
@@ -28,11 +28,11 @@ const faqs = [
   },
   {
     q: "What about my existing client list?",
-    a: "Upload a CSV or Excel file and Glamify will import it with phone numbers, visit history, notes, and tags. Or we'll migrate from Dingg, Zenoti, or any other software for free during onboarding.",
+    a: "Upload a CSV or Excel file and Clitell will import it with phone numbers, visit history, notes, and tags. Or we'll migrate from Dingg, Zenoti, or any other software for free during onboarding.",
   },
   {
     q: "Is my client data safe?",
-    a: "Yes. Glamify is fully DPDPA-compliant. Client PII is encrypted at rest, payment data never touches our servers (PCI compliance via Razorpay), and you can export or delete data at any time.",
+    a: "Yes. Clitell is fully DPDPA-compliant. Client PII is encrypted at rest, payment data never touches our servers (PCI compliance via Razorpay), and you can export or delete data at any time.",
   },
   {
     q: "Can I switch plans later?",

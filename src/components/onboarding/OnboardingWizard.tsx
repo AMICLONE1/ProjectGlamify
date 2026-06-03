@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getToken, getUser, getFreshToken } from "@/lib/session";
+import { ClitellWordmark } from "@/components/layout/Logo";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -371,7 +372,7 @@ function StepPublish({
   }
 
   if (published && liveUrl) {
-    const fullUrl = `${typeof window !== "undefined" ? window.location.origin : "https://glamify.in"}${liveUrl}`;
+    const fullUrl = `${typeof window !== "undefined" ? window.location.origin : "https://clitell.in"}${liveUrl}`;
     return (
       <div className="text-center space-y-6">
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
@@ -415,9 +416,9 @@ function StepPublish({
 
       <div className="space-y-3">
         {[
-          { icon: "🌐", title: "Branded storefront page", body: "Your own link at glamify.in — shareable, bookable, always up to date." },
+          { icon: "🌐", title: "Branded storefront page", body: "Your own link at clitell.in — shareable, bookable, always up to date." },
           { icon: "📲", title: "OTP-verified bookings", body: "Customers book with their phone number. You get confirmed, real appointments." },
-          { icon: "🎁", title: "₹50 cashback for new customers", body: "Glamify seeds your first bookings — customers get cashback on their first online booking." },
+          { icon: "🎁", title: "₹50 cashback for new customers", body: "Clitell seeds your first bookings — customers get cashback on their first online booking." },
           { icon: "📈", title: "Google-ready SEO page", body: "Your storefront is structured for local search. Connect GBP later to get the Website button on Google." },
         ].map(item => (
           <div key={item.title} className="flex gap-4 rounded-2xl border border-border bg-white px-5 py-4">
@@ -476,7 +477,7 @@ export function OnboardingWizard() {
     <div className="min-h-screen bg-background">
       {/* Top bar */}
       <div className="border-b border-border bg-white px-4 py-4 flex items-center justify-between">
-        <a href="/" className="font-display font-extrabold text-lg text-ink tracking-tight">Glamify</a>
+        <a href="/" className="inline-flex items-center"><ClitellWordmark className="h-6 w-auto" /></a>
         <span className="text-sm text-muted">
           Welcome, <span className="font-semibold text-ink">{user?.fullName?.split(" ")[0] ?? "there"}</span>
         </span>

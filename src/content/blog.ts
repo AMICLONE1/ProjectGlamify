@@ -41,7 +41,7 @@ export const blogPosts: BlogPost[] = [
     publishedAt: "2026-05-29",
     publishedLabel: "May 29, 2026",
     readingTime: "6 min read",
-    author: "Glamify Editorial",
+    author: "Clitell Editorial",
     authorRole: "Operations",
     highlights: [
       { label: "Typical result", value: "20-40% fewer no-shows" },
@@ -96,7 +96,7 @@ export const blogPosts: BlogPost[] = [
     publishedAt: "2026-05-27",
     publishedLabel: "May 27, 2026",
     readingTime: "7 min read",
-    author: "Glamify Editorial",
+    author: "Clitell Editorial",
     authorRole: "Finance",
     highlights: [
       { label: "Goal", value: "Invoice in under 30 sec" },
@@ -156,7 +156,7 @@ export const blogPosts: BlogPost[] = [
     publishedAt: "2026-05-24",
     publishedLabel: "May 24, 2026",
     readingTime: "5 min read",
-    author: "Glamify Product",
+    author: "Clitell Product",
     authorRole: "Intelligence",
     highlights: [
       { label: "Outcome", value: "Smarter slot fills" },

@@ -139,7 +139,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
       type: "website",
       locale: "en_IN",
     },
-    alternates: { canonical: `https://glamify.in/${city}/${slug}` },
+    alternates: { canonical: `https://clitell.in/${city}/${slug}` },
     robots: { index: true, follow: true },
   };
 }
@@ -162,7 +162,7 @@ function buildJsonLd(storefront: Storefront) {
     telephone: storefront.phone,
     address: { "@type":"PostalAddress", streetAddress:storefront.address, addressLocality:areaLabel, addressRegion:cityLabel, addressCountry:"IN" },
     geo: { "@type":"GeoCoordinates", latitude:storefront.geoLat, longitude:storefront.geoLng },
-    url: `https://glamify.in/${storefront.city}/${storefront.slug}`,
+    url: `https://clitell.in/${storefront.city}/${storefront.slug}`,
     ...(storefront.reviewCount > 0 ? { aggregateRating: { "@type":"AggregateRating", ratingValue:storefront.rating.toString(), reviewCount:storefront.reviewCount.toString() } } : {}),
     priceRange: storefront.priceRange,
     openingHoursSpecification: openingHours,

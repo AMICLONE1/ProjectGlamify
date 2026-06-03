@@ -9,6 +9,7 @@ import { businessNavigation } from "@/lib/business-data";
 import { NavIcon, BellIcon, SearchIcon, type IconName } from "./icons";
 import { getUser, signOut, type SessionUser } from "@/lib/session";
 import { dashboardApi, clientsApi, appointmentsApi, onboardingApi, type DashboardData, type OnboardingProgress } from "@/lib/api-client";
+import { ClitellMark } from "@/components/layout/Logo";
 
 function initialsOf(name: string) {
   return name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "G";
@@ -102,10 +103,10 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
           <div className="sticky top-4 flex h-[calc(100vh-2rem)] w-full flex-col items-center rounded-3xl bg-biz-surface py-5 shadow-sm">
             <Link
               href="/business"
-              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-biz-violet-500 text-lg font-bold text-white shadow-md shadow-biz-violet-500/30 hover:bg-biz-violet-600 transition-colors"
-              aria-label="Glamify dashboard"
+              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-md hover:bg-biz-surface-2 transition-colors"
+              aria-label="Clitell dashboard"
             >
-              G
+              <ClitellMark className="h-7 w-auto" />
             </Link>
 
             <nav aria-label="Primary" className="mt-8 flex flex-1 flex-col items-center gap-1">

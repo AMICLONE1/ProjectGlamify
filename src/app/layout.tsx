@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
@@ -25,38 +25,85 @@ const instrument = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://glamify.in"),
+  metadataBase: new URL("https://clitell.in"),
   title: {
-    default: "Glamify — AI-first software for beauty & wellness businesses",
-    template: "%s · Glamify",
+    default: "Clitell — The AI-first operating system for beauty & wellness",
+    template: "%s · Clitell",
   },
   description:
-    "Run your salon, spa, or clinic on Glamify. Booking, billing, CRM, loyalty, and AI insights — built for India. Start free in under 15 minutes.",
+    "Clitell is the all-in-one platform for salons, spas, and clinics in India — online booking, GST billing, CRM, inventory, marketing, and AI insights. Your own branded storefront, live in minutes.",
+  applicationName: "Clitell",
+  authors: [{ name: "Clitell", url: "https://clitell.in" }],
+  creator: "Clitell",
+  publisher: "Clitell Technologies Pvt Ltd",
+  category: "Business Software",
   keywords: [
     "salon software India",
     "spa management software",
     "salon booking app",
     "beauty business software",
-    "salon POS",
+    "salon POS billing",
     "salon CRM",
-    "Glamify",
+    "appointment booking software",
+    "salon storefront",
+    "wellness business platform",
+    "Clitell",
   ],
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: "https://glamify.in",
-    siteName: "Glamify",
-    title: "Glamify — AI-first software for beauty & wellness businesses",
+    url: "https://clitell.in",
+    siteName: "Clitell",
+    title: "Clitell — The AI-first operating system for beauty & wellness",
     description:
-      "Booking, billing, CRM, loyalty, and AI insights for India's salons, spas, and clinics. Start free.",
+      "Online booking, GST billing, CRM, inventory, and AI insights for India's salons, spas, and clinics — plus your own branded storefront. Start free.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Glamify — AI-first beauty & wellness software",
+    site: "@clitell",
+    creator: "@clitell",
+    title: "Clitell — The AI-first OS for beauty & wellness",
     description:
-      "Booking, billing, CRM, loyalty, and AI insights for India's salons, spas, and clinics.",
+      "Online booking, GST billing, CRM, inventory, and AI insights for India's salons, spas, and clinics. Your own branded storefront, live in minutes.",
   },
-  robots: { index: true, follow: true },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Clitell",
+  },
+  formatDetection: { telephone: false },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0d0608" },
+  ],
+  colorScheme: "light",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Mobile Preview — Glamify Business",
-  description: "Phone-frame preview of the Glamify staff app — today view, walk-in queue, and quick checkout.",
+  title: "Mobile Preview — Clitell Business",
+  description: "Phone-frame preview of the Clitell staff app — today view, walk-in queue, and quick checkout.",
 };
 
 export default function BusinessMobilePage() {

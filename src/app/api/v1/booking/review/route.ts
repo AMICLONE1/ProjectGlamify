@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   const sf = booking.storefront;
 
   // Build the review link — Google Maps if slug available, else storefront page
-  const reviewLink = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://glamify.in"}/${sf.city}/${sf.slug}`;
+  const reviewLink = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://clitell.in"}/${sf.city}/${sf.slug}`;
 
   await sendWhatsApp({
     type: "review_request",

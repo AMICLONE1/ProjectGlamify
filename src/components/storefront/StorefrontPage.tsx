@@ -31,11 +31,11 @@ export function StorefrontPage({ storefront, isOpen, pricesFromLabel }: Props) {
     // pb-20 on mobile leaves room above the sticky Book CTA so it never overlaps content
     <div className="min-h-screen bg-background pb-20 sm:pb-0">
 
-      {/* Top Glamify attribution strip */}
+      {/* Top Clitell attribution strip */}
       <div className="sticky top-0 z-40 border-b border-border bg-white/95 backdrop-blur-sm py-2 text-center text-[11px] text-muted-2">
         Powered by{" "}
-        <a href="https://glamify.in" className="font-semibold text-brand-500 hover:underline">
-          Glamify
+        <a href="https://clitell.in" className="font-semibold text-brand-500 hover:underline">
+          Clitell
         </a>
         <span className="mx-1.5 text-border-strong">·</span>
         OTP-verified bookings
@@ -80,8 +80,8 @@ export function StorefrontPage({ storefront, isOpen, pricesFromLabel }: Props) {
         <p className="mt-0.5">{storefront.address}</p>
         <p className="mt-3">
           Bookings powered by{" "}
-          <a href="https://glamify.in" className="font-semibold text-brand-500 hover:underline">
-            Glamify
+          <a href="https://clitell.in" className="font-semibold text-brand-500 hover:underline">
+            Clitell
           </a>
           {" "}· India&apos;s beauty &amp; wellness platform
         </p>

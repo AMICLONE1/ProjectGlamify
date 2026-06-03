@@ -4,7 +4,7 @@ import { Section } from "@/components/ui/Section";
 import { FinalCTA } from "@/components/sections/FinalCTA";
 
 export const metadata: Metadata = {
-  title: "About — The story behind Glamify",
+  title: "About — The story behind Clitell",
   description:
     "We're building the operating system for India's beauty and wellness businesses. Beautiful software. Honest pricing. AI that actually helps.",
   alternates: { canonical: "/about" },
@@ -30,7 +30,7 @@ const values = [
 ];
 
 const milestones = [
-  { date: "Jan 2026", title: "Glamify founded", body: "Started with a notebook full of pain points from 30 salon visits across Mumbai." },
+  { date: "Jan 2026", title: "Clitell founded", body: "Started with a notebook full of pain points from 30 salon visits across Mumbai." },
   { date: "Mar 2026", title: "First customers", body: "Five Bandra salons running on a private beta. Daily product calls." },
   { date: "May 2026", title: "Public beta", body: "500+ businesses signed up in the first 30 days. NPS 54." },
   { date: "Q3 2026", title: "AI features GA", body: "Churn prediction, smart scheduling, and demand forecasting available on Growth+." },
@@ -44,12 +44,12 @@ export default function AboutPage() {
       <section className="relative pt-16 pb-10 sm:pt-20 sm:pb-12">
         <Container>
           <div className="mx-auto max-w-4xl">
-            <p className="eyebrow mb-8">About Glamify</p>
+            <p className="eyebrow mb-8">About Clitell</p>
             <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-extrabold uppercase tracking-[-0.03em] leading-[0.95] text-ink">
               Beautiful software for the people who create beauty.
             </h1>
             <p className="mt-8 text-lg sm:text-xl text-muted leading-relaxed max-w-3xl">
-              Glamify is the operating system for India&apos;s beauty and wellness
+              Clitell is the operating system for India&apos;s beauty and wellness
               businesses. We replace WhatsApp groups, paper registers, and clunky
               software with one platform built specifically for how salons, spas,
               and clinics actually work.
@@ -83,7 +83,7 @@ export default function AboutPage() {
               </p>
               <p>
                 The existing software either cost too much (Dingg, Zenoti) or felt
-                like an afterthought for India (Fresha). So we built Glamify.
+                like an afterthought for India (Fresha). So we built Clitell.
               </p>
               <p className="text-2xl text-ink font-display font-bold uppercase tracking-[-0.02em]">
                 An operating system as serious as the work it powers.

@@ -4,16 +4,16 @@ import { Section } from "@/components/ui/Section";
 import { ContactForm } from "@/components/sections/ContactForm";
 
 export const metadata: Metadata = {
-  title: "Contact — Talk to the Glamify team",
+  title: "Contact — Talk to the Clitell team",
   description:
     "Sales, support, partnerships, or just to say hi. We're based in Mumbai and reply within one business day.",
   alternates: { canonical: "/contact" },
 };
 
 const channels = [
-  { label: "Sales", value: "hello@glamify.in", href: "mailto:hello@glamify.in", hint: "Enterprise quotes, partnerships, custom plans." },
-  { label: "Support", value: "support@glamify.in", href: "mailto:support@glamify.in", hint: "Existing customers: bug reports and questions." },
-  { label: "Press & media", value: "press@glamify.in", href: "mailto:press@glamify.in", hint: "Media inquiries and brand assets." },
+  { label: "Sales", value: "hello@clitell.in", href: "mailto:hello@clitell.in", hint: "Enterprise quotes, partnerships, custom plans." },
+  { label: "Support", value: "support@clitell.in", href: "mailto:support@clitell.in", hint: "Existing customers: bug reports and questions." },
+  { label: "Press & media", value: "press@clitell.in", href: "mailto:press@clitell.in", hint: "Media inquiries and brand assets." },
 ];
 
 export default function ContactPage() {
@@ -27,7 +27,7 @@ export default function ContactPage() {
               We&apos;d love to hear from you.
             </h1>
             <p className="mt-8 text-lg sm:text-xl text-muted leading-relaxed max-w-2xl">
-              Questions about Glamify, partnership ideas, press requests, or feedback
+              Questions about Clitell, partnership ideas, press requests, or feedback
               — we&apos;re a small team in Mumbai and we reply within one business day.
             </p>
           </div>
@@ -64,7 +64,7 @@ export default function ContactPage() {
                 </p>
                 <p className="font-display text-lg font-bold text-ink mb-1">Mumbai, India</p>
                 <p className="text-sm text-muted leading-relaxed">
-                  Glamify Technologies Pvt Ltd
+                  Clitell Technologies Pvt Ltd
                   <br />
                   Bandra Kurla Complex
                   <br />

@@ -44,7 +44,7 @@ export function OffersBar({ offers, loyalty }: Props) {
           </div>
         ))}
 
-        {/* Glamify cashback banner */}
+        {/* Clitell cashback banner */}
         <div className="flex items-start gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
           <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white text-xs font-bold">
             ₹50
@@ -52,9 +52,9 @@ export function OffersBar({ offers, loyalty }: Props) {
           <div>
             <p className="font-semibold text-ink text-sm">First booking cashback</p>
             <p className="text-sm text-muted mt-0.5">
-              Book online for the first time and get ₹50 cashback from Glamify — directly to your UPI.
+              Book online for the first time and get ₹50 cashback from Clitell — directly to your UPI.
             </p>
-            <p className="text-xs text-muted-2 mt-1">One per customer · Glamify platform offer</p>
+            <p className="text-xs text-muted-2 mt-1">One per customer · Clitell platform offer</p>
           </div>
         </div>
 

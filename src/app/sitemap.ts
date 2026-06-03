@@ -4,7 +4,7 @@ import { getFeatureSlugs } from "@/content/features";
 import { getSolutionSlugs } from "@/content/solutions";
 import { getAllStorefrontSlugs } from "@/content/storefronts";
 
-const SITE_URL = "https://glamify.in";
+const SITE_URL = "https://clitell.in";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

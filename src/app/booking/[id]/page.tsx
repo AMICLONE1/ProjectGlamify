@@ -87,10 +87,10 @@ export default function BookingConfirmationPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Glamify header */}
+      {/* Clitell header */}
       <div className="border-b border-gray-200 bg-white px-4 py-3 text-center text-xs text-gray-400">
         Powered by{" "}
-        <a href="/" className="font-semibold text-violet-600 hover:underline">Glamify</a>
+        <a href="/" className="font-semibold text-violet-600 hover:underline">Clitell</a>
         {" "}· OTP-verified bookings
       </div>
 

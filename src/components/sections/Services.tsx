@@ -10,7 +10,7 @@ const services = [
     eyebrow: "Branded Storefront",
     title: "Your salon, online in 15 minutes.",
     blurb:
-      "Every salon gets a public page at glamify.in/your-city/your-salon — shareable link, bookable instantly, no app download needed for customers.",
+      "Every salon gets a public page at clitell.in/your-city/your-salon — shareable link, bookable instantly, no app download needed for customers.",
     bullets: ["Services menu with prices", "Photo gallery", "Customer reviews", "Offers & loyalty"],
     href: "/features",
   },

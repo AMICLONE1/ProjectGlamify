@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SettingsBoard } from "@/components/business/settings/SettingsBoard";
 
 export const metadata: Metadata = {
-  title: "Settings — Glamify Business",
+  title: "Settings — Clitell Business",
   description: "Control profile, roles, integrations, and tax configuration for the business workspace.",
 };
 

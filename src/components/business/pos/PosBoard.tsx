@@ -562,7 +562,7 @@ function InvoiceConfirmation({
         <div className="px-6 py-5 print:px-4 print:py-2">
           {/* Salon header */}
           <div className="mb-4 text-center">
-            <p className="font-display text-xl font-bold text-biz-ink">Glamify</p>
+            <p className="font-display text-xl font-bold lowercase text-biz-ink">clitell</p>
             <p className="mt-0.5 text-xs text-biz-muted">Tax Invoice</p>
           </div>
 
@@ -628,7 +628,7 @@ function InvoiceConfirmation({
             </p>
           )}
 
-          <p className="mt-4 text-center text-[10px] text-biz-muted-2">Thank you for visiting! · Powered by Glamify</p>
+          <p className="mt-4 text-center text-[10px] text-biz-muted-2">Thank you for visiting! · Powered by Clitell</p>
         </div>
 
         <div className="border-t border-biz-border px-6 py-4 print:hidden">

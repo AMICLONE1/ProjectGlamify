@@ -7,7 +7,7 @@ import { Section } from "@/components/ui/Section";
 const testimonials = [
   {
     quote:
-      "We switched from a paper register and three WhatsApp groups to Glamify. Our no-shows dropped 40% in two months and I finally know which services actually make me money.",
+      "We switched from a paper register and three WhatsApp groups to Clitell. Our no-shows dropped 40% in two months and I finally know which services actually make me money.",
     name: "Priya Mehta",
     role: "Owner",
     business: "Studio P Salon, Bandra",
@@ -31,7 +31,7 @@ const testimonials = [
   },
   {
     quote:
-      "We tried Dingg and Zenoti before. Glamify is the only one priced fairly for our 3-chair shop, and the interface doesn't make my stylists groan when they have to use it.",
+      "We tried Dingg and Zenoti before. Clitell is the only one priced fairly for our 3-chair shop, and the interface doesn't make my stylists groan when they have to use it.",
     name: "Deepa Rao",
     role: "Owner",
     business: "Curl Story, Hyderabad",

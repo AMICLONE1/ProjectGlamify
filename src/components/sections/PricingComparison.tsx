@@ -23,7 +23,7 @@ const groups: Group[] = [
       { feature: "Locations", starter: "1", growth: "1", pro: "2", enterprise: "Unlimited" },
       { feature: "Monthly appointments", starter: "50", growth: "Unlimited", pro: "Unlimited", enterprise: "Unlimited" },
       { feature: "Consumer app access", starter: true, growth: true, pro: true, enterprise: true },
-      { feature: "Glamify branding on app", starter: "Shown", growth: "Removed", pro: "Removed", enterprise: "Custom" },
+      { feature: "Clitell branding on app", starter: "Shown", growth: "Removed", pro: "Removed", enterprise: "Custom" },
     ],
   },
   {

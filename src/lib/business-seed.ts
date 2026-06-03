@@ -230,7 +230,7 @@ export const products: Product[] = [
   { id: "p-02", sku: "OL-CN-250", name: "Olaplex No.5 Conditioner 250ml", brand: "Olaplex", category: "Aftercare", retailPrice: 2400, taxRate: 18 },
   { id: "p-03", sku: "LR-SR-50", name: "L'Oréal Pro Serie Expert Serum 50ml", brand: "L'Oréal", category: "Aftercare", retailPrice: 1100, taxRate: 18 },
   { id: "p-04", sku: "MK-FW-150", name: "Mamaearth Vitamin C Face Wash 150ml", brand: "Mamaearth", category: "Skincare", retailPrice: 250, taxRate: 18 },
-  { id: "p-05", sku: "GLM-GFT-1000", name: "Glamify Gift Card · ₹1000", brand: "Glamify", category: "Gift card", retailPrice: 1000, taxRate: 0 },
+  { id: "p-05", sku: "GLM-GFT-1000", name: "Clitell Gift Card · ₹1000", brand: "Clitell", category: "Gift card", retailPrice: 1000, taxRate: 0 },
 ];
 
 export type Staff = {

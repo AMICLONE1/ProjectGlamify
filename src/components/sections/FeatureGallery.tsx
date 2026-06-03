@@ -17,7 +17,7 @@ const features: Feature[] = [
     eyebrow: "Online Storefront",
     title: "Your salon, live on the internet.",
     blurb:
-      "A branded public page at glamify.in/your-city/your-salon. Services, prices, photos, reviews, hours — all managed from your dashboard.",
+      "A branded public page at clitell.in/your-city/your-salon. Services, prices, photos, reviews, hours — all managed from your dashboard.",
     visual: <BookingVisual />,
     span: "lg:col-span-2",
   },
@@ -37,7 +37,7 @@ const features: Feature[] = [
     eyebrow: "Rewards & Loyalty",
     title: "Keep them coming back.",
     blurb:
-      "Store-controlled loyalty programs, milestone rewards, and Glamify platform cashback to seed your first bookings.",
+      "Store-controlled loyalty programs, milestone rewards, and Clitell platform cashback to seed your first bookings.",
     visual: <LoyaltyVisual />,
     span: "lg:col-span-2",
   },
@@ -207,7 +207,7 @@ function LoyaltyVisual() {
     <div className="absolute inset-0 p-6 flex items-center justify-center gap-6">
       <div className="rounded-2xl bg-ink p-5 w-56 shadow-xl">
         <div className="flex justify-between items-center mb-6">
-          <span className="font-display font-bold text-white text-lg">Glamify</span>
+          <span className="font-display font-bold lowercase text-white text-lg">clitell</span>
           <span className="text-[9px] uppercase tracking-wider text-brand-300 font-semibold">Gold</span>
         </div>
         <p className="text-[10px] text-white/60">Points balance</p>

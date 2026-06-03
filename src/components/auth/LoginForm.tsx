@@ -59,7 +59,7 @@ export function LoginForm() {
       });
       const me = await meRes.json().catch(() => null);
       if (!meRes.ok || !me?.data) {
-        throw new Error(me?.error?.message ?? "Your account is not set up. Contact Glamify.");
+        throw new Error(me?.error?.message ?? "Your account is not set up. Contact Clitell.");
       }
       setUser({
         id: me.data.id,

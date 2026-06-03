@@ -1,10 +1,18 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
-export const alt = "Glamify — AI-first software for beauty & wellness businesses";
+export const alt = "Clitell — The AI-first operating system for beauty & wellness";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function OGImage() {
+  // Embed the real wordmark (black, transparent) so brand is exact.
+  const wordmark = await readFile(
+    join(process.cwd(), "public", "ClitellMarkBlack-trim.png")
+  );
+  const wordmarkSrc = `data:image/png;base64,${wordmark.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
@@ -20,26 +28,10 @@ export default async function OGImage() {
           position: "relative",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div
-            style={{
-              display: "flex",
-              width: 56,
-              height: 56,
-              borderRadius: "50%",
-              background: "#ff5840",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 28,
-              fontWeight: 700,
-              color: "white",
-            }}
-          >
-            G
-          </div>
-          <div style={{ display: "flex", fontSize: 36, fontWeight: 700, letterSpacing: -1, color: "#0d0608" }}>
-            Glamify
-          </div>
+        {/* Brand lockup */}
+        <div style={{ display: "flex", alignItems: "center" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={wordmarkSrc} alt="Clitell" height={56} />
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", marginTop: "auto" }}>
@@ -57,7 +49,7 @@ export default async function OGImage() {
             }}
           >
             <div style={{ display: "flex", width: 32, height: 2, background: "#ff5840" }} />
-            For salons, spas & clinics in India
+            For salons, spas &amp; clinics in India
           </div>
           <div
             style={{

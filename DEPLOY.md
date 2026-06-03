@@ -1,4 +1,4 @@
-# Deploying Glamify
+# Deploying Clitell
 
 This is the Next.js 16 monorepo root. It hosts the marketing site, the business
 web dashboard (`/business/*`), and the lead-capture API.

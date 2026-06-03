@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 
 export const metadata: Metadata = {
-  title: "Set up your storefront — Glamify",
+  title: "Set up your storefront — Clitell",
   robots: { index: false, follow: false },
 };
 

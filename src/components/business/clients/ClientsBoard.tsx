@@ -525,9 +525,9 @@ function QuickBookModal({ client, onClose, onBooked }: { client: ClientSummary; 
 // ─── Send Offer Sheet ─────────────────────────────────────────────────────────
 
 const OFFER_TEMPLATES = [
-  { id: "winback", label: "Win-back", body: (name: string) => `Hi ${name}! We miss you at the salon 💜 Come back this week and get 20% off your next visit. Book now: https://glamify.in` },
-  { id: "birthday", label: "Birthday", body: (name: string) => `Happy Birthday ${name}! 🎂 Celebrate with a complimentary blow-dry on us. Valid this week. Book now: https://glamify.in` },
-  { id: "offer", label: "Flash offer", body: (name: string) => `Hi ${name}, exclusive offer just for you 🌟 Flat ₹200 off on any service above ₹800 this weekend. Book now: https://glamify.in` },
+  { id: "winback", label: "Win-back", body: (name: string) => `Hi ${name}! We miss you at the salon 💜 Come back this week and get 20% off your next visit. Book now: https://clitell.in` },
+  { id: "birthday", label: "Birthday", body: (name: string) => `Happy Birthday ${name}! 🎂 Celebrate with a complimentary blow-dry on us. Valid this week. Book now: https://clitell.in` },
+  { id: "offer", label: "Flash offer", body: (name: string) => `Hi ${name}, exclusive offer just for you 🌟 Flat ₹200 off on any service above ₹800 this weekend. Book now: https://clitell.in` },
 ];
 
 function SendOfferSheet({ client, onClose }: { client: ClientSummary; onClose: () => void }) {

@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
+import { ClitellLockup } from "@/components/layout/Logo";
 
 const columns = [
   {
@@ -85,14 +86,8 @@ export function Footer() {
         {/* Main grid */}
         <div className="grid gap-12 py-14 md:grid-cols-[1.6fr_repeat(3,1fr)]">
           <div>
-            <Link href="/" aria-label="Glamify home" className="inline-flex items-center gap-2.5">
-              <span
-                aria-hidden
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-sm font-bold text-white shadow-lg shadow-brand-500/30"
-              >
-                G
-              </span>
-              <span className="font-display text-xl font-bold tracking-tight text-white">Glamify</span>
+            <Link href="/" aria-label="Clitell home" className="inline-flex items-center">
+              <ClitellLockup variant="white" />
             </Link>
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-white/55">
               India&apos;s most loved operating system for beauty and wellness businesses.
@@ -148,7 +143,7 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="flex flex-col gap-3 border-t border-white/10 py-7 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between">
-          <p>&copy; {new Date().getFullYear()} Glamify Technologies Pvt Ltd. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Clitell Technologies Pvt Ltd. All rights reserved.</p>
           <p className="flex items-center gap-2">
             <span>For salons, spas, clinics, barbershops &amp; studios.</span>
             <span aria-hidden className="hidden h-1 w-1 rounded-full bg-white/20 sm:inline-block" />

@@ -1,5 +1,5 @@
 /**
- * Creates one Glamify-issued business account: a Supabase Auth user + Tenant +
+ * Creates one Clitell-issued business account: a Supabase Auth user + Tenant +
  * owner User (linked via supabaseUid) + default Location.
  *
  * Run:  npx tsx scripts/create-account.ts
@@ -18,7 +18,7 @@ const acc = {
   email:    process.env.ACC_EMAIL    ?? "owner@glamifydemo.in",
   password: process.env.ACC_PASSWORD ?? "Glamify@2026",
   fullName: process.env.ACC_NAME     ?? "Omkar Kolhe",
-  business: process.env.ACC_BUSINESS ?? "Studio Glamify",
+  business: process.env.ACC_BUSINESS ?? "Studio Clitell",
   type:     process.env.ACC_TYPE     ?? "salon",
   city:     process.env.ACC_CITY     ?? "Pune",
   phone:    process.env.ACC_PHONE    ?? "9876543210",

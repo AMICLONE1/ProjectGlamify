@@ -812,7 +812,7 @@ export function StorefrontManager() {
               {data.isPublished ? "Live" : "Draft"}
             </span>
             <a href={storefrontUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-600 hover:underline font-mono truncate max-w-[200px] sm:max-w-none">
-              glamify.in{storefrontUrl}
+              clitell.in{storefrontUrl}
             </a>
           </div>
         </div>

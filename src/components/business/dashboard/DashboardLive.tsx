@@ -133,7 +133,7 @@ function WelcomeChecklist() {
       key: "account",
       done: s.account,
       title: "Account created",
-      desc: "Your Glamify account is set up and ready.",
+      desc: "Your Clitell account is set up and ready.",
       href: "/business/settings",
       actionLabel: "Account",
       Icon: UserCheckIcon,
@@ -201,7 +201,7 @@ function WelcomeChecklist() {
           <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-biz-violet-500">
             Getting started
           </p>
-          <h2 className="text-lg font-bold text-biz-ink">Finish setting up Glamify</h2>
+          <h2 className="text-lg font-bold text-biz-ink">Finish setting up Clitell</h2>
         </div>
         <div className="flex items-center gap-3">
           <div className="hidden h-2 w-28 overflow-hidden rounded-full bg-biz-border sm:block">

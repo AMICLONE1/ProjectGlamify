@@ -15,19 +15,19 @@ export const solutions: Record<string, Solution> = {
     slug: "salon",
     category: "Salons",
     title: "Salon software, finally beautiful.",
-    hero: "Glamify for salons",
+    hero: "Clitell for salons",
     tagline:
       "From single-chair shops to multi-location chains — run every booking, bill, and client relationship in one place.",
     description:
-      "Whether you're a unisex salon in Pune or a women's-only chain in Bengaluru, Glamify handles your unique workflow. Service catalogs with variants. Stylist preferences. Walk-ins alongside scheduled. Loyalty that keeps regulars coming back.",
+      "Whether you're a unisex salon in Pune or a women's-only chain in Bengaluru, Clitell handles your unique workflow. Service catalogs with variants. Stylist preferences. Walk-ins alongside scheduled. Loyalty that keeps regulars coming back.",
     painPoints: [
       {
         title: "WhatsApp chaos",
-        body: "Customers ping you for appointments at 11pm and you forget by morning. Glamify takes online bookings 24/7.",
+        body: "Customers ping you for appointments at 11pm and you forget by morning. Clitell takes online bookings 24/7.",
       },
       {
         title: "Paper register losses",
-        body: "Lost sheets, smudged totals, and zero idea which services actually make money. Glamify shows you, by stylist and by chair.",
+        body: "Lost sheets, smudged totals, and zero idea which services actually make money. Clitell shows you, by stylist and by chair.",
       },
       {
         title: "No-shows hurting revenue",
@@ -37,7 +37,7 @@ export const solutions: Record<string, Solution> = {
     features: ["ai-scheduling", "pos-billing", "crm", "loyalty", "staff", "consumer-app"],
     testimonial: {
       quote:
-        "We switched from a paper register and three WhatsApp groups to Glamify. Our no-shows dropped 40% in two months and I finally know which services actually make me money.",
+        "We switched from a paper register and three WhatsApp groups to Clitell. Our no-shows dropped 40% in two months and I finally know which services actually make me money.",
       name: "Priya Mehta",
       business: "Studio P Salon, Bandra",
       initials: "PM",
@@ -47,23 +47,23 @@ export const solutions: Record<string, Solution> = {
     slug: "spa",
     category: "Spas",
     title: "Spa software that flows.",
-    hero: "Glamify for spas & wellness",
+    hero: "Clitell for spas & wellness",
     tagline:
       "Memberships, packages, room scheduling, and therapist commissions — purpose-built for spa operations.",
     description:
-      "Spas need software that handles rooms as well as therapists, packages as well as services, and membership renewals as well as walk-ins. Glamify does all of it with a calm UX that matches your spa's energy.",
+      "Spas need software that handles rooms as well as therapists, packages as well as services, and membership renewals as well as walk-ins. Clitell does all of it with a calm UX that matches your spa's energy.",
     painPoints: [
       {
         title: "Room and therapist conflicts",
-        body: "Standard software books therapists but ignores room availability. Glamify checks both simultaneously.",
+        body: "Standard software books therapists but ignores room availability. Clitell checks both simultaneously.",
       },
       {
         title: "Package session tracking",
-        body: "Manually counting which of the 10 facials your member has used? Glamify tracks it automatically.",
+        body: "Manually counting which of the 10 facials your member has used? Clitell tracks it automatically.",
       },
       {
         title: "Membership renewal leakage",
-        body: "Members forget to renew. Glamify auto-charges via UPI mandate and sends grace-period reminders.",
+        body: "Members forget to renew. Clitell auto-charges via UPI mandate and sends grace-period reminders.",
       },
     ],
     features: ["ai-scheduling", "loyalty", "crm", "consumer-app", "staff", "reports"],
@@ -79,19 +79,19 @@ export const solutions: Record<string, Solution> = {
     slug: "clinic",
     category: "Clinics",
     title: "Clinic software with compliance built in.",
-    hero: "Glamify for beauty clinics",
+    hero: "Clitell for beauty clinics",
     tagline:
       "Client allergies, treatment histories, GST-compliant billing, and consent tracking — all secure, all compliant.",
     description:
-      "Beauty and skin clinics need the same operational features as salons plus medical-grade record keeping. Glamify keeps client history, allergies, treatment sequences, and consent forms — all DPDPA-compliant and encrypted at rest.",
+      "Beauty and skin clinics need the same operational features as salons plus medical-grade record keeping. Clitell keeps client history, allergies, treatment sequences, and consent forms — all DPDPA-compliant and encrypted at rest.",
     painPoints: [
       {
         title: "Treatment history scattered",
-        body: "Paper files, multiple systems, missing notes. Glamify consolidates every client's full medical history.",
+        body: "Paper files, multiple systems, missing notes. Clitell consolidates every client's full medical history.",
       },
       {
         title: "Allergy oversights",
-        body: "Forgetting a client's allergy is a liability. Glamify surfaces allergies at the top of every appointment.",
+        body: "Forgetting a client's allergy is a liability. Clitell surfaces allergies at the top of every appointment.",
       },
       {
         title: "Consent form chaos",
@@ -104,15 +104,15 @@ export const solutions: Record<string, Solution> = {
     slug: "barbershop",
     category: "Barbershops",
     title: "Barbershop software that keeps up.",
-    hero: "Glamify for barbershops",
+    hero: "Clitell for barbershops",
     tagline:
       "Walk-in queue, fast checkout, and stylist commission tracking — built for the pace of a busy barbershop.",
     description:
-      "Barbershops move fast. Walk-ins dominate. Glamify's walk-in queue shows real-time wait estimates, lets clients see their position via SMS, and processes payments in under 30 seconds.",
+      "Barbershops move fast. Walk-ins dominate. Clitell's walk-in queue shows real-time wait estimates, lets clients see their position via SMS, and processes payments in under 30 seconds.",
     painPoints: [
       {
         title: "Walk-in queue confusion",
-        body: "Who's next? Glamify's queue shows position and estimated wait. Clients see it on their phone.",
+        body: "Who's next? Clitell's queue shows position and estimated wait. Clients see it on their phone.",
       },
       {
         title: "Cash management",
@@ -129,11 +129,11 @@ export const solutions: Record<string, Solution> = {
     slug: "tattoo",
     category: "Tattoo Studios",
     title: "Tattoo studio management, refined.",
-    hero: "Glamify for tattoo studios",
+    hero: "Clitell for tattoo studios",
     tagline:
       "Deposits, custom artist portfolios, consent forms, and aftercare follow-ups — modernise your studio.",
     description:
-      "Tattoo studios have unique workflows — deposits to lock the slot, hour-based pricing, custom artwork sessions, consent forms, and aftercare follow-ups. Glamify handles all of it.",
+      "Tattoo studios have unique workflows — deposits to lock the slot, hour-based pricing, custom artwork sessions, consent forms, and aftercare follow-ups. Clitell handles all of it.",
     painPoints: [
       {
         title: "Deposit collection",
@@ -141,7 +141,7 @@ export const solutions: Record<string, Solution> = {
       },
       {
         title: "Artist-specific bookings",
-        body: "Clients book the artist, not just a slot. Glamify filters availability by artist preference.",
+        body: "Clients book the artist, not just a slot. Clitell filters availability by artist preference.",
       },
       {
         title: "Aftercare follow-ups",

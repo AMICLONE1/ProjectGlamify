@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   if (!post) return {};
 
   return {
-    title: `${post.title} — Glamify Blog`,
+    title: `${post.title} — Clitell Blog`,
     description: post.description,
     alternates: { canonical: `/blog/${slug}` },
   };
@@ -106,7 +106,7 @@ export default async function BlogPostPage({ params }: { params: Params }) {
                   Need the system, not the article?
                 </p>
                 <p className="text-sm leading-relaxed text-white/75">
-                  Glamify gives you the booking, billing, CRM, loyalty, and AI workflows described here.
+                  Clitell gives you the booking, billing, CRM, loyalty, and AI workflows described here.
                 </p>
                 <div className="mt-5 flex flex-col gap-3">
                   <Button href="/signup" size="sm" variant="primary" className="w-full">
@@ -177,7 +177,7 @@ export default async function BlogPostPage({ params }: { params: Params }) {
 
               <div className="rounded-4xl border border-border-strong bg-surface-2/60 p-7">
                 <p className="text-[11px] uppercase tracking-[0.2em] font-semibold text-brand-600 mb-4">
-                  What Glamify does
+                  What Clitell does
                 </p>
                 <ul className="space-y-3 text-sm text-muted leading-relaxed">
                   <li>Booking and calendar management</li>

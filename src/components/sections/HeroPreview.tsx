@@ -124,7 +124,7 @@ export function HeroPreview() {
             <span className="h-2.5 w-2.5 rounded-full bg-rose-400/60" />
             <span className="h-2.5 w-2.5 rounded-full bg-amber-300/60" />
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/60" />
-            <span className="ml-3 text-xs font-mono text-muted">app.glamify.in/dashboard</span>
+            <span className="ml-3 text-xs font-mono text-muted">app.clitell.in/dashboard</span>
             <span className="ml-auto inline-flex items-center gap-1.5 text-xs text-muted">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Live

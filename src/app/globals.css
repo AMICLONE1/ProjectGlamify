@@ -236,7 +236,7 @@ body {
   display: none;
 }
 
-/* Storefront: disable global Navbar/Footer Glamify cursor on storefront pages */
+/* Storefront: disable global Navbar/Footer Clitell cursor on storefront pages */
 [data-storefront] .custom-cursor-active * {
   cursor: auto !important;
 }

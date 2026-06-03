@@ -18,7 +18,7 @@ export function Intro() {
             transition={{ duration: 0.6 }}
             className="eyebrow mb-8"
           >
-            Why we built Glamify
+            Why we built Clitell
           </motion.p>
 
           <motion.h2
@@ -44,7 +44,7 @@ export function Intro() {
               not the salon itself. You lose customers to platforms that charge 25–30% commission.
             </p>
             <p className="text-base leading-relaxed">
-              Glamify gives every salon a branded public storefront, a Google-indexed local page,
+              Clitell gives every salon a branded public storefront, a Google-indexed local page,
               and OTP-verified bookings — without taking commission. Customers book directly from
               your link. You own the relationship. Built in India, for India.
             </p>

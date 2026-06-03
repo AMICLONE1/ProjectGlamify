@@ -25,7 +25,7 @@ export const features: Feature[] = [
     title: "A calendar that fills itself.",
     tagline: "Smart slot suggestions, no-show prediction, and auto-waitlist.",
     description:
-      "Glamify's AI watches your staff utilization, historical bookings, and client patterns to suggest the slots that will actually fill — not just the ones that are empty. When risk of a no-show climbs, you'll know before the client does.",
+      "Clitell's AI watches your staff utilization, historical bookings, and client patterns to suggest the slots that will actually fill — not just the ones that are empty. When risk of a no-show climbs, you'll know before the client does.",
     bullets: [
       "Smart slot suggestions that maximize staff utilization",
       "No-show prediction with risk scoring (0–100) per appointment",
@@ -39,11 +39,11 @@ export const features: Feature[] = [
       },
       {
         title: "Weather-aware predictions",
-        body: "Monsoon Tuesdays in Mumbai? Glamify already knows your no-show rate spikes 30% — and warns you about it.",
+        body: "Monsoon Tuesdays in Mumbai? Clitell already knows your no-show rate spikes 30% — and warns you about it.",
       },
       {
         title: "Waitlist auto-fill",
-        body: "When a regular cancels, Glamify offers the slot to matching waitlisted clients within 60 seconds.",
+        body: "When a regular cancels, Clitell offers the slot to matching waitlisted clients within 60 seconds.",
       },
     ],
     tier: "Growth+",
@@ -56,7 +56,7 @@ export const features: Feature[] = [
     title: "30-second checkout, every time.",
     tagline: "GST-compliant invoices, UPI QR, split bills, refunds.",
     description:
-      "Glamify's POS is built for the rhythm of a busy salon. Select the client, add services and products, apply a discount, split the payment, and generate a GST invoice — all without leaving the receptionist's keyboard.",
+      "Clitell's POS is built for the rhythm of a busy salon. Select the client, add services and products, apply a discount, split the payment, and generate a GST invoice — all without leaving the receptionist's keyboard.",
     bullets: [
       "Quick-checkout flow under 30 seconds",
       "Split billing across multiple payment methods",
@@ -121,7 +121,7 @@ export const features: Feature[] = [
     title: "Stock that tracks itself.",
     tagline: "Real-time stock, service consumption, expiry alerts, demand forecasting.",
     description:
-      "Glamify auto-deducts product quantities when services complete (one hair color session = X grams of developer used). Get low-stock alerts before you run out, expiry warnings before you waste, and AI-suggested reorder quantities.",
+      "Clitell auto-deducts product quantities when services complete (one hair color session = X grams of developer used). Get low-stock alerts before you run out, expiry warnings before you waste, and AI-suggested reorder quantities.",
     bullets: [
       "Real-time stock tracking with low-stock alerts",
       "Service-linked auto-consumption",
@@ -154,7 +154,7 @@ export const features: Feature[] = [
     title: "Make them come back.",
     tagline: "Points, memberships, packages, gift cards, referrals.",
     description:
-      "Glamify's loyalty engine handles every retention play — points-based rewards, tiered memberships with member pricing, prepaid service packages with session tracking, digital gift cards, and a referral program that rewards both sides.",
+      "Clitell's loyalty engine handles every retention play — points-based rewards, tiered memberships with member pricing, prepaid service packages with session tracking, digital gift cards, and a referral program that rewards both sides.",
     bullets: [
       "Points-based loyalty with configurable earn/burn ratios",
       "Tiered memberships (monthly/annual)",
@@ -287,7 +287,7 @@ export const features: Feature[] = [
     title: "Run every branch as one.",
     tagline: "Centralized control, per-location pricing, franchise mode.",
     description:
-      "Glamify's multi-location architecture lets you run two or twenty branches from one dashboard. Clients are recognized across all locations. Inventory, staff, and pricing can be centralized or decentralized per branch.",
+      "Clitell's multi-location architecture lets you run two or twenty branches from one dashboard. Clients are recognized across all locations. Inventory, staff, and pricing can be centralized or decentralized per branch.",
     bullets: [
       "Centralized dashboard with per-location drill-down",
       "Location-specific pricing, services, staff",

@@ -21,7 +21,7 @@ const tiers = [
     price: "₹1,499",
     period: "/ month",
     description: "Small salons ready to grow.",
-    features: ["Up to 5 staff seats", "Unlimited appointments", "CRM + Loyalty", "Remove Glamify branding", "Basic reports"],
+    features: ["Up to 5 staff seats", "Unlimited appointments", "CRM + Loyalty", "Remove Clitell branding", "Basic reports"],
     cta: "Start 14-day trial",
     href: "/signup",
     highlight: true,

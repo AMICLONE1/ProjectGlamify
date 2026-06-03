@@ -8,7 +8,7 @@ import { features, categoryOrder } from "@/content/features";
 export const metadata: Metadata = {
   title: "Features — Every module, beautifully built",
   description:
-    "Booking, POS, CRM, inventory, loyalty, marketing, staff, reports, and AI — explore every Glamify feature. Built for India's beauty and wellness businesses.",
+    "Booking, POS, CRM, inventory, loyalty, marketing, staff, reports, and AI — explore every Clitell feature. Built for India's beauty and wellness businesses.",
   alternates: { canonical: "/features" },
 };
 

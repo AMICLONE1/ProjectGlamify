@@ -13,7 +13,7 @@ export const signupSchema = z.object({
 });
 export type SignupInput = z.infer<typeof signupSchema>;
 
-// Early-access waitlist — no email/team size required (Glamify onboards manually)
+// Early-access waitlist — no email/team size required (Clitell onboards manually)
 export const waitlistSchema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters").max(80),
   phone: z.string().regex(/^[0-9+\-\s()]{8,18}$/, "Enter a valid phone number"),

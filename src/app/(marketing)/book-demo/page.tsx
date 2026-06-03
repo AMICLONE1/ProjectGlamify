@@ -3,9 +3,9 @@ import { Container } from "@/components/ui/Container";
 import { DemoForm } from "@/components/sections/DemoForm";
 
 export const metadata: Metadata = {
-  title: "Book a demo — See Glamify in action",
+  title: "Book a demo — See Clitell in action",
   description:
-    "30-minute walkthrough with our team. We'll show you how Glamify fits your business and answer every question. No card required.",
+    "30-minute walkthrough with our team. We'll show you how Clitell fits your business and answer every question. No card required.",
   robots: { index: false, follow: true },
   alternates: { canonical: "/book-demo" },
 };
@@ -24,7 +24,7 @@ export default function BookDemoPage() {
           <div className="lg:sticky lg:top-28">
             <p className="eyebrow mb-8">Book a demo</p>
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-[-0.02em] leading-[0.95] text-ink">
-              See Glamify in action.
+              See Clitell in action.
             </h1>
             <p className="mt-6 text-base sm:text-lg text-muted leading-relaxed max-w-md">
               A 30-minute walkthrough with a real human. We&apos;ll tailor it to your

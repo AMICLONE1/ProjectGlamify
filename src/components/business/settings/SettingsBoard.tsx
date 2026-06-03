@@ -131,8 +131,8 @@ function BusinessForm() {
     <div className="space-y-5">
       <SectionTitle eyebrow="Identity" title="Tell clients who you are" />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Display name *"><input value={f.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Studio Glamify" className={inputCls} /></Field>
-        <Field label="Legal entity"><input value={f.legalName} onChange={(e) => set("legalName", e.target.value)} placeholder="e.g. Glamify Technologies Pvt Ltd" className={inputCls} /></Field>
+        <Field label="Display name *"><input value={f.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Studio Clitell" className={inputCls} /></Field>
+        <Field label="Legal entity"><input value={f.legalName} onChange={(e) => set("legalName", e.target.value)} placeholder="e.g. Clitell Technologies Pvt Ltd" className={inputCls} /></Field>
         <Field label="Contact phone *"><input value={f.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+91 98765 43210" className={inputCls} /></Field>
         <Field label="Contact email *"><input type="email" value={f.email} onChange={(e) => set("email", e.target.value)} placeholder="you@yourbusiness.com" className={inputCls} /></Field>
         <Field label="Open hour (24h) *"><input type="number" min={0} max={23} value={f.openHour} onChange={(e) => set("openHour", e.target.value)} placeholder="9" className={inputCls} /></Field>

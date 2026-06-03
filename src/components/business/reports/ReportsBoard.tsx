@@ -282,7 +282,7 @@ function exportCsv({ range, rangeLabel, series, serviceMix, paymentMix, totals }
 }) {
   const rows: string[][] = [];
 
-  rows.push([`Glamify Reports — ${rangeLabel}`, "", "", ""]);
+  rows.push([`Clitell Reports — ${rangeLabel}`, "", "", ""]);
   rows.push([]);
   rows.push(["Summary", "", "", ""]);
   rows.push(["Total Revenue", String(totals.revenue), "", ""]);
@@ -309,7 +309,7 @@ function exportCsv({ range, rangeLabel, series, serviceMix, paymentMix, totals }
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `glamify-report-${range}-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `clitell-report-${range}-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
