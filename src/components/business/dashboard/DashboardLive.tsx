@@ -99,7 +99,7 @@ export function DashboardLive() {
 
       {isError && (
         <p className="text-center text-sm text-red-400">
-          Could not load live data. Connect a database to see real KPIs.
+          Could not load dashboard data. Please refresh the page or contact support.
         </p>
       )}
     </div>

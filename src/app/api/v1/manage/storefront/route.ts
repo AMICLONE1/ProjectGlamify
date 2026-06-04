@@ -89,7 +89,10 @@ export async function PATCH(req: NextRequest) {
   // Trigger ISR revalidation
   const secret = process.env.NEXT_REVALIDATE_SECRET;
   if (secret && updated.isPublished) {
-    const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001";
+    const base =
+      process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3003");
     fetch(`${base}/api/revalidate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

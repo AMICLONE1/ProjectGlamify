@@ -20,10 +20,13 @@ export async function POST(req: NextRequest) {
     data: { isPublished: true, publishedAt: new Date() },
   });
 
-  // Trigger ISR revalidation
+  // Trigger ISR revalidation — use VERCEL_URL in production, fallback to APP_URL
   const secret = process.env.NEXT_REVALIDATE_SECRET;
   if (secret) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001";
+    const baseUrl =
+      process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3003");
     await fetch(`${baseUrl}/api/revalidate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

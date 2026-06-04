@@ -19,8 +19,14 @@ export default function AdminTenantsPage() {
   const [q, setQ] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [provisioned, setProvisioned] = useState<ProvisionResult | null>(null);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
-  const { data, isLoading } = useQuery({
+  function showToast(msg: string, ok = true) {
+    setToast({ msg, ok });
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-tenants", q],
     queryFn: () => adminApi.tenants(q),
   });
@@ -28,7 +34,11 @@ export default function AdminTenantsPage() {
   const mutate = useMutation({
     mutationFn: ({ id, body }: { id: string; body: { suspended?: boolean; plan?: string } }) =>
       adminApi.setTenant(id, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-tenants"] }),
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ["admin-tenants"] });
+      showToast(r.tenant.suspended ? "Business suspended" : r.tenant.plan ? `Plan changed to ${r.tenant.plan}` : "Updated");
+    },
+    onError: (e) => showToast((e as Error).message, false),
   });
 
   const tenants = data?.tenants ?? [];
@@ -58,9 +68,21 @@ export default function AdminTenantsPage() {
         </div>
       </div>
 
+      {toast && (
+        <p className={`rounded-xl px-4 py-2.5 text-sm ${toast.ok ? "bg-zinc-800 text-zinc-200" : "bg-red-950/50 text-red-300"}`}>
+          {toast.msg}
+        </p>
+      )}
+
+      {isError && (
+        <p className="rounded-xl bg-red-950/50 px-4 py-3 text-sm text-red-300">
+          {(error as Error)?.message ?? "Failed to load businesses"}
+        </p>
+      )}
+
       {isLoading ? (
         <p className="text-sm text-zinc-500">Loading…</p>
-      ) : tenants.length === 0 ? (
+      ) : tenants.length === 0 && !isError ? (
         <p className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center text-sm text-zinc-500">
           No businesses found.
         </p>
@@ -342,7 +364,7 @@ function CredentialsModal({ result, onClose }: { result: ProvisionResult; onClos
 
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
             <p className="text-[11px] font-semibold text-zinc-400 mb-1.5">WhatsApp / email message template</p>
-            <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">{`Hi ${result.email.split("@")[0]}, welcome to Clitell! 🎉
+            <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">{`Hi ${result.fullName.split(" ")[0]}, welcome to Clitell! 🎉
 
 Here are your login details:
 🔗 ${loginUrl}
@@ -352,7 +374,7 @@ Here are your login details:
 Please change your password after first login. Let me know if you need help setting up!`}</p>
             <button
               onClick={() => copy(
-                `Hi ${result.email.split("@")[0]}, welcome to Clitell! 🎉\n\nHere are your login details:\n🔗 ${loginUrl}\n📧 ${result.email}\n🔑 ${result.password}\n\nPlease change your password after first login. Let me know if you need help setting up!`,
+                `Hi ${result.fullName.split(" ")[0]}, welcome to Clitell! 🎉\n\nHere are your login details:\n🔗 ${loginUrl}\n📧 ${result.email}\n🔑 ${result.password}\n\nPlease change your password after first login. Let me know if you need help setting up!`,
                 "msg"
               )}
               className="mt-2 rounded-lg bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-700"

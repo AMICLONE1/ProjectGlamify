@@ -75,10 +75,11 @@ export async function POST(req: NextRequest) {
     return ok({
       tenantId: tenant.id,
       userId: tenant.users[0].id,
+      fullName,
       email,
       password,
       plan,
-      loginUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/login`,
+      loginUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://clitell.vercel.app"}/login`,
     }, 201);
   } catch (e) {
     await supabase.auth.admin.deleteUser(supabaseUid).catch(() => {});

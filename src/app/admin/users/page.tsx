@@ -10,7 +10,7 @@ export default function AdminUsersPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [toast, setToast] = useState<string | null>(null);
-  const { data, isLoading } = useQuery({ queryKey: ["admin-users", q], queryFn: () => adminApi.users({ q }) });
+  const { data, isLoading, isError, error } = useQuery({ queryKey: ["admin-users", q], queryFn: () => adminApi.users({ q }) });
 
   const update = useMutation({
     mutationFn: (body: { id: string; role?: string; isActive?: boolean }) => adminApi.setUser(body),
@@ -42,9 +42,15 @@ export default function AdminUsersPage() {
 
       {toast && <p className="rounded-xl bg-zinc-800 px-4 py-2.5 text-sm text-zinc-200">{toast}</p>}
 
+      {isError && (
+        <p className="rounded-xl bg-red-950/50 px-4 py-3 text-sm text-red-300">
+          {(error as Error)?.message ?? "Failed to load users"}
+        </p>
+      )}
+
       {isLoading ? (
         <p className="text-sm text-zinc-500">Loading…</p>
-      ) : users.length === 0 ? (
+      ) : users.length === 0 && !isError ? (
         <p className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center text-sm text-zinc-500">No users found.</p>
       ) : (
         <div className="space-y-2.5">

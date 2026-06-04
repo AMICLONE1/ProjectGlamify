@@ -14,6 +14,10 @@ import { absoluteUrl } from "@/lib/site";
 // ISR: revalidate every hour; on-demand via /api/revalidate
 export const revalidate = 3600;
 
+// Allow slugs not in generateStaticParams — render on-demand and cache via ISR.
+// Without this, newly published storefronts get 404 until the next full build.
+export const dynamicParams = true;
+
 type Params = { city: string; slug: string };
 
 export async function generateStaticParams(): Promise<Params[]> {

@@ -77,6 +77,7 @@ export interface ProvisionResult {
   password: string;
   plan: string;
   loginUrl: string;
+  fullName: string;
 }
 
 // ─── API ──────────────────────────────────────────────────────────────────────

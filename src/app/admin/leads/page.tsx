@@ -102,13 +102,31 @@ const KINDS = [
   { v: "contact", label: "Contact" },
 ];
 
+function exportCSV(leads: AdminLead[]) {
+  const cols = ["Name", "Email", "Phone", "Business", "Type", "City", "Kind", "Status", "Message", "Date"];
+  const rows = leads.map((l) => [
+    l.fullName, l.email ?? "", l.phone ?? "", l.businessName ?? "",
+    l.businessType ?? "", l.city ?? "", l.kind, l.status,
+    (l.message ?? "").replace(/"/g, '""'),
+    new Date(l.createdAt).toLocaleDateString("en-IN"),
+  ].map((v) => `"${v}"`).join(","));
+  const csv = [cols.join(","), ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `clitell-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function AdminLeadsPage() {
   const qc = useQueryClient();
   const [kind, setKind] = useState("");
   const [stageFilter, setStageFilter] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-leads", kind],
     queryFn: () => adminApi.leads({ kind: kind || undefined }),
   });
@@ -116,6 +134,7 @@ export default function AdminLeadsPage() {
   const update = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) => adminApi.setLead(id, status),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-leads"] }),
+    onError: (e) => alert((e as Error).message),
   });
 
   const leads = data?.leads ?? [];
@@ -130,11 +149,21 @@ export default function AdminLeadsPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold">Waitlist & Pipeline</h1>
-        <p className="text-sm text-zinc-400">
-          {totalActive} active · {counts.converted ?? 0} onboarded · {counts.new ?? 0} new
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold">Waitlist & Pipeline</h1>
+          <p className="text-sm text-zinc-400">
+            {totalActive} active · {counts.converted ?? 0} onboarded · {counts.new ?? 0} new
+          </p>
+        </div>
+        {leads.length > 0 && (
+          <button
+            onClick={() => exportCSV(filtered.length < leads.length ? filtered : leads)}
+            className="flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-800"
+          >
+            ↓ Export CSV
+          </button>
+        )}
       </div>
 
       {/* Pipeline stage bar */}
@@ -177,9 +206,15 @@ export default function AdminLeadsPage() {
         ))}
       </div>
 
+      {isError && (
+        <p className="rounded-xl bg-red-950/50 px-4 py-3 text-sm text-red-300">
+          {(error as Error)?.message ?? "Failed to load leads"}
+        </p>
+      )}
+
       {isLoading ? (
         <p className="text-sm text-zinc-500">Loading…</p>
-      ) : filtered.length === 0 ? (
+      ) : filtered.length === 0 && !isError ? (
         <p className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center text-sm text-zinc-500">
           No leads{stageFilter ? ` in "${stageFilter}"` : ""}{kind ? ` for ${kind}` : ""}.
         </p>
