@@ -3,11 +3,15 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth, ok, fail, writeAudit } from "@/lib/auth";
 
+// Sane upper bound for a single line price (₹10 lakh). Guards against corrupt /
+// overflowed values that would otherwise crash the DB write or produce garbage totals.
+const MAX_UNIT_PRICE = 1_000_000;
+
 const lineItemSchema = z.object({
   serviceId: z.string().optional(),
   label: z.string().min(1),
-  qty: z.number().int().min(1).default(1),
-  unitPrice: z.number().min(0),
+  qty: z.number().int().min(1).max(999).default(1),
+  unitPrice: z.number().finite().min(0).max(MAX_UNIT_PRICE),
   discountPct: z.number().min(0).max(100).default(0),
   taxPct: z.number().min(0).max(100).default(18),
 });
@@ -32,7 +36,10 @@ function calcTotals(lineItems: z.infer<typeof lineItemSchema>[], discountAmt: nu
     const tax = base * (li.taxPct / 100);
     subtotal += base;
     taxTotal += tax;
-    return { ...li, lineTotal: parseFloat((base + tax).toFixed(2)) };
+    const lineTotal = parseFloat((base + tax).toFixed(2));
+    // Defensive: a non-finite lineTotal would crash the Prisma Float write.
+    if (!Number.isFinite(lineTotal)) throw new Error("Invalid line item amount");
+    return { ...li, lineTotal };
   });
   const taxableAmt = parseFloat((subtotal - discountAmt).toFixed(2));
   const cgstAmt = parseFloat((taxTotal / 2).toFixed(2));
@@ -85,7 +92,14 @@ export async function POST(req: NextRequest) {
   }
 
   const { locationId, clientId, appointmentId, lineItems, discountAmt, tipAmt, paymentMethod, notes, markPaid } = parsed.data;
-  const { items, subtotal, taxableAmt, cgstAmt, sgstAmt, totalAmt } = calcTotals(lineItems, discountAmt, tipAmt);
+
+  let totals;
+  try {
+    totals = calcTotals(lineItems, discountAmt, tipAmt);
+  } catch {
+    return fail("INVALID_AMOUNT", "One or more line item amounts are invalid. Please re-check the prices.", 422);
+  }
+  const { items, subtotal, taxableAmt, cgstAmt, sgstAmt, totalAmt } = totals;
 
   // Generate invoice number: GLM-YYYYMM-NNNN
   const count = await db.invoice.count({ where: { tenantId: auth.tenantId } });

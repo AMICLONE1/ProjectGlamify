@@ -87,8 +87,8 @@ export const usePosStore = create<PosState & PosActions>((set) => ({
             kind: "service",
             id: service.id,
             name: service.name,
-            unitPrice: service.price,
-            taxRate: service.taxRate,
+            unitPrice: Number(service.price) || 0,
+            taxRate: Number(service.taxRate) || 0,
             quantity: 1,
           },
         ],
@@ -115,8 +115,8 @@ export const usePosStore = create<PosState & PosActions>((set) => ({
             kind: "product",
             id: product.id,
             name: product.name,
-            unitPrice: product.retailPrice,
-            taxRate: product.taxRate,
+            unitPrice: Number(product.retailPrice) || 0,
+            taxRate: Number(product.taxRate) || 0,
             quantity: 1,
           },
         ],
@@ -177,15 +177,15 @@ export function calculateTotals(
   tip: number,
   payments: Payment[]
 ): CartTotals {
-  const subtotal = items.reduce((sum, it) => sum + it.unitPrice * it.quantity, 0);
+  const subtotal = items.reduce((sum, it) => sum + (Number(it.unitPrice) || 0) * (Number(it.quantity) || 0), 0);
   const discountAmount = (subtotal * discountPercent) / 100;
   const taxableBase = Math.max(0, subtotal - discountAmount);
 
   let totalTax = 0;
   for (const it of items) {
     const linePostDiscount =
-      it.unitPrice * it.quantity * (1 - discountPercent / 100);
-    totalTax += (linePostDiscount * it.taxRate) / 100;
+      (Number(it.unitPrice) || 0) * (Number(it.quantity) || 0) * (1 - discountPercent / 100);
+    totalTax += (linePostDiscount * (Number(it.taxRate) || 0)) / 100;
   }
 
   const cgst = totalTax / 2;

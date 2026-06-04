@@ -6,6 +6,7 @@ import { staffApi, appointmentsApi, type StaffMember, type UpcomingAppointment }
 import { getUser } from "@/lib/session";
 import { cn } from "@/lib/cn";
 import { useStaffStore } from "./staffStore";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 function initialsOf(name: string) {
   return name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "G";
@@ -50,17 +51,17 @@ export function StaffBoard() {
           {isLoading ? (
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {[...Array(3)].map((_, i) => (
-                <li key={i} className="animate-pulse rounded-2xl bg-biz-bg p-4">
+                <li key={i} className="rounded-2xl bg-biz-bg p-4">
                   <div className="flex items-center gap-3">
-                    <div className="h-11 w-11 rounded-full bg-biz-border" />
+                    <Skeleton className="skeleton-on-muted h-11 w-11 rounded-full" />
                     <div className="space-y-1.5 flex-1">
-                      <div className="h-4 w-24 rounded-full bg-biz-border" />
-                      <div className="h-3 w-16 rounded-full bg-biz-border" />
+                      <Skeleton className="skeleton-on-muted h-4 w-24 rounded-full" />
+                      <Skeleton className="skeleton-on-muted h-3 w-16 rounded-full" />
                     </div>
                   </div>
                   <div className="mt-3 space-y-1.5">
-                    <div className="h-3 w-32 rounded-full bg-biz-border" />
-                    <div className="h-3 w-28 rounded-full bg-biz-border" />
+                    <Skeleton className="skeleton-on-muted h-3 w-32 rounded-full" />
+                    <Skeleton className="skeleton-on-muted h-3 w-28 rounded-full" />
                   </div>
                 </li>
               ))}

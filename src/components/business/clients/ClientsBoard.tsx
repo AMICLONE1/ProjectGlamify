@@ -6,6 +6,7 @@ import { clientsApi, type ClientSummary } from "@/lib/api-client";
 import { cn } from "@/lib/cn";
 import { SearchIcon } from "../icons";
 import type { ClientDetail } from "@/lib/api-client";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type TagFilter = "all" | "vip" | "new" | "at-risk" | "regular";
 const TAG_FILTERS: { id: TagFilter; label: string }[] = [
@@ -156,7 +157,7 @@ export function ClientsBoard() {
                   [...Array(6)].map((_, i) => (
                     <tr key={i} className="border-b border-biz-border">
                       <td colSpan={5} className="px-3 py-3">
-                        <div className="h-8 animate-pulse rounded-xl bg-biz-bg" />
+                        <Skeleton className="h-8 rounded-xl" />
                       </td>
                     </tr>
                   ))

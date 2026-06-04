@@ -11,7 +11,7 @@ const createSchema = z.object({
   name:            z.string().min(1).max(100),
   categoryName:    z.string().min(1).max(60),
   durationMinutes: z.number().int().min(5).max(480),
-  price:           z.number().min(0),
+  price:           z.number().finite().min(0).max(1_000_000),
   description:     z.string().max(200).optional(),
 });
 

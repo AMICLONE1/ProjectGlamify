@@ -98,6 +98,8 @@ export const adminApi = {
   tenants: (q?: string) => req<{ tenants: AdminTenant[] }>(`/tenants/list${q ? `?q=${encodeURIComponent(q)}` : ""}`),
   setTenant: (id: string, body: { suspended?: boolean; plan?: string; billing?: TenantBilling }) =>
     req<{ tenant: { id: string; plan: string; suspended: boolean; billing: TenantBilling | null } }>(`/tenants/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteTenant: (id: string, confirm: string) =>
+    req<{ deleted: boolean; id: string }>(`/tenants/${id}?confirm=${encodeURIComponent(confirm)}`, { method: "DELETE" }),
 
   users: (params?: { q?: string; tenantId?: string }) => {
     const sp = new URLSearchParams();
@@ -110,6 +112,8 @@ export const adminApi = {
     req<{ user: { id: string; role: string; isActive: boolean } }>("/users", { method: "PATCH", body: JSON.stringify(body) }),
   resetUser: (userId: string) =>
     req<{ sent: boolean; email: string }>("/users/reset", { method: "POST", body: JSON.stringify({ userId }) }),
+  deleteUser: (id: string) =>
+    req<{ deleted: boolean; id: string }>(`/users?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   leads: (params?: { kind?: string; status?: string }) => {
     const sp = new URLSearchParams();

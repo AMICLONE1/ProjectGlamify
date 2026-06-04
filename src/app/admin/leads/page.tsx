@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminApi, type AdminLead } from "@/lib/admin-api";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 
 // Pipeline stages in order
 const PIPELINE: { status: string; label: string; color: string }[] = [
@@ -213,7 +214,7 @@ export default function AdminLeadsPage() {
       )}
 
       {isLoading ? (
-        <p className="text-sm text-zinc-500">Loading…</p>
+        <SkeletonRows rows={6} rowClassName="h-20 rounded-2xl" />
       ) : filtered.length === 0 && !isError ? (
         <p className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center text-sm text-zinc-500">
           No leads{stageFilter ? ` in "${stageFilter}"` : ""}{kind ? ` for ${kind}` : ""}.

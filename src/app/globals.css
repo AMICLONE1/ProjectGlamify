@@ -249,3 +249,65 @@ body {
 [data-storefront] .custom-cursor-active * {
   cursor: auto !important;
 }
+
+/* ─── Skeleton shimmer ──────────────────────────────────────────────────────
+   Reusable loading placeholder for the in-app screens (business + admin).
+   Base colour comes from `--skeleton-base`; the sweeping highlight from
+   `--skeleton-shine`. Override either via inline style or a wrapper to
+   theme per-surface (light biz vs. dark admin). */
+
+.skeleton {
+  --skeleton-base: var(--color-biz-bg, #e9e7ef);
+  --skeleton-shine: rgba(255, 255, 255, 0.55);
+  position: relative;
+  overflow: hidden;
+  background: var(--skeleton-base);
+  isolation: isolate;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--skeleton-shine) 50%,
+    transparent 100%
+  );
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+/* Dark variant for the admin console (zinc/black surfaces). */
+.skeleton-dark {
+  --skeleton-base: #27272a; /* zinc-800 */
+  --skeleton-shine: rgba(255, 255, 255, 0.08);
+}
+
+/* For skeletons sitting on the muted biz-bg surface (needs a darker base
+   so the placeholder stays visible against its grey container). */
+.skeleton-on-muted {
+  --skeleton-base: var(--color-biz-border, #d8d4e3);
+  --skeleton-shine: rgba(255, 255, 255, 0.7);
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+  .skeleton {
+    animation: skeleton-pulse 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}

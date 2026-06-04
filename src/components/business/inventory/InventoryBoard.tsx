@@ -6,6 +6,7 @@ import { inventoryApi, api, type Product } from "@/lib/api-client";
 import { cn } from "@/lib/cn";
 import { SearchIcon } from "../icons";
 import { useInventoryStore } from "./inventoryStore";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { getUser } from "@/lib/session";
 
 function formatINR(n: number) {
@@ -172,7 +173,7 @@ export function InventoryBoard() {
                 {isLoading && [...Array(5)].map((_, i) => (
                   <tr key={i} className="border-b border-biz-border">
                     <td colSpan={7} className="px-3 py-3">
-                      <div className="h-8 animate-pulse rounded-xl bg-biz-bg" />
+                      <Skeleton className="h-8 rounded-xl" />
                     </td>
                   </tr>
                 ))}
@@ -281,7 +282,7 @@ function MovementsPanel() {
       <p className="text-xs font-medium text-biz-violet-600">Stock movements</p>
       {isLoading ? (
         <div className="mt-4 space-y-2">
-          {[...Array(5)].map((_, i) => <div key={i} className="h-10 animate-pulse rounded-xl bg-biz-bg" />)}
+          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-10 rounded-xl" />)}
         </div>
       ) : movements.length === 0 ? (
         <div className="mt-4 flex h-40 flex-col items-center justify-center rounded-2xl bg-biz-bg text-center">

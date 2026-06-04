@@ -6,6 +6,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { ok, fail } from "@/lib/auth";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -100,4 +101,38 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       billing: (s.billing as object) ?? null,
     },
   });
+}
+
+// DELETE /api/v1/admin/tenants/[id] — permanently delete a business and everything
+// under it (users, clients, services, storefront, photos…). Cascades via Prisma.
+// Requires ?confirm=<tenant name> to prevent accidental deletion.
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireAdmin(req);
+  if (admin instanceof Response) return admin;
+  const { id } = await params;
+
+  const tenant = await db.tenant.findUnique({
+    where: { id },
+    select: { id: true, name: true, users: { select: { supabaseUid: true } } },
+  });
+  if (!tenant) return fail("NOT_FOUND", "Business not found", 404);
+
+  // Safety: caller must echo the exact business name.
+  const confirm = new URL(req.url).searchParams.get("confirm");
+  if (confirm !== tenant.name) {
+    return fail("CONFIRM_REQUIRED", "Confirmation text does not match the business name", 409);
+  }
+
+  // Delete all Supabase auth users for this tenant (best-effort).
+  const supabase = getSupabaseAdmin();
+  await Promise.all(
+    tenant.users
+      .filter((u) => u.supabaseUid)
+      .map((u) => supabase.auth.admin.deleteUser(u.supabaseUid!).catch(() => {}))
+  );
+
+  // Delete the tenant — all related rows cascade (onDelete: Cascade on every relation).
+  await db.tenant.delete({ where: { id } });
+
+  return ok({ deleted: true, id });
 }

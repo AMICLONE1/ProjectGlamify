@@ -8,7 +8,7 @@ const updateSchema = z.object({
   categoryId: z.string().nullable().optional(),
   description: z.string().optional(),
   durationMinutes: z.number().int().min(5).max(480).optional(),
-  price: z.number().min(0).optional(),
+  price: z.number().finite().min(0).max(1_000_000).optional(),
   taxPct: z.number().min(0).max(100).optional(),
   isActive: z.boolean().optional(),
   photoUrl: z.string().optional(),

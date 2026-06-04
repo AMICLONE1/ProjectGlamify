@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { getFreshToken } from "@/lib/session";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -771,23 +772,23 @@ export function StorefrontManager() {
   }
 
   if (loading) return (
-    <div className="animate-pulse space-y-6">
+    <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
-          <div className="h-3 w-20 rounded-full bg-gray-200" />
-          <div className="h-6 w-48 rounded-xl bg-gray-200" />
-          <div className="h-4 w-32 rounded-full bg-gray-100" />
+          <Skeleton className="h-3 w-20 rounded-full" />
+          <Skeleton className="h-6 w-48 rounded-xl" />
+          <Skeleton className="h-4 w-32 rounded-full" />
         </div>
         <div className="flex gap-2">
-          <div className="h-8 w-20 rounded-full bg-gray-200" />
-          <div className="h-8 w-32 rounded-full bg-gray-200" />
+          <Skeleton className="h-8 w-20 rounded-full" />
+          <Skeleton className="h-8 w-32 rounded-full" />
         </div>
       </div>
       <div className="flex gap-4 border-b border-gray-100 pb-4">
-        {[...Array(4)].map((_, i) => <div key={i} className="h-8 w-20 rounded-full bg-gray-100" />)}
+        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-8 w-20 rounded-full" />)}
       </div>
       <div className="space-y-4">
-        {[...Array(5)].map((_, i) => <div key={i} className="h-12 rounded-2xl bg-gray-100" />)}
+        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 rounded-2xl" />)}
       </div>
     </div>
   );

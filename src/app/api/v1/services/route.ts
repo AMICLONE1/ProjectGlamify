@@ -8,7 +8,7 @@ const createSchema = z.object({
   categoryId: z.string().optional(),
   description: z.string().optional(),
   durationMinutes: z.number().int().min(5).max(480),
-  price: z.number().min(0),
+  price: z.number().finite().min(0).max(1_000_000),
   taxPct: z.number().min(0).max(100).default(18),
   isActive: z.boolean().default(true),
   photoUrl: z.string().optional(),

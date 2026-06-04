@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminApi, type AdminTenant, type ProvisionResult, type TenantBilling } from "@/lib/admin-api";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 
 const PLANS = ["trial", "starter", "growth", "professional", "enterprise"];
 const BUSINESS_TYPES = ["salon", "spa", "clinic", "barbershop", "tattoo", "other"];
@@ -40,6 +41,12 @@ export default function AdminTenantsPage() {
       if (vars.body.billing) showToast("Payment recorded");
       else showToast(r.tenant.suspended ? "Business suspended" : r.tenant.plan ? `Plan changed to ${r.tenant.plan}` : "Updated");
     },
+    onError: (e) => showToast((e as Error).message, false),
+  });
+
+  const del = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => adminApi.deleteTenant(id, name),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-tenants"] }); showToast("Business deleted"); },
     onError: (e) => showToast((e as Error).message, false),
   });
 
@@ -83,7 +90,7 @@ export default function AdminTenantsPage() {
       )}
 
       {isLoading ? (
-        <p className="text-sm text-zinc-500">Loading…</p>
+        <SkeletonRows rows={5} rowClassName="h-24 rounded-2xl" />
       ) : tenants.length === 0 && !isError ? (
         <p className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center text-sm text-zinc-500">
           No businesses found.
@@ -94,8 +101,16 @@ export default function AdminTenantsPage() {
             <TenantRow
               key={t.id}
               t={t}
-              busy={mutate.isPending}
+              busy={mutate.isPending || del.isPending}
               onChange={(body) => mutate.mutate({ id: t.id, body })}
+              onDelete={() => {
+                const typed = window.prompt(
+                  `⚠️ This permanently deletes "${t.name}" and ALL its data — users, clients, bookings, services, storefront. This cannot be undone.\n\nType the business name to confirm:`
+                );
+                if (typed === null) return;
+                if (typed !== t.name) { showToast("Name didn't match — deletion cancelled", false); return; }
+                del.mutate({ id: t.id, name: t.name });
+              }}
             />
           ))}
         </div>
@@ -129,10 +144,11 @@ function daysUntil(iso?: string | null): number | null {
 }
 
 function TenantRow({
-  t, onChange, busy,
+  t, onChange, onDelete, busy,
 }: {
   t: AdminTenant;
   onChange: (b: { suspended?: boolean; plan?: string; billing?: TenantBilling }) => void;
+  onDelete: () => void;
   busy: boolean;
 }) {
   const [showPay, setShowPay] = useState(false);
@@ -208,6 +224,14 @@ function TenantRow({
             }
           >
             {t.suspended ? "Activate" : "Suspend"}
+          </button>
+          <button
+            disabled={busy}
+            onClick={onDelete}
+            title="Delete business permanently"
+            className="rounded-lg border border-red-900 bg-red-950/30 px-2.5 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-900/50 disabled:opacity-50"
+          >
+            Delete
           </button>
         </div>
       </div>

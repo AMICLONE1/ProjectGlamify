@@ -20,6 +20,7 @@ import {
 import { reportsApi } from "@/lib/api-client";
 import { formatINR } from "@/lib/business-seed";
 import { cn } from "@/lib/cn";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type ReportRange = "7d" | "30d" | "mtd" | "qtd";
 const rangeLabel: Record<ReportRange, string> = { "7d": "7 days", "30d": "30 days", mtd: "MTD", qtd: "QTD" };
@@ -211,9 +212,9 @@ export function ReportsBoard() {
 function ReportKpiSkeleton() {
   return (
     <div className="rounded-3xl bg-biz-surface p-5 shadow-sm">
-      <div className="h-3 w-20 animate-pulse rounded-full bg-biz-bg" />
-      <div className="mt-3 h-7 w-28 animate-pulse rounded-xl bg-biz-bg" />
-      <div className="mt-2 h-3 w-16 animate-pulse rounded-full bg-biz-bg" />
+      <Skeleton className="h-3 w-20 rounded-full" />
+      <Skeleton className="mt-3 h-7 w-28 rounded-xl" />
+      <Skeleton className="mt-2 h-3 w-16 rounded-full" />
     </div>
   );
 }

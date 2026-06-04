@@ -13,6 +13,7 @@ import { clientsApi, api, type ClientSummary } from "@/lib/api-client";
 import { formatINR } from "@/lib/business-seed";
 import { cn } from "@/lib/cn";
 import { useCampaignsStore } from "./campaignsStore";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type ApiCampaign = {
   id: string; name: string; channel: Channel; status: string;
@@ -204,7 +205,7 @@ export function CampaignsBoard() {
         </div>
         {campaignsLoading ? (
           <div className="mt-4 space-y-2">
-            {[...Array(3)].map((_, i) => <div key={i} className="h-10 animate-pulse rounded-xl bg-biz-bg" />)}
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10 rounded-xl" />)}
           </div>
         ) : apiHistory.length === 0 ? (
           <div className="mt-4 flex h-32 flex-col items-center justify-center rounded-2xl bg-biz-bg text-center">

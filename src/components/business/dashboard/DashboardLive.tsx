@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApi, onboardingApi, type DashboardData, type DashboardCharts, type OnboardingProgress, type UpcomingAppointment } from "@/lib/api-client";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { RevenueAreaChart } from "./RevenueAreaChart";
 import { ServiceMixDonut } from "./ServiceMixDonut";
 import { BookingsBarChart } from "./BookingsBarChart";
@@ -332,11 +333,11 @@ function KpiSkeleton() {
   return (
     <div className="rounded-3xl bg-biz-surface p-4 sm:p-5 md:p-6 shadow-sm">
       <div className="flex items-start justify-between gap-2">
-        <div className="h-10 w-10 animate-pulse rounded-2xl bg-biz-bg" />
-        <div className="h-5 w-24 animate-pulse rounded-full bg-biz-bg" />
+        <Skeleton className="h-10 w-10 rounded-2xl" />
+        <Skeleton className="h-5 w-24 rounded-full" />
       </div>
-      <div className="mt-4 h-7 w-20 animate-pulse rounded-xl bg-biz-bg" />
-      <div className="mt-2 h-3 w-28 animate-pulse rounded-full bg-biz-bg" />
+      <Skeleton className="mt-4 h-7 w-20 rounded-xl" />
+      <Skeleton className="mt-2 h-3 w-28 rounded-full" />
     </div>
   );
 }
@@ -421,7 +422,9 @@ function ScheduleCard({ appointments, isLoading }: { appointments: UpcomingAppoi
       {isLoading ? (
         <ul className="mt-5 space-y-2">
           {[...Array(4)].map((_, i) => (
-            <li key={i} className="h-12 animate-pulse rounded-2xl bg-biz-bg" />
+            <li key={i}>
+              <Skeleton className="h-12 rounded-2xl" />
+            </li>
           ))}
         </ul>
       ) : appointments.length === 0 ? (

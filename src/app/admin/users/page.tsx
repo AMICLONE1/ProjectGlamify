@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminApi, type AdminUser } from "@/lib/admin-api";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 
 const ROLES = ["owner", "manager", "staff", "receptionist"];
 
@@ -21,6 +22,12 @@ export default function AdminUsersPage() {
     mutationFn: (userId: string) => adminApi.resetUser(userId),
     onSuccess: (r) => { setToast(`Reset link sent to ${r.email}`); setTimeout(() => setToast(null), 4000); },
     onError: (e) => { setToast((e as Error).message); setTimeout(() => setToast(null), 4000); },
+  });
+
+  const del = useMutation({
+    mutationFn: (userId: string) => adminApi.deleteUser(userId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-users"] }); setToast("User deleted"); setTimeout(() => setToast(null), 4000); },
+    onError: (e) => { setToast((e as Error).message); setTimeout(() => setToast(null), 5000); },
   });
 
   const users = data?.users ?? [];
@@ -49,7 +56,7 @@ export default function AdminUsersPage() {
       )}
 
       {isLoading ? (
-        <p className="text-sm text-zinc-500">Loading…</p>
+        <SkeletonRows rows={6} rowClassName="h-16 rounded-2xl" />
       ) : users.length === 0 && !isError ? (
         <p className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center text-sm text-zinc-500">No users found.</p>
       ) : (
@@ -58,10 +65,15 @@ export default function AdminUsersPage() {
             <UserRow
               key={u.id}
               u={u}
-              busy={update.isPending || reset.isPending}
+              busy={update.isPending || reset.isPending || del.isPending}
               onRole={(role) => update.mutate({ id: u.id, role })}
               onToggle={() => update.mutate({ id: u.id, isActive: !u.isActive })}
               onReset={() => reset.mutate(u.id)}
+              onDelete={() => {
+                if (confirm(`Permanently delete ${u.fullName} (${u.email})? This removes their login and cannot be undone.`)) {
+                  del.mutate(u.id);
+                }
+              }}
             />
           ))}
         </div>
@@ -70,8 +82,8 @@ export default function AdminUsersPage() {
   );
 }
 
-function UserRow({ u, onRole, onToggle, onReset, busy }: {
-  u: AdminUser; onRole: (r: string) => void; onToggle: () => void; onReset: () => void; busy: boolean;
+function UserRow({ u, onRole, onToggle, onReset, onDelete, busy }: {
+  u: AdminUser; onRole: (r: string) => void; onToggle: () => void; onReset: () => void; onDelete: () => void; busy: boolean;
 }) {
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
@@ -105,6 +117,10 @@ function UserRow({ u, onRole, onToggle, onReset, busy }: {
               ? "rounded-lg border border-red-900 bg-red-950/50 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-900/50 disabled:opacity-50"
               : "rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"}>
             {u.isActive ? "Deactivate" : "Activate"}
+          </button>
+          <button disabled={busy} onClick={onDelete} title="Delete user permanently"
+            className="rounded-lg border border-red-900 bg-red-950/30 px-2.5 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-900/50 disabled:opacity-50">
+            Delete
           </button>
         </div>
       </div>

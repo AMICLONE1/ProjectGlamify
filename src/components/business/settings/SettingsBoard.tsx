@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { settingsApi, locationsApi, staffApi, type BranchLocation, type StaffMember } from "@/lib/api-client";
 import { getUser } from "@/lib/session";
 import { cn } from "@/lib/cn";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type Tab = "business" | "tax" | "branches" | "roles" | "integrations";
 
@@ -461,7 +462,7 @@ function SaveBar({ saved, pending, onSave }: { saved: boolean; pending: boolean;
 function PanelSkeleton() {
   return (
     <div className="space-y-3">
-      {[...Array(4)].map((_, i) => <div key={i} className="h-12 animate-pulse rounded-2xl bg-biz-bg" />)}
+      {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 rounded-2xl" />)}
     </div>
   );
 }

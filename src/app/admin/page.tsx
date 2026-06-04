@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 import { adminApi } from "@/lib/admin-api";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 function inr(n: number) {
   return "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
@@ -87,7 +88,7 @@ function Stat({ label, value, sub, trend, loading, href }: {
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 transition-colors hover:border-zinc-700">
       <p className="text-xs font-medium text-zinc-400">{label}</p>
       <p className="mt-1.5 text-2xl font-bold tracking-tight">
-        {loading ? <span className="inline-block h-7 w-16 animate-pulse rounded bg-zinc-800" /> : value ?? "—"}
+        {loading ? <Skeleton dark className="inline-block h-7 w-16 rounded align-middle" /> : value ?? "—"}
       </p>
       <div className="mt-1 flex items-center gap-2">
         {sub && <p className="text-[11px] text-zinc-500">{sub}</p>}
