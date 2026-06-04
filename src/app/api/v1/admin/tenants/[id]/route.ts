@@ -43,6 +43,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 const patchSchema = z.object({
   suspended: z.boolean().optional(),
   plan: z.enum(["trial", "starter", "growth", "professional", "enterprise"]).optional(),
+  // Manual billing tracking (stored in settings.billing — no DB migration needed)
+  billing: z.object({
+    status: z.enum(["unpaid", "paid", "overdue"]).optional(),
+    paidUntil: z.string().nullable().optional(), // ISO date the access is paid through
+    amount: z.number().nullable().optional(),    // last amount collected (₹)
+    method: z.string().max(40).nullable().optional(), // "UPI", "Bank transfer", "Cash"...
+    note: z.string().max(300).nullable().optional(),
+  }).optional(),
 });
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -58,18 +66,38 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const tenant = await db.tenant.findUnique({ where: { id }, select: { settings: true } });
   if (!tenant) return fail("NOT_FOUND", "Tenant not found", 404);
 
+  const existingSettings = (tenant.settings as Record<string, unknown> | null) ?? {};
   const data: { settings?: object; plan?: string } = {};
+  let nextSettings = { ...existingSettings };
+  let settingsChanged = false;
 
   if (parsed.data.suspended !== undefined) {
-    const settings = (tenant.settings as Record<string, unknown> | null) ?? {};
-    data.settings = { ...settings, suspended: parsed.data.suspended };
+    nextSettings = { ...nextSettings, suspended: parsed.data.suspended };
+    settingsChanged = true;
     // Mirror onto the tenant's users so they actually lose access.
     await db.user.updateMany({ where: { tenantId: id }, data: { isActive: !parsed.data.suspended } });
   }
+
+  if (parsed.data.billing) {
+    const existingBilling = (existingSettings.billing as Record<string, unknown> | null) ?? {};
+    nextSettings = {
+      ...nextSettings,
+      billing: { ...existingBilling, ...parsed.data.billing, updatedAt: new Date().toISOString() },
+    };
+    settingsChanged = true;
+  }
+
+  if (settingsChanged) data.settings = nextSettings;
   if (parsed.data.plan) data.plan = parsed.data.plan;
 
   const updated = await db.tenant.update({ where: { id }, data });
+  const s = (updated.settings as Record<string, unknown> | null) ?? {};
   return ok({
-    tenant: { id: updated.id, plan: updated.plan, suspended: Boolean((updated.settings as { suspended?: boolean } | null)?.suspended) },
+    tenant: {
+      id: updated.id,
+      plan: updated.plan,
+      suspended: Boolean((s as { suspended?: boolean }).suspended),
+      billing: (s.billing as object) ?? null,
+    },
   });
 }

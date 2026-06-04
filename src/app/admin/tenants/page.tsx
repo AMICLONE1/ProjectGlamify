@@ -2,15 +2,16 @@
 
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { adminApi, type AdminTenant, type ProvisionResult } from "@/lib/admin-api";
+import { adminApi, type AdminTenant, type ProvisionResult, type TenantBilling } from "@/lib/admin-api";
 
 const PLANS = ["trial", "starter", "growth", "professional", "enterprise"];
 const BUSINESS_TYPES = ["salon", "spa", "clinic", "barbershop", "tattoo", "other"];
+// Must match the public pricing page (src/components/sections/Pricing.tsx).
 const PLAN_PRICES: Record<string, string> = {
   trial: "Free (14-day trial)",
-  starter: "₹1,999/mo",
-  growth: "₹3,999/mo",
-  professional: "₹6,999/mo",
+  starter: "₹0 (free forever)",
+  growth: "₹1,499/mo",
+  professional: "₹3,999/mo",
   enterprise: "Custom",
 };
 
@@ -32,11 +33,12 @@ export default function AdminTenantsPage() {
   });
 
   const mutate = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: { suspended?: boolean; plan?: string } }) =>
+    mutationFn: ({ id, body }: { id: string; body: Parameters<typeof adminApi.setTenant>[1] }) =>
       adminApi.setTenant(id, body),
-    onSuccess: (r) => {
+    onSuccess: (r, vars) => {
       qc.invalidateQueries({ queryKey: ["admin-tenants"] });
-      showToast(r.tenant.suspended ? "Business suspended" : r.tenant.plan ? `Plan changed to ${r.tenant.plan}` : "Updated");
+      if (vars.body.billing) showToast("Payment recorded");
+      else showToast(r.tenant.suspended ? "Business suspended" : r.tenant.plan ? `Plan changed to ${r.tenant.plan}` : "Updated");
     },
     onError: (e) => showToast((e as Error).message, false),
   });
@@ -120,13 +122,34 @@ export default function AdminTenantsPage() {
   );
 }
 
+function daysUntil(iso?: string | null): number | null {
+  if (!iso) return null;
+  const ms = new Date(iso).getTime() - Date.now();
+  return Math.ceil(ms / (1000 * 60 * 60 * 24));
+}
+
 function TenantRow({
   t, onChange, busy,
 }: {
   t: AdminTenant;
-  onChange: (b: { suspended?: boolean; plan?: string }) => void;
+  onChange: (b: { suspended?: boolean; plan?: string; billing?: TenantBilling }) => void;
   busy: boolean;
 }) {
+  const [showPay, setShowPay] = useState(false);
+  const billing = t.billing;
+  const days = daysUntil(billing?.paidUntil);
+  const expired = days !== null && days < 0;
+  const expiringSoon = days !== null && days >= 0 && days <= 7;
+
+  const payBadge =
+    !billing?.status || billing.status === "unpaid"
+      ? { cls: "bg-zinc-800 text-zinc-400", label: "Unpaid" }
+      : expired
+        ? { cls: "bg-red-950 text-red-300", label: "Expired" }
+        : billing.status === "overdue"
+          ? { cls: "bg-orange-950 text-orange-300", label: "Overdue" }
+          : { cls: "bg-emerald-950 text-emerald-300", label: "Paid" };
+
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -134,10 +157,9 @@ function TenantRow({
           <div className="flex items-center gap-2">
             <p className="truncate font-semibold">{t.name}</p>
             {t.suspended && (
-              <span className="rounded-full bg-red-950 px-2 py-0.5 text-[10px] font-semibold text-red-300">
-                Suspended
-              </span>
+              <span className="rounded-full bg-red-950 px-2 py-0.5 text-[10px] font-semibold text-red-300">Suspended</span>
             )}
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${payBadge.cls}`}>{payBadge.label}</span>
           </div>
           <p className="text-xs text-zinc-500">
             /{t.slug} · {t.businessType} · {t.email ?? "no email"}
@@ -145,10 +167,18 @@ function TenantRow({
           <p className="mt-1.5 text-[11px] text-zinc-500">
             {t.counts.users} users · {t.counts.clients} clients · {t.counts.locations} locations ·{" "}
             joined{" "}
-            {new Date(t.createdAt).toLocaleDateString("en-IN", {
-              day: "numeric", month: "short", year: "numeric",
-            })}
+            {new Date(t.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
           </p>
+          {billing?.paidUntil && (
+            <p className={`mt-1 text-[11px] font-medium ${expired ? "text-red-400" : expiringSoon ? "text-orange-400" : "text-zinc-400"}`}>
+              {expired
+                ? `Expired ${Math.abs(days!)}d ago`
+                : `Paid until ${new Date(billing.paidUntil).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} (${days}d left)`}
+              {billing.amount ? ` · ₹${billing.amount.toLocaleString("en-IN")}` : ""}
+              {billing.method ? ` · ${billing.method}` : ""}
+            </p>
+          )}
+          {billing?.note && <p className="mt-0.5 text-[11px] italic text-zinc-600">"{billing.note}"</p>}
         </div>
         <div className="flex items-center gap-2">
           <select
@@ -163,6 +193,13 @@ function TenantRow({
           </select>
           <button
             disabled={busy}
+            onClick={() => setShowPay((s) => !s)}
+            className="rounded-lg border border-emerald-900 bg-emerald-950/40 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-900/40 disabled:opacity-50"
+          >
+            {showPay ? "Close" : "Record payment"}
+          </button>
+          <button
+            disabled={busy}
             onClick={() => onChange({ suspended: !t.suspended })}
             className={
               t.suspended
@@ -173,6 +210,75 @@ function TenantRow({
             {t.suspended ? "Activate" : "Suspend"}
           </button>
         </div>
+      </div>
+
+      {showPay && (
+        <RecordPaymentForm
+          billing={billing}
+          busy={busy}
+          onSave={(b) => { onChange({ billing: b }); setShowPay(false); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function RecordPaymentForm({
+  billing, onSave, busy,
+}: {
+  billing: TenantBilling | null;
+  onSave: (b: TenantBilling) => void;
+  busy: boolean;
+}) {
+  // Default paid-until = today + 1 month
+  const defaultUntil = () => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1);
+    return d.toISOString().slice(0, 10);
+  };
+  const [paidUntil, setPaidUntil] = useState(billing?.paidUntil?.slice(0, 10) ?? defaultUntil());
+  const [amount, setAmount] = useState(billing?.amount?.toString() ?? "");
+  const [method, setMethod] = useState(billing?.method ?? "UPI");
+  const [note, setNote] = useState(billing?.note ?? "");
+
+  return (
+    <div className="mt-3 grid gap-3 rounded-xl border border-zinc-800 bg-zinc-950/60 p-4 sm:grid-cols-4">
+      <label className="text-xs">
+        <span className="mb-1 block text-zinc-500">Paid until</span>
+        <input type="date" value={paidUntil} onChange={(e) => setPaidUntil(e.target.value)}
+          className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-zinc-100 focus:outline-none" />
+      </label>
+      <label className="text-xs">
+        <span className="mb-1 block text-zinc-500">Amount (₹)</span>
+        <input type="number" min={0} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="1499"
+          className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-zinc-100 placeholder:text-zinc-600 focus:outline-none" />
+      </label>
+      <label className="text-xs">
+        <span className="mb-1 block text-zinc-500">Method</span>
+        <select value={method} onChange={(e) => setMethod(e.target.value)}
+          className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-zinc-100 focus:outline-none">
+          {["UPI", "Bank transfer", "Cash", "Card", "Other"].map((m) => <option key={m} value={m}>{m}</option>)}
+        </select>
+      </label>
+      <label className="text-xs">
+        <span className="mb-1 block text-zinc-500">Note</span>
+        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="UTR / ref no."
+          className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-zinc-100 placeholder:text-zinc-600 focus:outline-none" />
+      </label>
+      <div className="sm:col-span-4 flex justify-end">
+        <button
+          disabled={busy}
+          onClick={() => onSave({
+            status: "paid",
+            paidUntil: new Date(paidUntil).toISOString(),
+            amount: amount ? Number(amount) : null,
+            method,
+            note: note.trim() || null,
+          })}
+          className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+        >
+          Save payment
+        </button>
       </div>
     </div>
   );

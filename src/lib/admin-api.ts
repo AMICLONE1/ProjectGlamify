@@ -31,6 +31,15 @@ export interface AdminMetrics {
   plans: { plan: string; count: number }[];
 }
 
+export interface TenantBilling {
+  status?: "unpaid" | "paid" | "overdue";
+  paidUntil?: string | null;
+  amount?: number | null;
+  method?: string | null;
+  note?: string | null;
+  updatedAt?: string;
+}
+
 export interface AdminTenant {
   id: string;
   name: string;
@@ -41,6 +50,7 @@ export interface AdminTenant {
   phone: string | null;
   createdAt: string;
   suspended: boolean;
+  billing: TenantBilling | null;
   counts: { users: number; clients: number; locations: number };
 }
 
@@ -86,8 +96,8 @@ export const adminApi = {
   metrics: () => req<AdminMetrics>("/metrics"),
 
   tenants: (q?: string) => req<{ tenants: AdminTenant[] }>(`/tenants/list${q ? `?q=${encodeURIComponent(q)}` : ""}`),
-  setTenant: (id: string, body: { suspended?: boolean; plan?: string }) =>
-    req<{ tenant: { id: string; plan: string; suspended: boolean } }>(`/tenants/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  setTenant: (id: string, body: { suspended?: boolean; plan?: string; billing?: TenantBilling }) =>
+    req<{ tenant: { id: string; plan: string; suspended: boolean; billing: TenantBilling | null } }>(`/tenants/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
 
   users: (params?: { q?: string; tenantId?: string }) => {
     const sp = new URLSearchParams();

@@ -50,6 +50,7 @@ export async function GET(req: NextRequest) {
       phone: t.phone,
       createdAt: t.createdAt,
       suspended: Boolean((t.settings as { suspended?: boolean } | null)?.suspended),
+      billing: ((t.settings as { billing?: object } | null)?.billing) ?? null,
       counts: t._count,
     })),
   });
