@@ -49,8 +49,11 @@ async function getStorefrontFromDB(city: string, slug: string): Promise<Storefro
     const tenant = sf.tenant;
     const location = tenant.locations[0];
 
-    // Map DB photos (URLs) and reviews into the storefront shape
-    const photos = sf.photos.map(p => p.url);
+    // Map DB photos — skip HEIC/HEIF and base64-inlined photos (not browser-renderable)
+    const RENDERABLE = /\.(jpe?g|png|webp|gif|avif|svg)(\?|$)/i;
+    const photos = sf.photos
+      .map(p => p.url)
+      .filter(u => !u.startsWith("data:") && (RENDERABLE.test(u) || u.includes("supabase.co")));
     const reviews = sf.reviews.map(r => ({
       id: r.id,
       authorName: r.authorName,
@@ -75,7 +78,7 @@ async function getStorefrontFromDB(city: string, slug: string): Promise<Storefro
         categoryId: catId,
         name: svc.name,
         durationMins: svc.durationMinutes,
-        price: svc.price,
+        price: Number(svc.price),   // Prisma Float can serialize as Decimal object — force JS number
         description: svc.description ?? undefined,
       };
     });

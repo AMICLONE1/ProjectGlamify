@@ -54,9 +54,15 @@ export async function POST(req: NextRequest) {
   const count = await db.storefrontPhoto.count({ where: { storefrontId: sfId } });
   if (count >= 20) return fail("LIMIT_EXCEEDED", "Maximum 20 photos per storefront", 422);
 
-  // If it's a base64 dataUrl, upload to Supabase Storage (or keep inline as dev fallback)
+  // If it's a base64 dataUrl, validate MIME type then upload to Supabase Storage
   let finalUrl = parsed.data.url;
   if (parsed.data.url.startsWith("data:")) {
+    const mimeMatch = parsed.data.url.match(/^data:([^;]+);/);
+    const mime = mimeMatch?.[1] ?? "";
+    const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!ALLOWED_MIME.includes(mime)) {
+      return fail("UNSUPPORTED_FORMAT", `File type "${mime}" is not supported. Upload JPG, PNG, WEBP, or GIF. iPhone HEIC photos must be converted first.`, 422);
+    }
     const result = await uploadPhoto(parsed.data.url, auth.tenantId, "storefront");
     finalUrl = result.url;
   }

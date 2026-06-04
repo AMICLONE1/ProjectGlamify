@@ -340,7 +340,15 @@ function TabPhotos({ photos: initial, storefrontName, onChanged }: { photos: Pho
   async function addPhotoFromFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!ALLOWED.includes(file.type)) {
+      setUrlError("Only JPG, PNG, WEBP, or GIF files are supported. iPhone HEIC photos must be converted first — on iPhone go to Settings → Camera → Formats → Most Compatible.");
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
     if (file.size > 5 * 1024 * 1024) { setUrlError("File must be under 5MB"); return; }
+
     setUploading(true); setUrlError(null);
     try {
       const dataUrl = await new Promise<string>((res, rej) => {
@@ -420,9 +428,9 @@ function TabPhotos({ photos: initial, storefrontName, onChanged }: { photos: Pho
             className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border-strong bg-white py-8 cursor-pointer hover:border-brand-300 transition-colors"
           >
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none" className="text-muted mb-2"><path d="M14 5v14M7 12l7-7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 22h20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-            <span className="text-sm text-muted">{uploading ? "Uploading…" : "Tap to upload · JPG, PNG, WEBP · max 5MB"}</span>
+            <span className="text-sm text-muted">{uploading ? "Uploading…" : "Tap to upload · JPG, PNG, WEBP · max 5MB · No HEIC"}</span>
           </div>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={addPhotoFromFile} />
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={addPhotoFromFile} />
         </div>
 
         {/* URL input */}
