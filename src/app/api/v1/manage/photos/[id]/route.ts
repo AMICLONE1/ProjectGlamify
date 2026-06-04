@@ -1,11 +1,26 @@
-// DELETE /api/v1/manage/photos/[id]  — remove a photo
+// DELETE /api/v1/manage/photos/[id]  — remove a photo (DB record + Supabase Storage file)
 // PATCH  /api/v1/manage/photos/[id]  — update alt text
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth, ok, fail } from "@/lib/auth";
+import { deletePhoto } from "@/lib/storage";
 import { revalidateStorefront } from "@/lib/revalidate-storefront";
+
+// Derive the Supabase storage path from a public URL.
+// URL format: {supabaseUrl}/storage/v1/object/public/{bucket}/{storagePath}
+function storagePathFromUrl(url: string): string | null {
+  try {
+    const bucket = process.env.SUPABASE_STORAGE_BUCKET ?? "glamify-photos";
+    const marker = `/storage/v1/object/public/${bucket}/`;
+    const idx = url.indexOf(marker);
+    if (idx === -1) return null;
+    return url.slice(idx + marker.length);
+  } catch {
+    return null;
+  }
+}
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -22,6 +37,12 @@ export async function DELETE(req: NextRequest, ctx: RouteContext) {
   if (!photo) return fail("NOT_FOUND", "Photo not found", 404);
 
   await db.storefrontPhoto.delete({ where: { id } });
+
+  // Delete the file from Supabase Storage (best-effort — don't fail the request if this errors)
+  const storagePath = storagePathFromUrl(photo.url);
+  if (storagePath) {
+    await deletePhoto(storagePath).catch(() => {});
+  }
 
   // Re-sequence sortOrder after deletion
   const remaining = await db.storefrontPhoto.findMany({
