@@ -70,6 +70,15 @@ export interface AdminLead {
   createdAt: string;
 }
 
+export interface ProvisionResult {
+  tenantId: string;
+  userId: string;
+  email: string;
+  password: string;
+  plan: string;
+  loginUrl: string;
+}
+
 // ─── API ──────────────────────────────────────────────────────────────────────
 
 export const adminApi = {
@@ -100,4 +109,9 @@ export const adminApi = {
   },
   setLead: (id: string, status: string) =>
     req<{ lead: AdminLead }>("/leads", { method: "PATCH", body: JSON.stringify({ id, status }) }),
+
+  provision: (body: {
+    fullName: string; email: string; phone: string; password: string;
+    businessName: string; businessType: string; city: string; plan: string;
+  }) => req<ProvisionResult>("/provision", { method: "POST", body: JSON.stringify(body) }),
 };

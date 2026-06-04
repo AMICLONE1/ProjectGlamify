@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 
 const patchSchema = z.object({
   id: z.string(),
-  status: z.enum(["new", "contacted", "converted", "rejected"]),
+  status: z.enum(["new", "contacted", "demo_scheduled", "demo_done", "converted", "rejected"]),
 });
 
 export async function PATCH(req: NextRequest) {

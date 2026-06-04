@@ -10,7 +10,7 @@ const nav = [
   { href: "/admin", label: "Overview", icon: GridIcon },
   { href: "/admin/tenants", label: "Businesses", icon: BuildingIcon },
   { href: "/admin/users", label: "Users", icon: UsersIcon },
-  { href: "/admin/leads", label: "Waitlist", icon: InboxIcon },
+  { href: "/admin/leads", label: "Pipeline", icon: InboxIcon },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
