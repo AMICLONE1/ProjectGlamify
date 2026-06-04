@@ -18,9 +18,14 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // First try bypass cookie (sent automatically by browser)
+      const bypassRes = await fetch("/api/v1/admin/me");
+      if (!cancelled && bypassRes.ok) { setState("ok"); return; }
+
+      // Fall back to Supabase token
       const token = await getFreshToken();
       if (!token) {
-        if (!cancelled) { setState("denied"); router.replace("/login?next=/admin"); }
+        if (!cancelled) { setState("denied"); router.replace("/admin-access"); }
         return;
       }
       const res = await fetch("/api/v1/admin/me", {
@@ -28,7 +33,7 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
       });
       if (cancelled) return;
       if (res.ok) setState("ok");
-      else { setState("denied"); router.replace("/login?next=/admin"); }
+      else { setState("denied"); router.replace("/admin-access"); }
     })();
     return () => { cancelled = true; };
   }, [router]);

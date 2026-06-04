@@ -1,5 +1,7 @@
 import { getSupabaseAdmin } from "./supabase/admin";
 import { extractBearer } from "./auth";
+import { cookies } from "next/headers";
+import { verifyBypassToken } from "@/app/api/v1/admin/bypass/route";
 
 // Platform super-admin gate (Clitell staff, not tenant users).
 //
@@ -29,6 +31,16 @@ export async function requireAdmin(request: Request): Promise<
   | { email: string; supabaseUid: string }
   | Response
 > {
+  // Accept bypass cookie (set via /admin-access page)
+  const secret = process.env.ADMIN_SECRET ?? "";
+  if (secret.length >= 16) {
+    const cookieStore = await cookies();
+    const raw = cookieStore.get("clitell_admin_bypass")?.value ?? "";
+    if (raw && await verifyBypassToken(raw, secret)) {
+      return { email: "admin@clitell.in", supabaseUid: "bypass" };
+    }
+  }
+
   const token = extractBearer(request);
   if (!token) {
     return Response.json(
