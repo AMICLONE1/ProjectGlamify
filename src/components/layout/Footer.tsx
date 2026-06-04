@@ -35,7 +35,7 @@ const columns = [
 ];
 
 const socials = [
-  { href: "https://instagram.com", label: "Instagram", icon: InstagramIcon },
+  { href: "https://www.instagram.com/clitell.in/", label: "Instagram", icon: InstagramIcon },
   { href: "https://linkedin.com", label: "LinkedIn", icon: LinkedInIcon },
   { href: "https://twitter.com", label: "X", icon: XIcon },
 ];
