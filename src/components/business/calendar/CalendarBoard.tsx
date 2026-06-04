@@ -760,6 +760,14 @@ function AppointmentPanel({ eventId, source, onClose, onUpdated }: {
     onError: (e) => setCheckinError(e instanceof Error ? e.message : "Check-in failed"),
   });
 
+  // Direct one-tap arrival — marks booking visited immediately (customer is physically here).
+  const [useCodeFlow, setUseCodeFlow] = useState(false);
+  const markArrived = useMutation({
+    mutationFn: () => api.patch(`/booking/recent`, { bookingId: eventId, status: "visited" }),
+    onSuccess: () => { setCheckinPhase("done"); onUpdated(); },
+    onError: (e) => setCheckinError(e instanceof Error ? e.message : "Failed to mark arrival"),
+  });
+
   const [remindSent, setRemindSent] = useState(false);
   const [reviewSent, setReviewSent] = useState(false);
   const remind = useMutation({ mutationFn: () => api.post(`/booking/remind`, { bookingId: eventId }), onSuccess: () => setRemindSent(true) });
@@ -878,19 +886,26 @@ function AppointmentPanel({ eventId, source, onClose, onUpdated }: {
             )}
 
             {/* Online booking check-in flow */}
-            {isOnline && panel.status === "confirmed" && (
+            {isOnline && panel.status === "confirmed" && checkinPhase !== "done" && (
               <div className="rounded-2xl bg-biz-bg p-4 space-y-3">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-biz-muted-2">Customer check-in</p>
 
                 {checkinPhase === "idle" && (
                   <>
-                    <p className="text-xs text-biz-muted">When the customer arrives, press the button below. A 6-digit code will be sent to their phone. They read it aloud — you enter it to confirm arrival.</p>
+                    <p className="text-xs text-biz-muted">Mark the customer as arrived to start the service. You can bill them at the POS once it&apos;s done.</p>
                     {checkinError && <p className="text-xs text-biz-pink-500">{checkinError}</p>}
-                    <button type="button" disabled={sendCheckin.isPending}
-                      onClick={() => sendCheckin.mutate()}
+                    <button type="button" disabled={markArrived.isPending}
+                      onClick={() => markArrived.mutate()}
                       className="w-full rounded-2xl bg-biz-green-500 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity">
-                      {sendCheckin.isPending ? "Sending code…" : "Customer arrived — send check-in code"}
+                      {markArrived.isPending ? "Marking…" : "Customer arrived — start service"}
                     </button>
+                    {!useCodeFlow ? (
+                      <button type="button"
+                        onClick={() => { setUseCodeFlow(true); sendCheckin.mutate(); }}
+                        className="w-full text-center text-[11px] font-medium text-biz-muted-2 hover:text-biz-violet-600 transition-colors">
+                        Verify identity with a code instead
+                      </button>
+                    ) : null}
                   </>
                 )}
 
@@ -914,9 +929,9 @@ function AppointmentPanel({ eventId, source, onClose, onUpdated }: {
                     />
                     {checkinError && <p className="text-xs text-biz-pink-500">{checkinError}</p>}
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => { setCheckinPhase("idle"); setCheckinError(null); setDevCode(null); }}
+                      <button type="button" onClick={() => { setCheckinPhase("idle"); setCheckinError(null); setDevCode(null); setUseCodeFlow(false); }}
                         className="flex-1 rounded-2xl border border-biz-border py-2 text-xs font-semibold text-biz-muted hover:bg-biz-border">
-                        Resend code
+                        Back
                       </button>
                       <button type="button"
                         disabled={confirmCheckin.isPending || (!devCode && checkinCode.length < 6)}
@@ -928,12 +943,6 @@ function AppointmentPanel({ eventId, source, onClose, onUpdated }: {
                   </>
                 )}
 
-                {checkinPhase === "done" && (
-                  <div className="flex items-center gap-2 rounded-xl bg-biz-green-400/15 px-3 py-2.5">
-                    <span className="text-biz-green-500 text-lg">✓</span>
-                    <p className="text-sm font-semibold text-biz-green-600">Customer arrived — service in progress</p>
-                  </div>
-                )}
               </div>
             )}
 

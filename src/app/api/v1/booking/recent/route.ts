@@ -63,9 +63,9 @@ export async function PATCH(req: NextRequest) {
     return Response.json({ success: false, error: { code: "VALIDATION_ERROR", message: "bookingId and status required" } }, { status: 422 });
   }
 
-  const allowed = ["no_show", "cancelled"];
+  const allowed = ["no_show", "cancelled", "visited"];
   if (!allowed.includes(status)) {
-    return Response.json({ success: false, error: { code: "VALIDATION_ERROR", message: "Status must be no_show or cancelled" } }, { status: 422 });
+    return Response.json({ success: false, error: { code: "VALIDATION_ERROR", message: "Status must be no_show, cancelled, or visited" } }, { status: 422 });
   }
 
   const booking = await db.onlineBooking.findFirst({ where: { id: bookingId, tenantId: auth.tenantId } });
@@ -73,7 +73,11 @@ export async function PATCH(req: NextRequest) {
 
   const updated = await db.onlineBooking.update({
     where: { id: bookingId },
-    data: { status: status as never, ...(status === "cancelled" ? { cancelledAt: new Date() } : {}) },
+    data: {
+      status: status as never,
+      ...(status === "cancelled" ? { cancelledAt: new Date() } : {}),
+      ...(status === "visited" ? { checkedInAt: new Date(), checkinCode: null } : {}),
+    },
   });
 
   return ok(updated);
