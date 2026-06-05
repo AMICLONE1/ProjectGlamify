@@ -120,5 +120,24 @@ export async function PATCH(req: NextRequest) {
     },
   });
 
+  // Keep shared fields in sync with the Storefront editor:
+  //   Tenant.about → Storefront.description   |   Tenant.phone → Location.phone
+  if (d.about !== undefined) {
+    await db.storefront.updateMany({
+      where: { tenantId: auth.tenantId },
+      data: { description: d.about },
+    });
+  }
+  if (d.phone !== undefined) {
+    const loc = await db.location.findFirst({ where: { tenantId: auth.tenantId }, select: { id: true } });
+    if (loc) await db.location.update({ where: { id: loc.id }, data: { phone: d.phone } });
+  }
+
+  // Revalidate the public storefront so the change shows immediately.
+  if (d.about !== undefined || d.phone !== undefined) {
+    const { revalidateStorefront } = await import("@/lib/revalidate-storefront");
+    await revalidateStorefront(auth.tenantId);
+  }
+
   return ok({ saved: true, profileComplete: profileComplete({ ...updated, legalName: null } as never) });
 }

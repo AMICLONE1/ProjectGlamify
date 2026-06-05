@@ -86,6 +86,18 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
+  // Keep shared fields in sync with the Settings page:
+  //   Storefront.description ↔ Tenant.about   |   Location.phone ↔ Tenant.phone
+  if (description !== undefined || phone !== undefined) {
+    await db.tenant.update({
+      where: { id: auth.tenantId },
+      data: {
+        ...(description !== undefined ? { about: description } : {}),
+        ...(phone       !== undefined ? { phone }              : {}),
+      },
+    });
+  }
+
   // Trigger ISR revalidation
   const secret = process.env.NEXT_REVALIDATE_SECRET;
   if (secret && updated.isPublished) {
