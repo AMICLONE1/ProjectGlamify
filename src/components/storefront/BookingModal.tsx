@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { Storefront, Service, StaffMember } from "@/content/storefronts";
-import { formatPrice, formatDuration } from "@/content/storefronts";
+import { formatPrice, formatServicePrice, formatDuration } from "@/content/storefronts";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -154,8 +154,8 @@ function StepServiceSelect({
   const filtered = services.filter((s) => s.categoryId === activeCategory);
 
   return (
-    <div className="flex flex-col h-full">
-      <h3 className="text-base font-bold text-ink mb-4">Choose services</h3>
+    <div className="flex flex-col h-full min-h-0">
+      <h3 className="text-base font-bold text-ink mb-4 shrink-0">Choose services</h3>
 
       {/* Category tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide shrink-0">
@@ -175,7 +175,7 @@ function StepServiceSelect({
       </div>
 
       {/* Service list */}
-      <div className="flex-1 overflow-y-auto divide-y divide-border -mx-1 px-1">
+      <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-border -mx-1 px-1">
         {filtered.map((svc) => {
           const isSelected = selected.includes(svc.id);
           return (
@@ -193,7 +193,7 @@ function StepServiceSelect({
                 <p className="text-xs text-muted mt-0.5">{formatDuration(svc.durationMins)}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-sm font-semibold text-ink">{formatPrice(svc.price)}</span>
+                <span className="text-sm font-semibold text-ink whitespace-nowrap">{formatServicePrice(svc)}</span>
                 <div
                   className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors ${
                     isSelected
@@ -598,7 +598,7 @@ function StepConfirmed({
           {booking.selectedServices.map((svc) => (
             <div key={svc.id} className="flex justify-between text-sm">
               <span className="text-ink">{svc.name}</span>
-              <span className="text-muted">{formatPrice(svc.price)}</span>
+              <span className="text-muted">{formatServicePrice(svc)}</span>
             </div>
           ))}
           <div className="border-t border-border pt-2 flex justify-between text-sm font-semibold text-ink">
@@ -784,7 +784,7 @@ export function BookingModal({ storefront, preselectedServiceId, onClose }: Prop
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-hidden flex flex-col px-6 py-5">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col px-6 py-5">
           <ProgressBar step={step} />
 
           <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
