@@ -71,7 +71,7 @@ function BusinessForm() {
 
   const [form, setForm] = useState<null | {
     name: string; legalName: string; phone: string; email: string;
-    about: string; openHour: string; closeHour: string;
+    about: string; openHour: string; closeHour: string; revenueGoal: string;
   }>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -85,6 +85,7 @@ function BusinessForm() {
     about: data.profile.about,
     openHour: data.profile.openHour != null ? String(data.profile.openHour) : "",
     closeHour: data.profile.closeHour != null ? String(data.profile.closeHour) : "",
+    revenueGoal: data.profile.revenueGoal != null ? String(data.profile.revenueGoal) : "",
   } : null);
 
   const save = useMutation({
@@ -98,12 +99,14 @@ function BusinessForm() {
         about: f.about.trim(),
         openHour: Number(f.openHour),
         closeHour: Number(f.closeHour),
+        revenueGoal: f.revenueGoal.trim() === "" ? 0 : Number(f.revenueGoal),
       });
     },
     onSuccess: () => {
       setSaved(true); setTimeout(() => setSaved(false), 2000);
       queryClient.invalidateQueries({ queryKey: ["settings"] });
       queryClient.invalidateQueries({ queryKey: ["onboarding-progress"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
     onError: (e) => setError(e instanceof Error ? e.message : "Save failed"),
   });
@@ -140,6 +143,16 @@ function BusinessForm() {
         <Field label="Close hour (24h) *"><input type="number" min={1} max={24} value={f.closeHour} onChange={(e) => set("closeHour", e.target.value)} placeholder="20" className={inputCls} /></Field>
       </div>
       <Field label="About *"><textarea rows={3} value={f.about} onChange={(e) => set("about", e.target.value)} placeholder="Describe your salon, specialities, and what makes you stand out…" className={cn(inputCls, "resize-y min-h-[90px]")} /></Field>
+
+      <Field label="Monthly revenue goal (₹)">
+        <input
+          type="number" min={0} value={f.revenueGoal}
+          onChange={(e) => set("revenueGoal", e.target.value)}
+          placeholder="e.g. 150000"
+          className={inputCls}
+        />
+        <p className="mt-1 text-xs text-biz-muted-2">Shown on your dashboard&apos;s Revenue Goal card. Leave blank to hide the target.</p>
+      </Field>
 
       {error && <p className="text-sm text-biz-pink-500">{error}</p>}
       <SaveBar saved={saved} pending={save.isPending} onSave={validateAndSave} />

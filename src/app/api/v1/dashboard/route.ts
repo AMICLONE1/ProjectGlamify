@@ -62,6 +62,10 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
+  // Monthly revenue goal (stored in tenant settings JSON)
+  const tenant = await db.tenant.findUnique({ where: { id: auth.tenantId }, select: { settings: true } });
+  const revenueGoal = (tenant?.settings as { revenueGoal?: number } | null)?.revenueGoal ?? null;
+
   const monthRevenue = monthInvoices._sum.totalAmt ?? 0;
   const prevRevenue = prevMonthInvoices._sum.totalAmt ?? 1;
   const revenueChangePct = parseFloat((((monthRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1));
@@ -75,6 +79,7 @@ export async function GET(req: NextRequest) {
       totalClients,
       newClientsThisMonth,
       lowStockAlerts: lowStockProducts,
+      revenueGoal,
     },
     upcomingToday,
   });

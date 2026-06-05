@@ -52,6 +52,7 @@ export interface DashboardKpis {
   totalClients: number;
   newClientsThisMonth: number;
   lowStockAlerts: number;
+  revenueGoal: number | null;
 }
 
 export interface UpcomingAppointment {
@@ -104,6 +105,7 @@ export interface SettingsData {
     openHour: number | null;
     closeHour: number | null;
     businessType: string;
+    revenueGoal: number | null;
   };
   tax: {
     gstin: string;

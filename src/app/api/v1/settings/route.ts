@@ -16,6 +16,7 @@ type TenantSettings = {
     showInclusive?: boolean;
   };
   integrations?: Record<string, boolean>;
+  revenueGoal?: number; // monthly revenue goal in ₹ (dashboard GoalCard)
 };
 
 const patchSchema = z.object({
@@ -28,6 +29,7 @@ const patchSchema = z.object({
   openHour: z.number().int().min(0).max(23).optional(),
   closeHour: z.number().int().min(1).max(24).optional(),
   gstin: z.string().max(20).optional(),
+  revenueGoal: z.number().min(0).max(1_000_000_000).optional(),
   // Tax (stored in settings JSON)
   tax: z.object({
     hsnServices: z.string().max(20).optional(),
@@ -69,6 +71,7 @@ export async function GET(req: NextRequest) {
       openHour: tenant.openHour,
       closeHour: tenant.closeHour,
       businessType: tenant.businessType,
+      revenueGoal: settings.revenueGoal ?? null,
     },
     tax: {
       gstin: tenant.gstin ?? "",
@@ -101,6 +104,7 @@ export async function PATCH(req: NextRequest) {
   const nextSettings: TenantSettings = { ...currentSettings };
   if (d.tax) nextSettings.tax = { ...currentSettings.tax, ...d.tax };
   if (d.integrations) nextSettings.integrations = { ...currentSettings.integrations, ...d.integrations };
+  if (d.revenueGoal !== undefined) nextSettings.revenueGoal = d.revenueGoal;
 
   const updated = await db.tenant.update({
     where: { id: auth.tenantId },
@@ -113,7 +117,7 @@ export async function PATCH(req: NextRequest) {
       ...(d.openHour  !== undefined ? { openHour: d.openHour }   : {}),
       ...(d.closeHour !== undefined ? { closeHour: d.closeHour } : {}),
       ...(d.gstin     !== undefined ? { gstin: d.gstin }         : {}),
-      ...(d.tax || d.integrations ? { settings: nextSettings as never } : {}),
+      ...(d.tax || d.integrations || d.revenueGoal !== undefined ? { settings: nextSettings as never } : {}),
     },
     select: {
       name: true, phone: true, email: true, about: true, openHour: true, closeHour: true,

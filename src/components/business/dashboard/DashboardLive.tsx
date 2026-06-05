@@ -83,7 +83,7 @@ export function DashboardLive() {
 
       {/* Charts */}
       <section className="grid gap-4 lg:grid-cols-[1fr_2fr]">
-        <GoalCard revenue={data?.kpis.monthRevenue ?? 0} isLoading={isLoading} />
+        <GoalCard revenue={data?.kpis.monthRevenue ?? 0} goal={data?.kpis.revenueGoal ?? null} isLoading={isLoading} />
         <ChartCard><RevenueAreaChart series={charts?.revenueTrends} hasData={charts?.hasRevenue} /></ChartCard>
       </section>
 
@@ -370,9 +370,16 @@ function KpiCard({ label, value, delta, deltaTone, icon, tone }: {
 
 // ─── Goal card ───────────────────────────────────────────────────────────────
 
-function GoalCard({ revenue, isLoading }: { revenue: number; isLoading: boolean }) {
-  const goal = 1_500_000;
-  const pct = Math.min(100, Math.round((revenue / goal) * 100));
+// Compact ₹ label: 1500000 → "₹15L", 250000 → "₹2.5L", 80000 → "₹80,000"
+function compactINR(n: number): string {
+  if (n >= 10_000_000) return `₹${(n / 10_000_000).toLocaleString("en-IN", { maximumFractionDigits: 1 })}Cr`;
+  if (n >= 100_000) return `₹${(n / 100_000).toLocaleString("en-IN", { maximumFractionDigits: 1 })}L`;
+  return "₹" + n.toLocaleString("en-IN");
+}
+
+function GoalCard({ revenue, goal: goalRaw, isLoading }: { revenue: number; goal: number | null; isLoading: boolean }) {
+  const goal = goalRaw && goalRaw > 0 ? goalRaw : null;
+  const pct = goal ? Math.min(100, Math.round((revenue / goal) * 100)) : 0;
   const onTrack = Math.round(pct / 10);
 
   return (
@@ -390,15 +397,23 @@ function GoalCard({ revenue, isLoading }: { revenue: number; isLoading: boolean 
           </p>
         </div>
         <div className="mt-5 flex items-center justify-between rounded-2xl bg-white/10 px-4 py-3 backdrop-blur-sm">
-          <p className="text-sm">
-            <span className="font-semibold">{pct}%</span>
-            <span className="ml-1 text-white/80">of ₹15L goal</span>
-          </p>
-          <div className="flex items-center gap-1">
-            {[...Array(10)].map((_, i) => (
-              <span key={i} className={`h-1.5 w-3 rounded-full ${i < onTrack ? "bg-white" : "bg-white/25"}`} />
-            ))}
-          </div>
+          {goal ? (
+            <>
+              <p className="text-sm">
+                <span className="font-semibold">{pct}%</span>
+                <span className="ml-1 text-white/80">of {compactINR(goal)} goal</span>
+              </p>
+              <div className="flex items-center gap-1">
+                {[...Array(10)].map((_, i) => (
+                  <span key={i} className={`h-1.5 w-3 rounded-full ${i < onTrack ? "bg-white" : "bg-white/25"}`} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <a href="/business/settings" className="text-sm text-white/90 hover:text-white">
+              Set a monthly revenue goal →
+            </a>
+          )}
         </div>
       </div>
     </div>
