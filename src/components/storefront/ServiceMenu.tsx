@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Storefront } from "@/content/storefronts";
-import { formatPrice, formatDuration } from "@/content/storefronts";
+import { formatServicePrice, formatDuration } from "@/content/storefronts";
 
 type Props = {
   categories: Storefront["serviceCategories"];
@@ -54,7 +54,7 @@ export function ServiceMenu({ categories, services, onBookService }: Props) {
               <p className="mt-1 text-xs text-muted-2">{formatDuration(svc.durationMins)}</p>
             </div>
             <div className="flex shrink-0 items-center gap-3">
-              <span className="font-semibold text-ink">{formatPrice(svc.price)}</span>
+              <span className="font-semibold text-ink whitespace-nowrap">{formatServicePrice(svc)}</span>
               <button
                 onClick={() => onBookService(svc.id)}
                 className="rounded-full border border-brand-500 bg-white px-4 py-1.5 text-sm font-semibold text-brand-600 transition-colors hover:bg-brand-500 hover:text-white"

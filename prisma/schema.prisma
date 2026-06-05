@@ -246,6 +246,8 @@ model Service {
   description     String?
   durationMinutes Int       @default(60)
   price           Float
+  priceType       String    @default("fixed") // "fixed" | "from" | "range"
+  priceMax        Float?    // upper bound when priceType = "range"
   taxPct          Float     @default(18)
   isActive        Boolean   @default(true)
   photoUrl        String?

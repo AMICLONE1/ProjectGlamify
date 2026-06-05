@@ -12,7 +12,9 @@ export type Service = {
   categoryId: string;
   name: string;
   durationMins: number;
-  price: number; // INR
+  price: number; // INR — the "from" / base price
+  priceType?: "fixed" | "from" | "range";
+  priceMax?: number; // upper bound when priceType = "range"
   description?: string;
 };
 
@@ -235,6 +237,15 @@ export function isOpenNow(hours: WeeklyHours): boolean {
 
 export function formatPrice(price: number): string {
   return `₹${price.toLocaleString("en-IN")}`;
+}
+
+// Price label that respects the service's price type (fixed / from / range).
+export function formatServicePrice(svc: Pick<Service, "price" | "priceType" | "priceMax">): string {
+  if (svc.priceType === "from") return `${formatPrice(svc.price)}+`;
+  if (svc.priceType === "range" && svc.priceMax != null) {
+    return `${formatPrice(svc.price)} – ${formatPrice(svc.priceMax)}`;
+  }
+  return formatPrice(svc.price);
 }
 
 export function formatDuration(mins: number): string {

@@ -246,6 +246,8 @@ export interface Service {
   categoryId: string | null;
   durationMinutes: number;
   price: number;
+  priceType?: "fixed" | "from" | "range" | null;
+  priceMax?: number | null;
   taxPct: number;
   isActive: boolean;
   category?: { id: string; name: string } | null;

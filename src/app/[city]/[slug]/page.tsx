@@ -79,6 +79,8 @@ async function getStorefrontFromDB(city: string, slug: string): Promise<Storefro
         name: svc.name,
         durationMins: svc.durationMinutes,
         price: Number(svc.price),   // Prisma Float can serialize as Decimal object — force JS number
+        priceType: (svc.priceType as "fixed" | "from" | "range" | null) ?? "fixed",
+        priceMax: svc.priceMax != null ? Number(svc.priceMax) : undefined,
         description: svc.description ?? undefined,
       };
     });

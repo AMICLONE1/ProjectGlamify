@@ -11,7 +11,9 @@ const patchSchema = z.object({
   name:            z.string().min(1).max(100).optional(),
   categoryName:    z.string().min(1).max(60).optional(),
   durationMinutes: z.number().int().min(5).max(480).optional(),
-  price:           z.number().min(0).optional(),
+  price:           z.number().finite().min(0).max(1_000_000).optional(),
+  priceType:       z.enum(["fixed", "from", "range"]).optional(),
+  priceMax:        z.number().finite().min(0).max(1_000_000).nullable().optional(),
   description:     z.string().max(200).nullable().optional(),
   isActive:        z.boolean().optional(),
 }).strict();
@@ -33,7 +35,15 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) return fail("VALIDATION_ERROR", "Invalid input", 422);
 
-  const { name, categoryName, durationMinutes, price, description, isActive } = parsed.data;
+  const { name, categoryName, durationMinutes, price, priceType, priceMax, description, isActive } = parsed.data;
+
+  // Validate range coherence using the effective (new or existing) values.
+  const effType = priceType ?? existing.priceType;
+  const effPrice = price ?? existing.price;
+  const effMax = priceMax !== undefined ? priceMax : existing.priceMax;
+  if (effType === "range" && !(effMax != null && effMax > effPrice)) {
+    return fail("VALIDATION_ERROR", "For a range, the max price must be greater than the starting price", 422);
+  }
 
   let categoryId = existing.categoryId;
   if (categoryName) {
@@ -51,6 +61,11 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
       ...(categoryId      !== existing.categoryId ? { categoryId } : {}),
       ...(durationMinutes !== undefined ? { durationMinutes } : {}),
       ...(price           !== undefined ? { price }           : {}),
+      ...(priceType       !== undefined ? { priceType }       : {}),
+      // Clear priceMax whenever the effective type isn't a range.
+      ...(priceType !== undefined || priceMax !== undefined
+        ? { priceMax: effType === "range" ? effMax : null }
+        : {}),
       ...(description     !== undefined ? { description }     : {}),
       ...(isActive        !== undefined ? { isActive }        : {}),
     },

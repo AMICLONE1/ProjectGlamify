@@ -252,7 +252,11 @@ export function PosBoard() {
                     <p className="mt-1 font-semibold text-biz-ink">{s.name}</p>
                     <div className="mt-3 flex items-center justify-between text-xs">
                       <span className="text-biz-muted">{s.durationMinutes} min</span>
-                      <span className="font-bold text-biz-ink">{formatINR(s.price)}</span>
+                      <span className="font-bold text-biz-ink">
+                        {s.priceType === "from" ? `${formatINR(s.price)}+`
+                          : s.priceType === "range" && s.priceMax != null ? `${formatINR(s.price)}–${formatINR(s.priceMax)}`
+                          : formatINR(s.price)}
+                      </span>
                     </div>
                   </button>
                 ))}

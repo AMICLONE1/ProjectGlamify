@@ -12,7 +12,12 @@ const createSchema = z.object({
   categoryName:    z.string().min(1).max(60),
   durationMinutes: z.number().int().min(5).max(480),
   price:           z.number().finite().min(0).max(1_000_000),
+  priceType:       z.enum(["fixed", "from", "range"]).default("fixed"),
+  priceMax:        z.number().finite().min(0).max(1_000_000).nullable().optional(),
   description:     z.string().max(200).optional(),
+}).refine((d) => d.priceType !== "range" || (d.priceMax != null && d.priceMax > d.price), {
+  message: "For a range, the max price must be greater than the starting price",
+  path: ["priceMax"],
 });
 
 export async function GET(req: NextRequest) {
@@ -38,7 +43,7 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return fail("VALIDATION_ERROR", "Invalid input", 422);
 
-  const { name, categoryName, durationMinutes, price, description } = parsed.data;
+  const { name, categoryName, durationMinutes, price, priceType, priceMax, description } = parsed.data;
 
   // Upsert category
   let category = await db.serviceCategory.findFirst({
@@ -57,6 +62,8 @@ export async function POST(req: NextRequest) {
       name,
       durationMinutes,
       price,
+      priceType,
+      priceMax: priceType === "range" ? priceMax ?? null : null,
       description: description ?? null,
       isActive: true,
     },

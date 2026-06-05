@@ -11,7 +11,8 @@ type ServiceCategory = { id: string; name: string };
 type Service = {
   id: string; name: string; categoryId: string | null;
   category: ServiceCategory | null; durationMinutes: number;
-  price: number; description: string | null; isActive: boolean;
+  price: number; priceType?: string | null; priceMax?: number | null;
+  description: string | null; isActive: boolean;
 };
 type Photo = { id: string; url: string; altText: string | null; sortOrder: number };
 type Review = {
@@ -144,14 +145,86 @@ function TabOverview({ data, onSaved }: { data: StorefrontData; onSaved: () => v
 const CATS = ["Hair","Skin","Makeup","Nails","Spa","Beard","Waxing","Other"];
 const DURATIONS = [15,30,45,60,75,90,120,150,180,240];
 
-type ServiceForm = { name:string; categoryName:string; durationMinutes:number; price:number; description:string };
+type PriceType = "fixed" | "from" | "range";
+type ServiceForm = { name:string; categoryName:string; durationMinutes:number; price:number; priceType:PriceType; priceMax:number; description:string };
 
-const EMPTY_SVC: ServiceForm = { name:"", categoryName:"Hair", durationMinutes:60, price:0, description:"" };
+const EMPTY_SVC: ServiceForm = { name:"", categoryName:"Hair", durationMinutes:60, price:0, priceType:"fixed", priceMax:0, description:"" };
 
 function fmtDur(m: number) {
   if (m < 60) return `${m} min`;
   const h = Math.floor(m/60), r = m%60;
   return r ? `${h}h ${r}m` : `${h}h`;
+}
+
+// Display price label respecting the price type.
+function fmtPriceLabel(svc: { price: number; priceType?: string | null; priceMax?: number | null }) {
+  const p = svc.price.toLocaleString("en-IN");
+  if (svc.priceType === "from") return `₹${p}+`;
+  if (svc.priceType === "range" && svc.priceMax != null) return `₹${p} – ₹${svc.priceMax.toLocaleString("en-IN")}`;
+  return `₹${p}`;
+}
+
+// Build the form body sent to the API (only include priceMax for ranges).
+function svcPayload(f: ServiceForm) {
+  return {
+    name: f.name, categoryName: f.categoryName, durationMinutes: f.durationMinutes,
+    price: f.price, priceType: f.priceType,
+    priceMax: f.priceType === "range" ? f.priceMax : null,
+    description: f.description,
+  };
+}
+
+const PRICE_TYPES: { v: PriceType; label: string; hint: string }[] = [
+  { v: "fixed", label: "Fixed",  hint: "₹250" },
+  { v: "from",  label: "From",   hint: "₹250+" },
+  { v: "range", label: "Range",  hint: "₹250 – ₹500" },
+];
+
+// Price type toggle + price input(s). Shared by add & edit forms.
+function PriceFields({ form, onChange }: { form: ServiceForm; onChange: (patch: Partial<ServiceForm>) => void }) {
+  return (
+    <div className="space-y-2">
+      <label className="label">Price (₹)</label>
+      <div className="flex gap-1.5">
+        {PRICE_TYPES.map((pt) => (
+          <button
+            key={pt.v}
+            type="button"
+            onClick={() => onChange({ priceType: pt.v })}
+            className={`flex-1 rounded-lg border px-2 py-1.5 text-xs font-semibold transition-colors ${
+              form.priceType === pt.v
+                ? "border-brand-400 bg-brand-50 text-brand-700"
+                : "border-border-strong text-muted hover:border-ink"
+            }`}
+            title={pt.hint}
+          >
+            {pt.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="number" min={0} value={form.price}
+          onChange={(e) => onChange({ price: Number(e.target.value) })}
+          placeholder={form.priceType === "fixed" ? "Price" : "From"}
+          className={iCls}
+        />
+        {form.priceType === "range" && (
+          <>
+            <span className="text-muted">–</span>
+            <input
+              type="number" min={0} value={form.priceMax}
+              onChange={(e) => onChange({ priceMax: Number(e.target.value) })}
+              placeholder="Up to"
+              className={iCls}
+            />
+          </>
+        )}
+      </div>
+      {form.priceType === "from" && <p className="text-[11px] text-muted-2">Shown as “₹{form.price.toLocaleString("en-IN")}+”. Final price set at billing.</p>}
+      {form.priceType === "range" && <p className="text-[11px] text-muted-2">Shown as a range. Final price set at billing.</p>}
+    </div>
+  );
 }
 
 function TabServices({ services: initial, onChanged }: { services: Service[]; onChanged: () => void }) {
@@ -174,7 +247,7 @@ function TabServices({ services: initial, onChanged }: { services: Service[]; on
     if (!form.name.trim()) { setError("Service name is required"); return; }
     setBusy("add"); setError(null);
     try {
-      const data = await apiFetch("/api/v1/manage/services", { method:"POST", body: JSON.stringify(form) });
+      const data = await apiFetch("/api/v1/manage/services", { method:"POST", body: JSON.stringify(svcPayload(form)) });
       setServices(s => [...s, data.service]);
       setForm(EMPTY_SVC); setAdding(false);
       onChanged();
@@ -185,7 +258,7 @@ function TabServices({ services: initial, onChanged }: { services: Service[]; on
   async function saveEdit(id: string) {
     setBusy(id); setError(null);
     try {
-      const data = await apiFetch(`/api/v1/manage/services/${id}`, { method:"PATCH", body: JSON.stringify(editForm) });
+      const data = await apiFetch(`/api/v1/manage/services/${id}`, { method:"PATCH", body: JSON.stringify(svcPayload(editForm)) });
       setServices(s => s.map(x => x.id === id ? data.service : x));
       setEditId(null);
       onChanged();
@@ -231,8 +304,8 @@ function TabServices({ services: initial, onChanged }: { services: Service[]; on
                         </select>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><label className="label">Price (₹)</label><input type="number" min={0} value={editForm.price} onChange={e=>setEditForm(f=>({...f,price:Number(e.target.value)}))} className={iCls} /></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <PriceFields form={editForm} onChange={(patch)=>setEditForm(f=>({...f,...patch}))} />
                       <div><label className="label">Duration</label>
                         <select value={editForm.durationMinutes} onChange={e=>setEditForm(f=>({...f,durationMinutes:Number(e.target.value)}))} className={iCls+" appearance-none"}>
                           {DURATIONS.map(d=><option key={d} value={d}>{fmtDur(d)}</option>)}
@@ -253,8 +326,8 @@ function TabServices({ services: initial, onChanged }: { services: Service[]; on
                       <p className="text-xs text-muted">{fmtDur(svc.durationMinutes)}{svc.description ? ` · ${svc.description}` : ""}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-semibold text-sm text-ink">₹{svc.price.toLocaleString("en-IN")}</span>
-                      <button onClick={()=>{setEditId(svc.id);setEditForm({name:svc.name,categoryName:svc.category?.name??"Hair",durationMinutes:svc.durationMinutes,price:svc.price,description:svc.description??""});}} className="h-7 w-7 flex items-center justify-center rounded-full border border-border-strong text-muted hover:border-ink hover:text-ink transition-colors" title="Edit">
+                      <span className="font-semibold text-sm text-ink whitespace-nowrap">{fmtPriceLabel(svc)}</span>
+                      <button onClick={()=>{setEditId(svc.id);setEditForm({name:svc.name,categoryName:svc.category?.name??"Hair",durationMinutes:svc.durationMinutes,price:svc.price,priceType:(svc.priceType as PriceType)??"fixed",priceMax:svc.priceMax??0,description:svc.description??""});}} className="h-7 w-7 flex items-center justify-center rounded-full border border-border-strong text-muted hover:border-ink hover:text-ink transition-colors" title="Edit">
                         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9 2L11 4M2 10l1-3L9 2l2 2-6 6-3 1z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
                       </button>
                       <button onClick={()=>toggleActive(svc)} disabled={busy===svc.id} className={`h-7 px-2 rounded-full border text-xs font-medium transition-colors ${svc.isActive ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50" : "border-border-strong text-muted hover:border-ink"}`} title={svc.isActive?"Hide from storefront":"Show on storefront"}>
@@ -290,8 +363,8 @@ function TabServices({ services: initial, onChanged }: { services: Service[]; on
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Price (₹)</label><input type="number" min={0} value={form.price} onChange={e=>setForm(f=>({...f,price:Number(e.target.value)}))} className={iCls} /></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <PriceFields form={form} onChange={(patch)=>setForm(f=>({...f,...patch}))} />
             <div><label className="label">Duration</label>
               <select value={form.durationMinutes} onChange={e=>setForm(f=>({...f,durationMinutes:Number(e.target.value)}))} className={iCls+" appearance-none"}>
                 {DURATIONS.map(d=><option key={d} value={d}>{fmtDur(d)}</option>)}
