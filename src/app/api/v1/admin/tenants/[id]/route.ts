@@ -131,8 +131,44 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       .map((u) => supabase.auth.admin.deleteUser(u.supabaseUid!).catch(() => {}))
   );
 
-  // Delete the tenant — all related rows cascade (onDelete: Cascade on every relation).
-  await db.tenant.delete({ where: { id } });
+  // Several relations (Invoice→Location, Appointment→Location, InvoiceLineItem→Service…)
+  // default to onDelete: Restrict, so a plain tenant.delete() throws an FK error.
+  // Delete dependent rows in FK-safe order (children → parents) inside one transaction.
+  try {
+    const clientIds = (await db.client.findMany({ where: { tenantId: id }, select: { id: true } })).map((c) => c.id);
+    const invoiceIds = (await db.invoice.findMany({ where: { tenantId: id }, select: { id: true } })).map((i) => i.id);
+    const appointmentIds = (await db.appointment.findMany({ where: { tenantId: id }, select: { id: true } })).map((a) => a.id);
+
+    await db.$transaction([
+      // Deepest leaves first
+      db.loyaltyTransaction.deleteMany({ where: { clientId: { in: clientIds } } }),
+      db.invoiceLineItem.deleteMany({ where: { invoiceId: { in: invoiceIds } } }),
+      db.appointmentItem.deleteMany({ where: { appointmentId: { in: appointmentIds } } }),
+      db.stockMovement.deleteMany({ where: { location: { tenantId: id } } }),
+      // Mid-level rows that reference Location/Client/Service
+      db.invoice.deleteMany({ where: { tenantId: id } }),
+      db.appointment.deleteMany({ where: { tenantId: id } }),
+      db.onlineBooking.deleteMany({ where: { tenantId: id } }),
+      // Storefront children cascade from Storefront, but delete explicitly to be safe
+      db.storefrontPhoto.deleteMany({ where: { storefront: { tenantId: id } } }),
+      db.storefrontReview.deleteMany({ where: { storefront: { tenantId: id } } }),
+      db.storefront.deleteMany({ where: { tenantId: id } }),
+      // Catalog + people
+      db.product.deleteMany({ where: { tenantId: id } }),
+      db.service.deleteMany({ where: { tenantId: id } }),
+      db.serviceCategory.deleteMany({ where: { tenantId: id } }),
+      db.campaign.deleteMany({ where: { tenantId: id } }),
+      db.client.deleteMany({ where: { tenantId: id } }),
+      db.staffDetail.deleteMany({ where: { user: { tenantId: id } } }),
+      db.auditLog.deleteMany({ where: { tenantId: id } }),
+      db.user.deleteMany({ where: { tenantId: id } }),
+      db.location.deleteMany({ where: { tenantId: id } }),
+      // Finally the tenant itself
+      db.tenant.delete({ where: { id } }),
+    ]);
+  } catch (e) {
+    return fail("DELETE_FAILED", e instanceof Error ? e.message : "Failed to delete business", 500);
+  }
 
   return ok({ deleted: true, id });
 }

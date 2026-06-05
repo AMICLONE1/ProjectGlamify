@@ -14,8 +14,22 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
       ...init?.headers,
     },
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error?.message ?? "Request failed");
+
+  // Tolerate empty / non-JSON bodies (e.g. a 204 or an upstream error page)
+  // instead of crashing with "Unexpected end of JSON input".
+  const text = await res.text();
+  let json: { success?: boolean; data?: T; error?: { message?: string } } | null = null;
+  if (text) {
+    try { json = JSON.parse(text); } catch { /* non-JSON body */ }
+  }
+
+  if (json === null) {
+    if (res.ok) return undefined as T; // succeeded with no body
+    throw new Error(`Request failed (${res.status})`);
+  }
+  if (!res.ok || json.success === false) {
+    throw new Error(json.error?.message ?? `Request failed (${res.status})`);
+  }
   return json.data as T;
 }
 

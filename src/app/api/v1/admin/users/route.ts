@@ -94,7 +94,12 @@ export async function DELETE(req: NextRequest) {
   if (user.supabaseUid) {
     await getSupabaseAdmin().auth.admin.deleteUser(user.supabaseUid).catch(() => {});
   }
-  await db.user.delete({ where: { id } });
+  try {
+    await db.user.delete({ where: { id } });
+  } catch {
+    // Usually an FK restraint — staff linked to appointments/bookings.
+    return fail("DELETE_FAILED", "Couldn't delete this user — they're linked to existing appointments or bookings. Deactivate them instead.", 409);
+  }
 
   return ok({ deleted: true, id });
 }
