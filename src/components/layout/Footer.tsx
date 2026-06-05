@@ -148,6 +148,13 @@ export function Footer() {
             <span>For salons, spas, clinics, barbershops &amp; studios.</span>
             <span aria-hidden className="hidden h-1 w-1 rounded-full bg-white/20 sm:inline-block" />
             <span className="hidden sm:inline">Made in India</span>
+            {/* Discreet admin access — a small dot only the team knows to click. */}
+            <Link
+              href="/admin"
+              aria-label="Admin"
+              title="Admin"
+              className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-white/15 transition-colors hover:bg-brand-500"
+            />
           </p>
         </div>
       </Container>

@@ -196,7 +196,7 @@ function TenantRow({
           )}
           {billing?.note && <p className="mt-0.5 text-[11px] italic text-zinc-600">"{billing.note}"</p>}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <select
             value={t.plan}
             disabled={busy}
@@ -348,8 +348,8 @@ function CreateBusinessModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-lg rounded-2xl border border-zinc-700 bg-zinc-950 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4">
+      <div className="my-auto max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-zinc-700 bg-zinc-950 shadow-2xl">
         <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
           <h2 className="font-semibold">Create business account</h2>
           <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300">✕</button>
@@ -467,8 +467,8 @@ function CredentialsModal({ result, onClose }: { result: ProvisionResult; onClos
   const loginUrl = result.loginUrl || "https://clitell.vercel.app/login";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-md rounded-2xl border border-emerald-800 bg-zinc-950 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4">
+      <div className="my-auto max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-emerald-800 bg-zinc-950 shadow-2xl">
         <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
           <div className="flex items-center gap-2">
             <span className="text-emerald-400">✓</span>

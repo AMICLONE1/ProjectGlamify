@@ -99,7 +99,7 @@ function UserRow({ u, onRole, onToggle, onReset, onDelete, busy }: {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <select
             value={u.role}
             disabled={busy}
