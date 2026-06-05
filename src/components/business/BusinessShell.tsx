@@ -8,7 +8,8 @@ import { cn } from "@/lib/cn";
 import { businessNavigation } from "@/lib/business-data";
 import { NavIcon, BellIcon, SearchIcon, type IconName } from "./icons";
 import { getUser, signOut, type SessionUser } from "@/lib/session";
-import { dashboardApi, clientsApi, appointmentsApi, onboardingApi, type DashboardData, type OnboardingProgress } from "@/lib/api-client";
+import { dashboardApi, clientsApi, appointmentsApi, onboardingApi, settingsApi, type DashboardData, type OnboardingProgress } from "@/lib/api-client";
+import { FullscreenPrompt } from "./FullscreenPrompt";
 import { ClitellMark } from "@/components/layout/Logo";
 
 function initialsOf(name: string) {
@@ -45,6 +46,13 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
     queryFn: () => onboardingApi.progress(),
     staleTime: 5 * 60_000,
   });
+
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => settingsApi.get(),
+    staleTime: 5 * 60_000,
+  });
+  const salonName = settings?.profile.name?.trim() || "";
 
   const alerts = [
     (dashData?.kpis.lowStockAlerts ?? 0) > 0 && {
@@ -98,6 +106,7 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-biz-bg text-biz-ink">
+      <FullscreenPrompt />
       <div className="mx-auto flex min-h-screen max-w-screen-2xl gap-4 p-3 sm:p-4">
         <aside className="hidden w-[72px] shrink-0 lg:flex">
           <div className="sticky top-4 flex h-[calc(100vh-2rem)] w-full flex-col items-center rounded-3xl bg-biz-surface py-5 shadow-sm">
@@ -161,7 +170,14 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
               <span className="truncate">Search…</span>
             </button>
 
-            <div className="hidden min-w-0 flex-1 items-center md:flex">
+            <div className="hidden min-w-0 flex-1 items-center gap-4 md:flex">
+              {salonName && (
+                <div className="hidden min-w-0 shrink-0 lg:block">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-biz-muted-2 leading-none">Workspace</p>
+                  <p className="mt-1 max-w-56 truncate text-sm font-bold text-biz-ink leading-none" title={salonName}>{salonName}</p>
+                </div>
+              )}
+              {salonName && <span className="hidden h-8 w-px shrink-0 bg-biz-border lg:block" />}
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
