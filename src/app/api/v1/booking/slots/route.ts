@@ -17,6 +17,19 @@ function minsToTime(mins: number): string {
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
+// Weekday index (0=Sun..6=Sat) for a YYYY-MM-DD date, evaluated in IST.
+// Parsing the date parts directly avoids UTC-vs-IST off-by-one-day errors.
+function istWeekday(dateStr: string): number {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  // Noon UTC on that calendar date is always the same weekday in IST.
+  return new Date(Date.UTC(y, m - 1, d, 12, 0, 0)).getUTCDay();
+}
+
+// YYYY-MM-DD string for a Date already shifted into IST wall-clock.
+function istDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 // Default working hours if not configured per-staff
 const DEFAULT_START = 10 * 60; // 10:00
 const DEFAULT_END = 20 * 60;   // 20:00
@@ -58,15 +71,22 @@ export async function GET(req: NextRequest) {
     });
     const hours = sf?.openingHours as Record<string, { open: string; close: string; closed?: boolean }> | null;
     const dayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-    const dayKey = dayNames[date.getDay()];
+    // Compute the weekday in IST (not server UTC) — otherwise a date at
+    // midnight IST reads as the *previous* day on a UTC server.
+    const dayKey = dayNames[istWeekday(dateStr)];
     const dayHours = hours?.[dayKey];
 
-    const start = dayHours && !dayHours.closed ? timeToMins(dayHours.open) : DEFAULT_START;
-    const end   = dayHours && !dayHours.closed ? timeToMins(dayHours.close) : DEFAULT_END;
+    // Only treat the day as closed if explicitly marked closed. If hours are
+    // missing or malformed, fall back to defaults so booking still works.
+    const openMins  = dayHours && !dayHours.closed ? timeToMins(dayHours.open) : NaN;
+    const closeMins = dayHours && !dayHours.closed ? timeToMins(dayHours.close) : NaN;
+    const isClosed  = !!dayHours?.closed;
+    const start = !isClosed && Number.isFinite(openMins)  ? openMins  : (isClosed ? -1 : DEFAULT_START);
+    const end   = !isClosed && Number.isFinite(closeMins) ? closeMins : (isClosed ? -1 : DEFAULT_END);
 
     const nowIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
     const nowMinsG = nowIST.getHours() * 60 + nowIST.getMinutes();
-    const isTodayG = date.toDateString() === nowIST.toDateString();
+    const isTodayG = dateStr === istDateStr(nowIST);
     const cutoffG = isTodayG ? nowMinsG + 30 : -1;
 
     const genericSlots = [];
@@ -102,10 +122,12 @@ export async function GET(req: NextRequest) {
   const slots: Array<{ time: string; staffId: string; staffName: string }> = [];
 
   for (const staff of staffList) {
-    // Determine working hours
+    // Determine working hours (fall back to defaults if missing/malformed)
     const workingHours = staff.workingHours as { start?: string; end?: string } | null;
-    const start = workingHours?.start ? timeToMins(workingHours.start) : DEFAULT_START;
-    const end = workingHours?.end ? timeToMins(workingHours.end) : DEFAULT_END;
+    const wStart = workingHours?.start ? timeToMins(workingHours.start) : NaN;
+    const wEnd   = workingHours?.end ? timeToMins(workingHours.end) : NaN;
+    const start = Number.isFinite(wStart) ? wStart : DEFAULT_START;
+    const end   = Number.isFinite(wEnd)   ? wEnd   : DEFAULT_END;
 
     // Build occupied blocks for this staff member
     const occupied: Array<{ start: number; end: number }> = [
@@ -144,7 +166,7 @@ export async function GET(req: NextRequest) {
   // Strip past slots when booking for today (with 30-min buffer in IST)
   const nowIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
   const nowMins = nowIST.getHours() * 60 + nowIST.getMinutes();
-  const isToday = date.toDateString() === nowIST.toDateString();
+  const isToday = dateStr === istDateStr(nowIST);
   const cutoff = isToday ? nowMins + 30 : -1;
 
   const filtered = slots.filter((s) => {
