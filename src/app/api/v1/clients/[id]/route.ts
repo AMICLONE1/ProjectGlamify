@@ -28,6 +28,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         take: 10,
         include: { items: { include: { service: { select: { name: true } } } } },
       },
+      invoices: {
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: {
+          id: true, invoiceNumber: true, status: true, totalAmt: true,
+          paymentMethod: true, createdAt: true,
+        },
+      },
       loyaltyTxns: { orderBy: { createdAt: "desc" }, take: 10 },
     },
   });

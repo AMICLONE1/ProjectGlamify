@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { clientsApi, type ClientSummary } from "@/lib/api-client";
 import { ImportClientsModal } from "./ImportClientsModal";
+import { InvoiceReceipt } from "../InvoiceReceipt";
 import { cn } from "@/lib/cn";
 import { SearchIcon } from "../icons";
 import type { ClientDetail } from "@/lib/api-client";
@@ -293,6 +294,7 @@ function ClientPanel({ client }: { client: ClientSummary }) {
   const [showBook, setShowBook] = useState(false);
   const [showOffer, setShowOffer] = useState(false);
   const [tab, setTab] = useState<ClientPanelTab>("profile");
+  const [printInvoiceId, setPrintInvoiceId] = useState<string | null>(null);
 
   const { data: detail, isLoading: detailLoading } = useQuery<ClientDetail>({
     queryKey: ["client-detail", client.id],
@@ -361,8 +363,41 @@ function ClientPanel({ client }: { client: ClientSummary }) {
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-biz-violet-500 border-t-transparent" />
             </div>
           )}
-          {detail && detail.appointments.length === 0 && (
-            <p className="py-8 text-center text-sm text-biz-muted">No visits recorded yet.</p>
+          {detail && detail.appointments.length === 0 && detail.invoices.length === 0 && (
+            <p className="py-8 text-center text-sm text-biz-muted">No visits or bills recorded yet.</p>
+          )}
+
+          {/* Bills (POS sales + invoices) */}
+          {detail && detail.invoices.length > 0 && (
+            <>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-biz-muted-2">Bills</p>
+              {detail.invoices.map((inv) => (
+                <div key={inv.id} className="flex items-center justify-between rounded-2xl bg-biz-bg px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs font-semibold text-biz-ink">{inv.invoiceNumber}</p>
+                    <p className="text-[11px] text-biz-muted-2">
+                      {new Date(inv.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      {" · "}{inv.paymentMethod} · {inv.status}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-sm font-bold text-biz-ink">{formatINR(inv.totalAmt)}</span>
+                    <button
+                      type="button"
+                      onClick={() => setPrintInvoiceId(inv.id)}
+                      title="Print bill"
+                      className="rounded-full bg-biz-surface px-2.5 py-1 text-[11px] font-semibold text-biz-ink hover:bg-biz-border"
+                    >
+                      🖨
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {detail && detail.appointments.length > 0 && (
+            <p className="pt-2 text-[10px] font-semibold uppercase tracking-wider text-biz-muted-2">Appointments</p>
           )}
           {detail?.appointments.map((apt) => {
             const svcNames = apt.items.map((i) => i.service.name).join(", ") || "—";
@@ -405,6 +440,7 @@ function ClientPanel({ client }: { client: ClientSummary }) {
           onBooked={() => { setShowBook(false); queryClient.invalidateQueries({ queryKey: ["calendar"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }); }} />
       )}
       {showOffer && <SendOfferSheet client={client} onClose={() => setShowOffer(false)} />}
+      {printInvoiceId && <InvoiceReceipt invoiceId={printInvoiceId} onClose={() => setPrintInvoiceId(null)} />}
     </div>
   );
 }

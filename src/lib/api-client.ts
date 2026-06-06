@@ -185,8 +185,13 @@ export interface ClientVisit {
 export interface LoyaltyTxn {
   id: string; type: string; points: number; note: string | null; createdAt: string;
 }
+export interface ClientInvoice {
+  id: string; invoiceNumber: string; status: string; totalAmt: number;
+  paymentMethod: string; createdAt: string;
+}
 export interface ClientDetail extends ClientSummary {
   appointments: ClientVisit[];
+  invoices: ClientInvoice[];
   loyaltyTxns: LoyaltyTxn[];
 }
 
