@@ -311,3 +311,17 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }
 }
+
+/* ─── Print: isolate a receipt/bill so only it prints, not the whole app ─── */
+@media print {
+  body * { visibility: hidden !important; }
+  .print-receipt, .print-receipt * { visibility: visible !important; }
+  .print-receipt {
+    position: absolute !important;
+    inset: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  .print\:hidden { display: none !important; }
+}

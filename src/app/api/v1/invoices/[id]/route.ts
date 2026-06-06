@@ -22,7 +22,25 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     },
   });
   if (!invoice) return fail("NOT_FOUND", "Invoice not found", 404);
-  return ok(invoice);
+
+  // Business header info for printable bills.
+  const tenant = await db.tenant.findUnique({
+    where: { id: auth.tenantId },
+    select: { name: true, legalName: true, phone: true, email: true, gstin: true, locations: { take: 1, select: { address: true, city: true } } },
+  });
+
+  return ok({
+    ...invoice,
+    business: {
+      name: tenant?.name ?? "",
+      legalName: tenant?.legalName ?? "",
+      phone: tenant?.phone ?? "",
+      email: tenant?.email ?? "",
+      gstin: tenant?.gstin ?? "",
+      address: tenant?.locations[0]?.address ?? "",
+      city: tenant?.locations[0]?.city ?? "",
+    },
+  });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
