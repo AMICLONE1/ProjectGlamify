@@ -46,7 +46,7 @@ const patchSchema = z.object({
     (v) => v == null || v === "" || /^https?:\/\/(www\.)?(google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl\/maps|maps\.google\.[a-z.]+|g\.page|business\.google\.[a-z.]+)/i.test(v),
     { message: "Enter a valid Google Business / Maps link" }
   ),
-}).strict();
+}); // not .strict() — unknown keys are stripped rather than 422'ing the whole save
 
 function profileComplete(t: { name: string | null; phone: string | null; email: string | null; about: string | null; openHour: number | null; closeHour: number | null }) {
   return !!(t.name?.trim() && t.phone?.trim() && t.email?.trim() && t.about?.trim() && t.openHour != null && t.closeHour != null);
@@ -101,7 +101,11 @@ export async function PATCH(req: NextRequest) {
   try { body = await req.json(); } catch { return fail("INVALID_JSON", "Body must be JSON", 400); }
 
   const parsed = patchSchema.safeParse(body);
-  if (!parsed.success) return fail("VALIDATION_ERROR", "Invalid settings input", 422);
+  if (!parsed.success) {
+    const first = parsed.error.issues[0];
+    const where = first?.path?.join(".") || "field";
+    return fail("VALIDATION_ERROR", `${where}: ${first?.message ?? "invalid value"}`, 422);
+  }
   const d = parsed.data;
 
   const existing = await db.tenant.findUnique({ where: { id: auth.tenantId }, select: { settings: true } });

@@ -142,7 +142,7 @@ export function ClientsBoard() {
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-1 rounded-full bg-biz-bg p-1">
+            <div className="flex items-center gap-1 overflow-x-auto rounded-full bg-biz-bg p-1 scrollbar-hide">
               {TAG_FILTERS.map((f) => (
                 <button
                   key={f.id}
@@ -159,7 +159,47 @@ export function ClientsBoard() {
             </div>
           </div>
 
-          <div className="mt-5 overflow-x-auto">
+          {/* Mobile: card list (tables are unusable on small screens) */}
+          <div className="mt-5 space-y-2 md:hidden">
+            {isLoading && [...Array(6)].map((_, i) => <Skeleton key={i} className="h-16 rounded-2xl" />)}
+            {!isLoading && clients.map((c) => {
+              const active = c.id === selectedId;
+              const primaryTag = c.tags[0];
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setSelectedId(c.id)}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-colors",
+                    active ? "border-biz-violet-300 bg-biz-violet-50/60" : "border-biz-border bg-biz-bg hover:bg-biz-surface"
+                  )}
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-biz-violet-400 to-biz-magenta-500 text-xs font-bold text-white">
+                    {initials(c.fullName)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-biz-ink">{c.fullName}</p>
+                    <p className="truncate text-xs text-biz-muted-2">{c.phone ?? c.email ?? "—"}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    {primaryTag && (
+                      <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider", tagBadge[primaryTag] ?? "bg-biz-surface text-biz-muted")}>
+                        {primaryTag}
+                      </span>
+                    )}
+                    <p className="mt-1 text-[11px] text-biz-muted">{c.totalVisits} visits · {formatINR(c.totalSpend)}</p>
+                  </div>
+                </button>
+              );
+            })}
+            {!isLoading && clients.length === 0 && (
+              <p className="rounded-2xl border border-biz-border bg-biz-bg p-8 text-center text-sm text-biz-muted-2">No clients match the current filters.</p>
+            )}
+          </div>
+
+          {/* Desktop: full table */}
+          <div className="mt-5 hidden overflow-x-auto md:block">
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead>
                 <tr className="border-b border-biz-border text-[10px] uppercase tracking-wider text-biz-muted-2">
