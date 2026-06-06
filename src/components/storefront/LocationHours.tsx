@@ -1,7 +1,7 @@
 import type { Storefront } from "@/content/storefronts";
 
 type Props = {
-  storefront: Pick<Storefront, "address" | "phone" | "geoLat" | "geoLng" | "hours" | "name">;
+  storefront: Pick<Storefront, "address" | "phone" | "geoLat" | "geoLng" | "hours" | "name" | "area" | "city" | "mapsUrl">;
 };
 
 const DAY_LABELS: { key: keyof Storefront["hours"]; label: string }[] = [
@@ -26,7 +26,21 @@ export function LocationHours({ storefront }: Props) {
   const dayKeys: (keyof Storefront["hours"])[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
   const todayKey = dayKeys[todayIdx];
 
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${storefront.geoLat},${storefront.geoLng}`;
+  // Maps link priority:
+  //   1. Manual link the salon pasted (most accurate — they pick the exact pin)
+  //   2. Auto-geocoded coordinates
+  //   3. Address text search (never points at 0,0 / the ocean)
+  const hasCoords =
+    Number.isFinite(storefront.geoLat) && Number.isFinite(storefront.geoLng) &&
+    !(storefront.geoLat === 0 && storefront.geoLng === 0);
+  const addressQuery = [storefront.name, storefront.address, storefront.area, storefront.city, "India"]
+    .filter(Boolean)
+    .join(", ");
+  const mapsUrl = storefront.mapsUrl
+    ? storefront.mapsUrl
+    : hasCoords
+      ? `https://www.google.com/maps/search/?api=1&query=${storefront.geoLat},${storefront.geoLng}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressQuery)}`;
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8 border-t border-border">

@@ -17,6 +17,7 @@ type TenantSettings = {
   };
   integrations?: Record<string, boolean>;
   revenueGoal?: number; // monthly revenue goal in ₹ (dashboard GoalCard)
+  gbp?: { url: string; connectedAt: string } | null; // Google Business Profile listing link
 };
 
 const patchSchema = z.object({
@@ -40,6 +41,11 @@ const patchSchema = z.object({
   }).optional(),
   // Integrations toggles (stored in settings JSON)
   integrations: z.record(z.string(), z.boolean()).optional(),
+  // Google Business Profile listing link. null = disconnect.
+  gbpUrl: z.string().max(2000).nullable().optional().refine(
+    (v) => v == null || v === "" || /^https?:\/\/(www\.)?(google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl\/maps|maps\.google\.[a-z.]+|g\.page|business\.google\.[a-z.]+)/i.test(v),
+    { message: "Enter a valid Google Business / Maps link" }
+  ),
 }).strict();
 
 function profileComplete(t: { name: string | null; phone: string | null; email: string | null; about: string | null; openHour: number | null; closeHour: number | null }) {
@@ -82,6 +88,7 @@ export async function GET(req: NextRequest) {
       showInclusive: settings.tax?.showInclusive ?? false,
     },
     integrations: settings.integrations ?? {},
+    gbp: settings.gbp ?? null,
     profileComplete: profileComplete(tenant),
   });
 }
@@ -105,6 +112,9 @@ export async function PATCH(req: NextRequest) {
   if (d.tax) nextSettings.tax = { ...currentSettings.tax, ...d.tax };
   if (d.integrations) nextSettings.integrations = { ...currentSettings.integrations, ...d.integrations };
   if (d.revenueGoal !== undefined) nextSettings.revenueGoal = d.revenueGoal;
+  if (d.gbpUrl !== undefined) {
+    nextSettings.gbp = d.gbpUrl ? { url: d.gbpUrl, connectedAt: new Date().toISOString() } : null;
+  }
 
   const updated = await db.tenant.update({
     where: { id: auth.tenantId },
@@ -117,7 +127,7 @@ export async function PATCH(req: NextRequest) {
       ...(d.openHour  !== undefined ? { openHour: d.openHour }   : {}),
       ...(d.closeHour !== undefined ? { closeHour: d.closeHour } : {}),
       ...(d.gstin     !== undefined ? { gstin: d.gstin }         : {}),
-      ...(d.tax || d.integrations || d.revenueGoal !== undefined ? { settings: nextSettings as never } : {}),
+      ...(d.tax || d.integrations || d.revenueGoal !== undefined || d.gbpUrl !== undefined ? { settings: nextSettings as never } : {}),
     },
     select: {
       name: true, phone: true, email: true, about: true, openHour: true, closeHour: true,

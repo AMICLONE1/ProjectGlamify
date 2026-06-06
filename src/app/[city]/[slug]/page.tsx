@@ -97,6 +97,7 @@ async function getStorefrontFromDB(city: string, slug: string): Promise<Storefro
       address: location?.address ?? "",
       geoLat: sf.geoLat ?? 0,
       geoLng: sf.geoLng ?? 0,
+      mapsUrl: sf.mapsUrl ?? undefined,
       rating,
       reviewCount,
       photos,

@@ -5,6 +5,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAuth, ok, fail } from "@/lib/auth";
+import { geocodeAddress } from "@/lib/geocode";
 
 const patchSchema = z.object({
   tagline:     z.string().max(160).optional(),
@@ -14,6 +15,11 @@ const patchSchema = z.object({
   address:     z.string().max(200).optional(),
   geoLat:      z.number().optional(),
   geoLng:      z.number().optional(),
+  // Manual Google Maps link. Empty string clears it. Must be a Google/maps URL.
+  mapsUrl:     z.string().max(2000).optional().refine(
+    (v) => v === undefined || v === "" || /^https?:\/\/(www\.)?(google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl\/maps|maps\.google\.[a-z.]+)/i.test(v),
+    { message: "Enter a valid Google Maps link" }
+  ),
   isPublished: z.boolean().optional(),
 }).strict();
 
@@ -54,7 +60,7 @@ export async function PATCH(req: NextRequest) {
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) return fail("VALIDATION_ERROR", "Invalid input", 422);
 
-  const { tagline, description, area, phone, address, geoLat, geoLng, isPublished } = parsed.data;
+  const { tagline, description, area, phone, address, geoLat, geoLng, mapsUrl, isPublished } = parsed.data;
 
   const sf = await db.storefront.findUnique({ where: { tenantId: auth.tenantId } });
   if (!sf) return fail("NOT_FOUND", "Storefront not found", 404);
@@ -67,6 +73,7 @@ export async function PATCH(req: NextRequest) {
       ...(area        !== undefined ? { area: area.toLowerCase().replace(/\s+/g, "-") } : {}),
       ...(geoLat      !== undefined ? { geoLat }      : {}),
       ...(geoLng      !== undefined ? { geoLng }      : {}),
+      ...(mapsUrl     !== undefined ? { mapsUrl: mapsUrl.trim() || null } : {}),
       ...(isPublished !== undefined ? { isPublished, publishedAt: isPublished ? new Date() : null } : {}),
       updatedAt: new Date(),
     },
@@ -96,6 +103,16 @@ export async function PATCH(req: NextRequest) {
         ...(phone       !== undefined ? { phone }              : {}),
       },
     });
+  }
+
+  // Auto-geocode when the address or area changed and the client didn't supply
+  // explicit coordinates. Best-effort — never blocks the save.
+  if ((address !== undefined || area !== undefined) && geoLat === undefined && geoLng === undefined) {
+    const loc = await db.location.findFirst({ where: { tenantId: auth.tenantId }, select: { address: true, city: true } });
+    const geo = await geocodeAddress({ address: loc?.address, area: updated.area, city: loc?.city });
+    if (geo) {
+      await db.storefront.update({ where: { id: sf.id }, data: { geoLat: geo.lat, geoLng: geo.lng } });
+    }
   }
 
   // Trigger ISR revalidation

@@ -22,6 +22,7 @@ type Review = {
 type StorefrontData = {
   id: string; slug: string; city: string; area: string;
   tagline: string | null; description: string | null;
+  mapsUrl: string | null;
   isPublished: boolean;
   photos: Photo[];
   reviews: Review[];
@@ -78,6 +79,7 @@ function TabOverview({ data, onSaved }: { data: StorefrontData; onSaved: () => v
     area:        data.area ?? "",
     phone:       loc?.phone ?? "",
     address:     loc?.address ?? "",
+    mapsUrl:     data.mapsUrl ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -118,6 +120,11 @@ function TabOverview({ data, onSaved }: { data: StorefrontData; onSaved: () => v
           <label className="label">Address</label>
           <input value={form.address} onChange={e => setForm(f => ({...f, address: e.target.value}))} placeholder="Shop 4, Linking Road" className={iCls} />
         </div>
+      </div>
+      <div>
+        <label className="label">Google Maps link <span className="text-muted-2 font-normal normal-case tracking-normal text-[11px]">(optional)</span></label>
+        <input value={form.mapsUrl} onChange={e => setForm(f => ({...f, mapsUrl: e.target.value}))} placeholder="Paste your Google Maps link for an exact pin" className={iCls} />
+        <p className="text-xs text-muted-2 mt-1">Search your salon on Google Maps → Share → Copy link. Leave blank and we&apos;ll locate you from your address automatically.</p>
       </div>
       <div>
         <label className="label">Tagline <span className="text-muted-2 font-normal normal-case tracking-normal text-[11px]">({form.tagline.length}/160)</span></label>

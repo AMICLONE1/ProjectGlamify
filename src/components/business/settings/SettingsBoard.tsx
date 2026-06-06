@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { settingsApi, locationsApi, staffApi, type BranchLocation, type StaffMember } from "@/lib/api-client";
+import { settingsApi, locationsApi, staffApi, onboardingApi, type BranchLocation, type StaffMember } from "@/lib/api-client";
 import { getUser } from "@/lib/session";
 import { cn } from "@/lib/cn";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -385,17 +385,19 @@ function RoleRow({ name, email, role, you }: { name: string; email: string; role
 
 // ─── Integrations (real toggles) ──────────────────────────────────────────────
 
+// Simple flag-based integrations (toggle = mark connected).
 const INTEGRATIONS = [
-  { id: "razorpay", label: "Razorpay", purpose: "UPI payments + refunds" },
   { id: "whatsapp", label: "WhatsApp Business", purpose: "Booking confirmations & reminders" },
   { id: "openai", label: "AI insights", purpose: "Smart suggestions & copy" },
-  { id: "gbp", label: "Google Business Profile", purpose: "Book button on Google" },
 ];
 
 function IntegrationsPanel() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["settings"], queryFn: () => settingsApi.get() });
+  const { data: onboarding } = useQuery({ queryKey: ["onboarding-progress"], queryFn: () => onboardingApi.progress() });
   const connected = data?.integrations ?? {};
+  const gbp = data?.gbp ?? null;
+  const [gbpOpen, setGbpOpen] = useState(false);
 
   const toggle = useMutation({
     mutationFn: (next: Record<string, boolean>) => settingsApi.update({ integrations: next }),
@@ -404,10 +406,40 @@ function IntegrationsPanel() {
 
   if (isLoading) return <PanelSkeleton />;
 
+  const bookingUrl = onboarding?.storefrontUrl
+    ? (typeof window !== "undefined" ? window.location.origin : "") + onboarding.storefrontUrl
+    : "";
+
   return (
     <div className="space-y-5">
       <SectionTitle eyebrow="Integrations" title="Connect external services" />
       <ul className="grid gap-3 sm:grid-cols-2">
+        {/* Google Business Profile — real guided connect */}
+        <li className="rounded-2xl bg-biz-bg p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-semibold text-biz-ink">Google Business Profile</p>
+              <p className="mt-0.5 text-xs text-biz-muted-2">Add a “Book” button to your Google listing</p>
+            </div>
+            <span className={cn("rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider", gbp ? "bg-biz-green-400/15 text-biz-green-500" : "bg-biz-surface text-biz-muted")}>
+              {gbp ? "Connected" : "Not connected"}
+            </span>
+          </div>
+          {gbp && (
+            <a href={gbp.url} target="_blank" rel="noopener noreferrer" className="mt-2 block truncate text-xs text-biz-violet-600 hover:underline">
+              {gbp.url}
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={() => setGbpOpen(true)}
+            className="mt-3 rounded-full bg-biz-surface px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-biz-ink hover:bg-biz-border"
+          >
+            {gbp ? "Manage" : "Connect"}
+          </button>
+        </li>
+
+        {/* Simple flag-based integrations */}
         {INTEGRATIONS.map((it) => {
           const on = !!connected[it.id];
           return (
@@ -433,7 +465,108 @@ function IntegrationsPanel() {
           );
         })}
       </ul>
-      <p className="text-xs text-biz-muted-2">Toggling marks an integration as connected for your workspace.</p>
+
+      {gbpOpen && (
+        <GbpConnectModal
+          current={gbp?.url ?? ""}
+          bookingUrl={bookingUrl}
+          onClose={() => setGbpOpen(false)}
+          onSaved={() => { queryClient.invalidateQueries({ queryKey: ["settings"] }); setGbpOpen(false); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Guided Google Business Profile connect: capture the listing link + show the
+// salon how to point their Google "Book" button at their Clitell storefront.
+function GbpConnectModal({ current, bookingUrl, onClose, onSaved }: {
+  current: string; bookingUrl: string; onClose: () => void; onSaved: () => void;
+}) {
+  const [url, setUrl] = useState(current);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const save = useMutation({
+    mutationFn: (gbpUrl: string | null) => settingsApi.update({ gbpUrl }),
+    onSuccess: onSaved,
+    onError: (e) => setError(e instanceof Error ? e.message : "Failed to save"),
+  });
+
+  function copyBooking() {
+    if (!bookingUrl) return;
+    navigator.clipboard.writeText(bookingUrl).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm">
+      <div className="my-auto max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-biz-surface p-6 shadow-2xl">
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <h2 className="font-display text-lg font-bold text-biz-ink">Google Business Profile</h2>
+            <p className="text-sm text-biz-muted">Let customers book you straight from Google.</p>
+          </div>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-biz-bg text-biz-muted hover:text-biz-ink">✕</button>
+        </div>
+
+        {/* Step 1 — paste listing */}
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-biz-muted-2">1 · Link your Google listing</p>
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="Paste your Google Maps / Business listing link"
+            className="w-full rounded-xl border border-biz-border bg-white px-3 py-2.5 text-sm text-biz-ink focus:outline-none focus:ring-2 focus:ring-biz-violet-300"
+          />
+          <p className="text-[11px] text-biz-muted-2">Search your salon on Google Maps → Share → Copy link.</p>
+        </div>
+
+        {/* Step 2 — booking link to paste into Google */}
+        <div className="mt-5 space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-biz-muted-2">2 · Add your booking link to Google</p>
+          {bookingUrl ? (
+            <>
+              <div className="flex items-center gap-2 rounded-xl bg-biz-bg px-3 py-2">
+                <span className="truncate text-xs text-biz-ink">{bookingUrl}</span>
+                <button onClick={copyBooking} className="ml-auto shrink-0 rounded-lg bg-biz-surface px-2.5 py-1 text-[11px] font-semibold text-biz-ink hover:bg-biz-border">
+                  {copied ? "Copied!" : "Copy"}
+                </button>
+              </div>
+              <ol className="list-decimal space-y-1 pl-4 text-[11px] text-biz-muted">
+                <li>Open your Google Business Profile (search your salon name → “Edit profile”).</li>
+                <li>Go to <strong>Bookings</strong> (or <strong>Edit profile → Booking</strong>).</li>
+                <li>Paste the link above as your appointment / booking URL and save.</li>
+                <li>A <strong>Book</strong> button now appears on your Google listing → customers land on your Clitell page.</li>
+              </ol>
+            </>
+          ) : (
+            <p className="rounded-xl bg-biz-orange-300/15 px-3 py-2 text-xs text-biz-orange-700">
+              Publish your storefront first (Storefront tab) to get a booking link.
+            </p>
+          )}
+        </div>
+
+        {error && <p className="mt-3 text-sm text-biz-pink-500">{error}</p>}
+
+        <div className="mt-6 flex gap-2">
+          {current && (
+            <button
+              onClick={() => save.mutate(null)}
+              disabled={save.isPending}
+              className="rounded-2xl border border-biz-border px-4 py-2.5 text-sm font-semibold text-biz-muted hover:bg-biz-bg disabled:opacity-50"
+            >
+              Disconnect
+            </button>
+          )}
+          <button
+            onClick={() => { setError(null); save.mutate(url.trim() || null); }}
+            disabled={save.isPending || (!url.trim() && !current)}
+            className="flex-1 rounded-2xl bg-biz-violet-500 py-2.5 text-sm font-semibold text-white hover:bg-biz-violet-600 disabled:opacity-40"
+          >
+            {save.isPending ? "Saving…" : current ? "Save changes" : "Connect"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

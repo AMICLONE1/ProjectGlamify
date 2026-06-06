@@ -459,6 +459,7 @@ model Storefront {
   publishedAt     DateTime?
   geoLat          Float?
   geoLng          Float?
+  mapsUrl         String?  // optional Google Maps link the salon pastes manually (overrides geo)
   gbpLocationId   String?
   gbpConnected    Boolean  @default(false)
   createdAt       DateTime @default(now())

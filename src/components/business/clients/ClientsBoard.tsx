@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { clientsApi, type ClientSummary } from "@/lib/api-client";
+import { ImportClientsModal } from "./ImportClientsModal";
 import { cn } from "@/lib/cn";
 import { SearchIcon } from "../icons";
 import type { ClientDetail } from "@/lib/api-client";
@@ -48,6 +49,7 @@ export function ClientsBoard() {
   const [tagFilter, setTagFilter] = useState<TagFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -86,14 +88,30 @@ export function ClientsBoard() {
             Search by name, phone, or email · filter by tag · open the side panel for full profile.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowAdd(true)}
-          className="rounded-full bg-biz-violet-500 px-4 py-2 text-xs font-semibold text-white hover:bg-biz-violet-600"
-        >
-          + Add client
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setShowImport(true)}
+            className="rounded-full border border-biz-border bg-biz-surface px-4 py-2 text-xs font-semibold text-biz-ink hover:border-biz-violet-300 hover:text-biz-violet-600"
+          >
+            ↑ Import from Excel
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowAdd(true)}
+            className="rounded-full bg-biz-violet-500 px-4 py-2 text-xs font-semibold text-white hover:bg-biz-violet-600"
+          >
+            + Add client
+          </button>
+        </div>
       </header>
+
+      {showImport && (
+        <ImportClientsModal
+          onClose={() => setShowImport(false)}
+          onDone={() => queryClient.invalidateQueries({ queryKey: ["clients"] })}
+        />
+      )}
 
       {showAdd && (
         <AddClientModal

@@ -116,6 +116,7 @@ export interface SettingsData {
     showInclusive: boolean;
   };
   integrations: Record<string, boolean>;
+  gbp: { url: string; connectedAt: string } | null;
   profileComplete: boolean;
 }
 
@@ -202,7 +203,26 @@ export const clientsApi = {
   getDetail: (id: string) => api.get<ClientDetail>(`/clients/${id}`),
   create: (body: Partial<ClientSummary> & { fullName: string }) => api.post<ClientSummary>("/clients", body),
   update: (id: string, body: Partial<ClientSummary>) => api.patch<ClientSummary>(`/clients/${id}`, body),
+  import: (rows: ImportClientRow[]) =>
+    api.post<ImportClientResult>("/clients/import", { rows }),
 };
+
+export interface ImportClientRow {
+  fullName: string;
+  phone?: string;
+  email?: string;
+  gender?: string;
+  notes?: string;
+  tags?: string[];
+}
+
+export interface ImportClientResult {
+  created: number;
+  updated: number;
+  skipped: number;
+  total: number;
+  errors: string[];
+}
 
 // ─── Appointments ─────────────────────────────────────────────────────────────
 
