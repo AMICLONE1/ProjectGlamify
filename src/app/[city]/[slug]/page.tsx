@@ -12,8 +12,10 @@ import { db } from "@/lib/db";
 import { absoluteUrl } from "@/lib/site";
 import { getGoogleRating } from "@/lib/google-places";
 
-// ISR: revalidate every hour; on-demand via /api/revalidate
-export const revalidate = 3600;
+// ISR: revalidate every 5 min; on-demand via /api/revalidate on each content change.
+// Short window is a safety net so new reviews/edits surface quickly even if an
+// on-demand revalidation call is missed.
+export const revalidate = 300;
 
 // Allow slugs not in generateStaticParams — render on-demand and cache via ISR.
 // Without this, newly published storefronts get 404 until the next full build.
@@ -32,7 +34,8 @@ async function getStorefrontFromDB(city: string, slug: string): Promise<Storefro
       where: { city, slug, isPublished: true },
       include: {
         photos: { orderBy: { sortOrder: "asc" } },
-        reviews: { orderBy: { createdAt: "desc" } },
+        // Public reviews only — private feedback (1-3★, source="feedback") stays hidden.
+        reviews: { where: { source: { not: "feedback" } }, orderBy: { createdAt: "desc" } },
         tenant: {
           include: {
             locations: { take: 1 },
@@ -212,11 +215,9 @@ export default async function Page({ params }: { params: Promise<Params> }) {
     where: { city, slug, isPublished: true },
     select: { mapsUrl: true, googleReviewUrl: true },
   }).catch(() => null);
-  const cityLabel = city[0].toUpperCase() + city.slice(1);
   const googleRating = await getGoogleRating({
     reviewUrl: sfRow?.googleReviewUrl,
     mapsUrl: sfRow?.mapsUrl,
-    queryFallback: `${storefront.name} ${storefront.area} ${cityLabel}`,
   });
 
   return (

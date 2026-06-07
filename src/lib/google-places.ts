@@ -20,32 +20,17 @@ export function extractPlaceId(url: string | null | undefined): string | null {
   return null;
 }
 
-// Resolve a free-text query (salon name + area) to a Place ID via Find Place.
-async function findPlaceId(query: string, key: string): Promise<string | null> {
-  try {
-    const url =
-      "https://maps.googleapis.com/maps/api/place/findplacefromtext/json" +
-      `?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id&key=${key}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
-    const data = await res.json();
-    return data?.candidates?.[0]?.place_id ?? null;
-  } catch {
-    return null;
-  }
-}
-
 export async function getGoogleRating(opts: {
   reviewUrl?: string | null;
   mapsUrl?: string | null;
-  queryFallback?: string;
 }): Promise<PlaceRating> {
   const key = process.env.GOOGLE_PLACES_API_KEY;
   if (!key) return null;
 
-  let placeId = extractPlaceId(opts.reviewUrl) || extractPlaceId(opts.mapsUrl);
-  if (!placeId && opts.queryFallback) {
-    placeId = await findPlaceId(opts.queryFallback, key);
-  }
+  // ONLY use a Place ID the salon explicitly gave us (via their pasted Google
+  // link). We deliberately do NOT text-search by name — a fuzzy name match can
+  // return a DIFFERENT business's rating, which would be wrong/misleading.
+  const placeId = extractPlaceId(opts.reviewUrl) || extractPlaceId(opts.mapsUrl);
   if (!placeId) return null;
 
   try {
