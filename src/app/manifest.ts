@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Clitell",
     description:
       "Run your salon, spa, or clinic on Clitell. Booking, billing, CRM, loyalty, and AI insights — built for India.",
-    start_url: "/",
+    start_url: "/business/dashboard",
     display: "standalone",
     background_color: "#ffffff",
     theme_color: "#0d0608",

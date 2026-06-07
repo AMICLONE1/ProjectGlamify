@@ -26,7 +26,10 @@ export function setRememberPreference(remember: boolean) {
 
 function pickStorage(): Storage | undefined {
   if (typeof window === "undefined") return undefined;
-  return getRememberPreference() ? window.localStorage : window.sessionStorage;
+  // Always localStorage: a salon app should keep staff logged in across app
+  // closes / phone restarts. They only log out when they explicitly tap Sign out.
+  // (The "remember me" toggle now only controls pre-filling the email.)
+  return window.localStorage;
 }
 
 export function createClient() {
@@ -35,10 +38,12 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       auth: {
-        // Choose storage based on the remember-me preference.
         storage: pickStorage(),
         persistSession: true,
         autoRefreshToken: true,
+        // Supabase refresh tokens are long-lived and rotate on use, so the
+        // session stays valid indefinitely as long as the app is opened
+        // periodically — no fixed timeout logout.
       },
     }
   );

@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/cn";
 import { SearchIcon } from "../icons";
-import { api, clientsApi, servicesApi, inventoryApi, type ClientSummary, type Service, type Product } from "@/lib/api-client";
+import { api, clientsApi, servicesApi, inventoryApi, onboardingApi, type ClientSummary, type Service, type Product } from "@/lib/api-client";
 import { getUser } from "@/lib/session";
 import { calculateTotals, usePosStore, type PaymentMethod } from "./posStore";
 
@@ -38,6 +38,8 @@ export function PosBoard() {
   const { data: servicesData } = useQuery({ queryKey: ["services"], queryFn: () => servicesApi.list() });
   const { data: productsData } = useQuery({ queryKey: ["inventory"], queryFn: () => inventoryApi.list() });
   const { data: clientsData } = useQuery({ queryKey: ["clients"], queryFn: () => clientsApi.list({ limit: 100 }) });
+  // Storefront review link for the post-sale review nudge.
+  const { data: onboarding } = useQuery({ queryKey: ["onboarding-progress"], queryFn: () => onboardingApi.progress(), staleTime: 5 * 60_000 });
 
   const services: Service[] = servicesData?.services ?? [];
   const products: Product[] = productsData?.products ?? [];
@@ -501,6 +503,8 @@ export function PosBoard() {
           totals={totals}
           items={items}
           clientName={cartClient?.fullName ?? "Client"}
+          clientPhone={cartClient?.phone ?? null}
+          reviewPath={onboarding?.storefrontUrl ? `${onboarding.storefrontUrl}/review` : null}
           paymentMethod={payments[0]?.method ?? "cash"}
           onClose={handleResetSale}
         />
@@ -542,12 +546,14 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "pin
 }
 
 function InvoiceConfirmation({
-  invoiceNumber, totals, items, clientName, paymentMethod, onClose,
+  invoiceNumber, totals, items, clientName, clientPhone, reviewPath, paymentMethod, onClose,
 }: {
   invoiceNumber: string;
   totals: ReturnType<typeof calculateTotals>;
   items: ReturnType<typeof usePosStore.getState>["items"];
   clientName: string;
+  clientPhone: string | null;
+  reviewPath: string | null;
   paymentMethod: string;
   onClose: () => void;
 }) {
@@ -656,7 +662,26 @@ function InvoiceConfirmation({
           <p className="mt-4 text-center text-[10px] text-biz-muted-2">Thank you for visiting! · Powered by Clitell</p>
         </div>
 
-        <div className="border-t border-biz-border px-6 py-4 print:hidden">
+        <div className="space-y-2 border-t border-biz-border px-6 py-4 print:hidden">
+          {clientPhone && reviewPath && (() => {
+            const reviewUrl = (typeof window !== "undefined" ? window.location.origin : "") + reviewPath;
+            const msg = `Hi ${clientName}! 🙏 Thanks for visiting today. We'd love your feedback — it takes 20 seconds: ${reviewUrl}`;
+            const wa = `https://wa.me/91${clientPhone.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
+            return (
+              <a
+                href={wa}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-4 py-2.5 text-xs font-semibold text-white hover:opacity-90"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.51 5.26l-.999 3.648 3.978-1.607z"/></svg>
+                Send review request on WhatsApp
+              </a>
+            );
+          })()}
+          {clientPhone && !reviewPath && (
+            <p className="text-center text-[11px] text-biz-muted-2">Publish your storefront to enable review requests.</p>
+          )}
           <button
             type="button"
             onClick={onClose}

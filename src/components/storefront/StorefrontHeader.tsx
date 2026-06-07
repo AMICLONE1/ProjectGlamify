@@ -61,12 +61,15 @@ export function StorefrontHeader({ storefront, isOpen, pricesFromLabel, googleRa
             className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border-strong bg-white text-muted transition-colors hover:border-ink hover:text-ink"
           >
             {copied ? (
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                <path d="M2 7.5l4 4 7-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             ) : (
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                <path d="M10 2.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM5 5.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm5 5a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM8.12 6.62l-1.24.74M6.88 7.62l1.24.74" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+              // Premium iOS-style share glyph: rounded tray + upward arrow.
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3v12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M8.5 6.5L12 3l3.5 3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M7 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             )}
           </button>

@@ -8,6 +8,7 @@ import { cn } from "@/lib/cn";
 import { businessNavigation } from "@/lib/business-data";
 import { NavIcon, BellIcon, SearchIcon, type IconName } from "./icons";
 import { getUser, signOut, type SessionUser } from "@/lib/session";
+import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { dashboardApi, clientsApi, appointmentsApi, onboardingApi, settingsApi, type DashboardData, type OnboardingProgress } from "@/lib/api-client";
 import { FullscreenPrompt } from "./FullscreenPrompt";
 import { ClitellMark } from "@/components/layout/Logo";
@@ -33,6 +34,23 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Keep the session alive when the installed PWA returns to the foreground.
+  // While backgrounded, Supabase's auto-refresh timer is paused; on resume the
+  // access token may be stale, so we proactively refresh it instead of letting
+  // a request fail and bounce the user to login.
+  useEffect(() => {
+    async function refreshOnResume() {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const supabase = getSupabaseBrowser();
+        const { data } = await supabase.auth.getSession();
+        if (data.session) await supabase.auth.refreshSession();
+      } catch { /* getFreshToken handles a truly-dead session on the next API call */ }
+    }
+    document.addEventListener("visibilitychange", refreshOnResume);
+    return () => document.removeEventListener("visibilitychange", refreshOnResume);
   }, []);
 
   const { data: dashData } = useQuery<DashboardData>({
