@@ -11,6 +11,9 @@ export type CartItem = {
   taxRate: number;
   quantity: number;
   staffId?: string;
+  openPrice?: boolean;        // service has a "from"/range price → staff sets final amount
+  priceMin?: number;          // base/min for validation hint
+  priceMax?: number;          // upper bound for validation hint
 };
 
 export type PaymentMethod = "cash" | "upi" | "card";
@@ -32,13 +35,17 @@ type PosState = {
 };
 
 export type CartProduct = { id: string; name: string; retailPrice: number; taxRate: number };
-export type CartService = { id: string; name: string; price: number; taxRate: number };
+export type CartService = {
+  id: string; name: string; price: number; taxRate: number;
+  priceType?: "fixed" | "from" | "range" | null; priceMax?: number | null;
+};
 
 type PosActions = {
   setClient: (id: string | null) => void;
   addService: (service: CartService) => void;
   addProduct: (product: CartProduct) => void;
   updateQuantity: (key: string, delta: number) => void;
+  updatePrice: (key: string, unitPrice: number) => void;
   removeItem: (key: string) => void;
   setDiscountPercent: (value: number) => void;
   setTip: (value: number) => void;
@@ -79,6 +86,7 @@ export const usePosStore = create<PosState & PosActions>((set) => ({
           ),
         };
       }
+      const openPrice = service.priceType === "from" || service.priceType === "range";
       return {
         items: [
           ...state.items,
@@ -90,6 +98,9 @@ export const usePosStore = create<PosState & PosActions>((set) => ({
             unitPrice: Number(service.price) || 0,
             taxRate: Number(service.taxRate) || 0,
             quantity: 1,
+            openPrice,
+            priceMin: Number(service.price) || 0,
+            priceMax: service.priceMax != null ? Number(service.priceMax) : undefined,
           },
         ],
       };
@@ -128,6 +139,13 @@ export const usePosStore = create<PosState & PosActions>((set) => ({
       items: state.items
         .map((it) => (it.key === key ? { ...it, quantity: it.quantity + delta } : it))
         .filter((it) => it.quantity > 0),
+    })),
+
+  updatePrice: (key, unitPrice) =>
+    set((state) => ({
+      items: state.items.map((it) =>
+        it.key === key ? { ...it, unitPrice: Math.max(0, Number(unitPrice) || 0) } : it
+      ),
     })),
 
   removeItem: (key) => set((state) => ({ items: state.items.filter((it) => it.key !== key) })),

@@ -9,6 +9,25 @@
 //   1. A Place ID we can parse from the salon's pasted Google link.
 //   2. Find Place from Text using the salon's NAME + full ADDRESS (precise — the
 //      address keeps it from matching a different business of the same name).
+//
+// COST CONTROL: results are cached 24h per place (Details) / 7d (Find Place),
+// so a salon triggers at most ~1 call/day. On top of that, a global monthly cap
+// (GOOGLE_PLACES_MONTHLY_CAP, default 10,000) keeps total spend inside Google's
+// $200/mo free credit (~11.7k Place Details calls). Beyond the cap we serve the
+// last cached value / no badge rather than incur charges.
+
+import { rateLimit } from "@/lib/rate-limit";
+
+const MONTHLY_CAP = Number(process.env.GOOGLE_PLACES_MONTHLY_CAP ?? 10000);
+
+// True while we're still under the monthly call budget. Uses a calendar-month
+// window so it resets on the 1st. Fails OPEN only if the limiter backend errors.
+async function withinMonthlyBudget(): Promise<boolean> {
+  const month = new Date().toISOString().slice(0, 7); // "2026-06"
+  const monthMs = 31 * 24 * 60 * 60 * 1000;
+  const res = await rateLimit(`places:month:${month}`, MONTHLY_CAP, monthMs);
+  return res.allowed;
+}
 
 type GoogleReview = {
   author: string;
@@ -57,6 +76,10 @@ export async function getGooglePlace(opts: {
 }): Promise<GooglePlace> {
   const key = process.env.GOOGLE_PLACES_API_KEY;
   if (!key) return null;
+
+  // Stop calling Google once we hit the monthly budget (stays in free tier).
+  // ISR's 24h cache means already-fetched salons keep showing their badge.
+  if (!(await withinMonthlyBudget())) return null;
 
   let placeId = extractPlaceId(opts.reviewUrl) || extractPlaceId(opts.mapsUrl);
   if (!placeId && opts.nameQuery && opts.nameQuery.trim().length > 4) {

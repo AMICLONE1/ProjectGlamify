@@ -45,7 +45,7 @@ export function PosBoard() {
 
   const {
     clientId, items, discountPercent, tip, payments, notes,
-    setClient, addService, addProduct, updateQuantity, removeItem,
+    setClient, addService, addProduct, updateQuantity, updatePrice, removeItem,
     setDiscountPercent, setTip, addPayment, removePayment, setNotes, reset,
   } = usePosStore();
 
@@ -71,7 +71,7 @@ export function PosBoard() {
     if (!ids.length || items.length > 0) return; // don't overwrite if cart already has items
     for (const id of ids) {
       const svc = servicesData.services.find((s) => s.id === id);
-      if (svc) addService({ id: svc.id, name: svc.name, price: svc.price, taxRate: svc.taxPct });
+      if (svc) addService({ id: svc.id, name: svc.name, price: svc.price, taxRate: svc.taxPct, priceType: svc.priceType, priceMax: svc.priceMax });
     }
   }, [servicesData, searchParams, items.length, addService]);
 
@@ -84,6 +84,8 @@ export function PosBoard() {
     () => calculateTotals(items, discountPercent, tip, payments),
     [items, discountPercent, tip, payments]
   );
+  // Range/"from" services must have a final price entered before billing.
+  const hasUnpriced = items.some((it) => it.openPrice && (!it.unitPrice || it.unitPrice <= 0));
   const cartClient = clients.find((c) => c.id === clientId);
 
   const filteredServices = useMemo(() => {
@@ -243,7 +245,7 @@ export function PosBoard() {
                   <button
                     key={s.id}
                     type="button"
-                    onClick={() => addService({ id: s.id, name: s.name, price: s.price, taxRate: s.taxPct })}
+                    onClick={() => addService({ id: s.id, name: s.name, price: s.price, taxRate: s.taxPct, priceType: s.priceType, priceMax: s.priceMax })}
                     className="group rounded-2xl bg-biz-bg p-4 text-left transition-colors hover:bg-biz-violet-50"
                   >
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-biz-violet-600">
@@ -340,7 +342,24 @@ export function PosBoard() {
                       <div className="min-w-0">
                         <p className="text-[10px] uppercase tracking-wider text-biz-muted-2">{it.kind}</p>
                         <p className="mt-0.5 truncate text-sm font-semibold text-biz-ink">{it.name}</p>
-                        <p className="mt-0.5 text-xs text-biz-muted">{formatINR(it.unitPrice)} · GST {it.taxRate}%</p>
+                        {it.openPrice ? (
+                          <div className="mt-1.5">
+                            <div className="inline-flex items-center gap-1 rounded-lg bg-biz-surface px-2 py-1">
+                              <span className="text-xs text-biz-muted">₹</span>
+                              <input
+                                type="number" min={0} value={it.unitPrice || ""}
+                                onChange={(e) => updatePrice(it.key, Number(e.target.value))}
+                                placeholder="Enter price"
+                                className="w-20 bg-transparent text-sm font-semibold text-biz-ink focus:outline-none"
+                              />
+                            </div>
+                            <p className="mt-0.5 text-[10px] text-biz-violet-600">
+                              {it.priceMax ? `Range ₹${it.priceMin?.toLocaleString("en-IN")}–₹${it.priceMax.toLocaleString("en-IN")}` : `From ₹${it.priceMin?.toLocaleString("en-IN")}`} · set final price
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="mt-0.5 text-xs text-biz-muted">{formatINR(it.unitPrice)} · GST {it.taxRate}%</p>
+                        )}
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-biz-ink">{formatINR(it.unitPrice * it.quantity)}</p>
@@ -457,13 +476,15 @@ export function PosBoard() {
             <button
               type="button"
               onClick={() => createInvoice.mutate()}
-              disabled={items.length === 0 || totals.due > 0.01 || !clientId || createInvoice.isPending}
+              disabled={items.length === 0 || totals.due > 0.01 || !clientId || hasUnpriced || createInvoice.isPending}
               className="mt-4 w-full rounded-full bg-biz-violet-500 px-4 py-3 text-sm font-semibold text-white hover:bg-biz-violet-600 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {createInvoice.isPending
                 ? "Saving…"
                 : items.length === 0
                 ? "Add items to begin"
+                : hasUnpriced
+                ? "Set price for ranged services"
                 : !clientId
                 ? "Select a client"
                 : totals.due > 0.01
