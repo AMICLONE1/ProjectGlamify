@@ -1,47 +1,91 @@
-// Google Places — fetch a salon's live Google rating + review count.
-// COMPLIANCE: we only show the aggregate rating/count and link out to Google.
-// We do NOT store or redisplay individual Google review text (against Google ToS).
+// Google Places — fetch a salon's live Google rating, review count, and recent reviews.
 //
-// Needs GOOGLE_PLACES_API_KEY. We extract the Place ID from the salon's pasted
-// Google Maps / review URL, then call the Places Details endpoint.
+// COMPLIANCE: Google's Places API terms allow showing review content **with
+// attribution** (author name, "on Google", relative time) and linking back.
+// We show up to 5 Google reviews clearly marked as Google-sourced and never mix
+// them silently with platform reviews. We cache responses (24h) to limit cost.
+//
+// Place resolution priority:
+//   1. A Place ID we can parse from the salon's pasted Google link.
+//   2. Find Place from Text using the salon's NAME + full ADDRESS (precise — the
+//      address keeps it from matching a different business of the same name).
 
-type PlaceRating = { rating: number; total: number; placeId: string } | null;
+type GoogleReview = {
+  author: string;
+  rating: number;
+  text: string;
+  relativeTime: string;
+  profilePhoto?: string;
+};
+export type GooglePlace = {
+  rating: number;
+  total: number;
+  placeId: string;
+  reviews: GoogleReview[];
+} | null;
 
-// Pull a Place ID out of common Google URL shapes.
+// Parse a Place ID directly out of a Google URL when present.
 export function extractPlaceId(url: string | null | undefined): string | null {
   if (!url) return null;
-  // ?placeid=... or place_id:...
   const q = url.match(/[?&]place_?id=([^&]+)/i) || url.match(/place_id:([A-Za-z0-9_-]+)/);
   if (q) return decodeURIComponent(q[1]);
-  // .../maps/place/.../data=...!1s0x...:0x... — the cid after :0x isn't a place_id, skip.
-  // ChIJ... style ids that sometimes appear in the path
   const chij = url.match(/(ChIJ[A-Za-z0-9_-]{10,})/);
   if (chij) return chij[1];
   return null;
 }
 
-export async function getGoogleRating(opts: {
+// Resolve name + address → Place ID. Address is included so a generic salon
+// name doesn't match the wrong business.
+async function findPlaceId(query: string, key: string): Promise<string | null> {
+  try {
+    const url =
+      "https://maps.googleapis.com/maps/api/place/findplacefromtext/json" +
+      `?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id` +
+      `&key=${key}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000), next: { revalidate: 604800 } });
+    const data = await res.json();
+    return data?.candidates?.[0]?.place_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function getGooglePlace(opts: {
   reviewUrl?: string | null;
   mapsUrl?: string | null;
-}): Promise<PlaceRating> {
+  nameQuery?: string | null; // "Salon Name, Address, City"
+}): Promise<GooglePlace> {
   const key = process.env.GOOGLE_PLACES_API_KEY;
   if (!key) return null;
 
-  // ONLY use a Place ID the salon explicitly gave us (via their pasted Google
-  // link). We deliberately do NOT text-search by name — a fuzzy name match can
-  // return a DIFFERENT business's rating, which would be wrong/misleading.
-  const placeId = extractPlaceId(opts.reviewUrl) || extractPlaceId(opts.mapsUrl);
+  let placeId = extractPlaceId(opts.reviewUrl) || extractPlaceId(opts.mapsUrl);
+  if (!placeId && opts.nameQuery && opts.nameQuery.trim().length > 4) {
+    placeId = await findPlaceId(opts.nameQuery, key);
+  }
   if (!placeId) return null;
 
   try {
     const url =
       "https://maps.googleapis.com/maps/api/place/details/json" +
-      `?place_id=${encodeURIComponent(placeId)}&fields=rating,user_ratings_total&key=${key}`;
+      `?place_id=${encodeURIComponent(placeId)}` +
+      `&fields=rating,user_ratings_total,reviews&reviews_sort=newest&key=${key}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(6000), next: { revalidate: 86400 } });
     const data = await res.json();
     const r = data?.result;
     if (!r || typeof r.rating !== "number") return null;
-    return { rating: r.rating, total: r.user_ratings_total ?? 0, placeId };
+
+    const reviews: GoogleReview[] = (r.reviews ?? [])
+      .filter((rv: { text?: string }) => rv.text && rv.text.trim().length > 0)
+      .slice(0, 5)
+      .map((rv: { author_name: string; rating: number; text: string; relative_time_description: string; profile_photo_url?: string }) => ({
+        author: rv.author_name,
+        rating: rv.rating,
+        text: rv.text,
+        relativeTime: rv.relative_time_description,
+        profilePhoto: rv.profile_photo_url,
+      }));
+
+    return { rating: r.rating, total: r.user_ratings_total ?? 0, placeId, reviews };
   } catch {
     return null;
   }

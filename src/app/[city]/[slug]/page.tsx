@@ -10,7 +10,7 @@ import {
 import { StorefrontPage } from "@/components/storefront/StorefrontPage";
 import { db } from "@/lib/db";
 import { absoluteUrl } from "@/lib/site";
-import { getGoogleRating } from "@/lib/google-places";
+import { getGooglePlace } from "@/lib/google-places";
 
 // ISR: revalidate every 5 min; on-demand via /api/revalidate on each content change.
 // Short window is a safety net so new reviews/edits surface quickly even if an
@@ -210,20 +210,31 @@ export default async function Page({ params }: { params: Promise<Params> }) {
   const isOpen = isOpenNow(storefront.hours);
   const pricesFrom = storefront.services.length > 0 ? Math.min(...storefront.services.map(s => s.price)) : 0;
 
-  // Live Google rating badge (compliant: aggregate only, links to Google).
-  const sfRow = await db.storefront.findFirst({
-    where: { city, slug, isPublished: true },
-    select: { mapsUrl: true, googleReviewUrl: true },
-  }).catch(() => null);
-  const googleRating = await getGoogleRating({
-    reviewUrl: sfRow?.googleReviewUrl,
-    mapsUrl: sfRow?.mapsUrl,
-  });
+  // Live Google rating + reviews (compliant: shown with attribution, links to Google).
+  // Only for real DB-backed storefronts (seed/demo storefronts have no tenantId).
+  let google = null;
+  if (storefront.tenantId) {
+    let sfRow: { mapsUrl: string | null; googleReviewUrl: string | null } | null = null;
+    try {
+      sfRow = await db.storefront.findFirst({
+        where: { city, slug, isPublished: true },
+        select: { mapsUrl: true, googleReviewUrl: true },
+      });
+    } catch { sfRow = null; }
+    const cityLabel = city[0].toUpperCase() + city.slice(1);
+    const nameQuery = [storefront.name, storefront.address, storefront.area, cityLabel]
+      .filter(Boolean).join(", ");
+    google = await getGooglePlace({
+      reviewUrl: sfRow?.googleReviewUrl,
+      mapsUrl: sfRow?.mapsUrl,
+      nameQuery,
+    });
+  }
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <StorefrontPage storefront={storefront} isOpen={isOpen} pricesFrom={pricesFrom} pricesFromLabel={formatPrice(pricesFrom)} googleRating={googleRating} />
+      <StorefrontPage storefront={storefront} isOpen={isOpen} pricesFrom={pricesFrom} pricesFromLabel={formatPrice(pricesFrom)} google={google} />
     </>
   );
 }

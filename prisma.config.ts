@@ -1,9 +1,9 @@
 import { config } from "dotenv";
 import { defineConfig } from "prisma/config";
 
-// Load .env.local first (dev), then fall back to .env
+// Load .env.local — the single source of local secrets. (On Vercel, env vars
+// are injected directly, so dotenv is effectively a no-op there.)
 config({ path: ".env.local", override: false });
-config({ path: ".env", override: false });
 
 export default defineConfig({
   schema: "prisma/schema.prisma",

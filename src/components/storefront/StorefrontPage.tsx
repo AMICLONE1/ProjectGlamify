@@ -11,15 +11,18 @@ import { ReviewsSection } from "./ReviewsSection";
 import { LocationHours } from "./LocationHours";
 import { BookingModal } from "./BookingModal";
 
+type GoogleReview = { author: string; rating: number; text: string; relativeTime: string; profilePhoto?: string };
+type GooglePlace = { rating: number; total: number; reviews: GoogleReview[] } | null;
+
 type Props = {
   storefront: Storefront;
   isOpen: boolean;
   pricesFrom: number;
   pricesFromLabel: string;
-  googleRating?: { rating: number; total: number } | null;
+  google?: GooglePlace;
 };
 
-export function StorefrontPage({ storefront, isOpen, pricesFromLabel, googleRating }: Props) {
+export function StorefrontPage({ storefront, isOpen, pricesFromLabel, google }: Props) {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [preselectedServiceId, setPreselectedServiceId] = useState<string | null>(null);
 
@@ -46,7 +49,7 @@ export function StorefrontPage({ storefront, isOpen, pricesFromLabel, googleRati
         storefront={storefront}
         isOpen={isOpen}
         pricesFromLabel={pricesFromLabel}
-        googleRating={googleRating}
+        googleRating={google ? { rating: google.rating, total: google.total } : null}
         onBookClick={() => openBooking()}
       />
 
@@ -74,6 +77,8 @@ export function StorefrontPage({ storefront, isOpen, pricesFromLabel, googleRati
         reviewCount={storefront.reviewCount}
         city={storefront.city}
         slug={storefront.slug}
+        googleReviews={google?.reviews ?? []}
+        googleRating={google ? { rating: google.rating, total: google.total } : null}
       />
 
       <LocationHours storefront={storefront} />

@@ -1,13 +1,28 @@
 import Link from "next/link";
 import type { Storefront } from "@/content/storefronts";
 
+type GoogleReview = { author: string; rating: number; text: string; relativeTime: string; profilePhoto?: string };
+
 type Props = {
   reviews: Storefront["reviews"];
   rating: number;
   reviewCount: number;
   city: string;
   slug: string;
+  googleReviews?: GoogleReview[];
+  googleRating?: { rating: number; total: number } | null;
 };
+
+function GoogleGlyph({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden>
+      <path fill="#4285F4" d="M45 24c0-1.6-.1-3.1-.4-4.6H24v9.1h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1C42.7 36.9 45 31 45 24z"/>
+      <path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.4l-7.1-5.5c-2 1.3-4.5 2.1-7.4 2.1-5.7 0-10.5-3.8-12.2-9H4.5v5.7C8.1 41.1 15.5 46 24 46z"/>
+      <path fill="#FBBC05" d="M11.8 28.2c-.4-1.3-.7-2.7-.7-4.2s.2-2.9.7-4.2v-5.7H4.5C3 17.1 2.1 20.4 2.1 24s.9 6.9 2.4 9.9l7.3-5.7z"/>
+      <path fill="#EA4335" d="M24 10.8c3.2 0 6.1 1.1 8.4 3.3l6.3-6.3C34.9 4.1 29.9 2 24 2 15.5 2 8.1 6.9 4.5 14.1l7.3 5.7c1.7-5.2 6.5-9 12.2-9z"/>
+    </svg>
+  );
+}
 
 function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
   return (
@@ -21,8 +36,9 @@ function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
   );
 }
 
-export function ReviewsSection({ reviews, rating, reviewCount, city, slug }: Props) {
+export function ReviewsSection({ reviews, rating, reviewCount, city, slug, googleReviews = [], googleRating }: Props) {
   const reviewUrl = `/${city}/${slug}/review`;
+  const hasAny = reviews.length > 0 || googleReviews.length > 0;
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8 border-t border-border">
@@ -45,7 +61,7 @@ export function ReviewsSection({ reviews, rating, reviewCount, city, slug }: Pro
         </div>
       </div>
 
-      {reviews.length === 0 && (
+      {!hasAny && (
         <div className="rounded-2xl border border-dashed border-border-strong bg-surface-2 px-4 py-10 text-center">
           <p className="text-sm font-medium text-ink">No reviews yet</p>
           <p className="mt-1 text-xs text-muted">Be the first to share your experience.</p>
@@ -53,6 +69,41 @@ export function ReviewsSection({ reviews, rating, reviewCount, city, slug }: Pro
             Write a review
           </Link>
         </div>
+      )}
+
+      {/* Google reviews — shown with attribution per Google Places terms */}
+      {googleReviews.length > 0 && (
+        <div className="mb-6">
+          <div className="mb-3 flex items-center gap-2">
+            <GoogleGlyph size={16} />
+            <span className="text-sm font-semibold text-ink">From Google</span>
+            {googleRating && <span className="text-xs text-muted">· {googleRating.rating.toFixed(1)} ({googleRating.total})</span>}
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {googleReviews.map((g, i) => (
+              <div key={i} className="rounded-2xl border border-border bg-white p-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {g.profilePhoto
+                      ? <img src={g.profilePhoto} alt={g.author} className="h-8 w-8 rounded-full" referrerPolicy="no-referrer" />
+                      : <div className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-xs font-bold text-ink">{g.author.charAt(0)}</div>}
+                    <div>
+                      <p className="text-sm font-semibold text-ink">{g.author}</p>
+                      <p className="flex items-center gap-1 text-xs text-muted-2"><GoogleGlyph size={10} /> {g.relativeTime}</p>
+                    </div>
+                  </div>
+                  <StarRow rating={g.rating} size={12} />
+                </div>
+                <p className="text-sm leading-relaxed text-muted line-clamp-5">{g.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {reviews.length > 0 && googleReviews.length > 0 && (
+        <p className="mb-3 text-sm font-semibold text-ink">More from customers</p>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
