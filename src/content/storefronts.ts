@@ -226,14 +226,17 @@ export function getAllStorefrontSlugs(): { city: string; slug: string }[] {
 }
 
 export function isOpenNow(hours: WeeklyHours): boolean {
-  const now = new Date();
+  // Evaluate in IST. On a UTC server (Vercel) a naive new Date() would read the
+  // wrong weekday/hour and show salons as Closed during their actual open hours.
+  const nowIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
   const days: (keyof WeeklyHours)[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-  const dayKey = days[now.getDay()];
+  const dayKey = days[nowIST.getDay()];
   const dayHours = hours[dayKey];
-  if (dayHours.closed) return false;
+  if (!dayHours || dayHours.closed) return false;
   const [oh, om] = dayHours.open.split(":").map(Number);
   const [ch, cm] = dayHours.close.split(":").map(Number);
-  const nowMins = now.getHours() * 60 + now.getMinutes();
+  if ([oh, om, ch, cm].some((n) => Number.isNaN(n))) return false;
+  const nowMins = nowIST.getHours() * 60 + nowIST.getMinutes();
   return nowMins >= oh * 60 + om && nowMins < ch * 60 + cm;
 }
 

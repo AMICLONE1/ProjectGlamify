@@ -22,7 +22,8 @@ function formatTime(t: string) {
 }
 
 export function LocationHours({ storefront }: Props) {
-  const todayIdx = new Date().getDay(); // 0=Sun
+  // Use IST so "today" is correct regardless of the viewer's timezone.
+  const todayIdx = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).getDay(); // 0=Sun
   const dayKeys: (keyof Storefront["hours"])[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
   const todayKey = dayKeys[todayIdx];
 
