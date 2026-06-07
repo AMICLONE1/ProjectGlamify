@@ -59,18 +59,24 @@ export async function signOut() {
 // Refreshes the access token from the live Supabase session (tokens expire ~1h).
 // Returns a valid token or null. Call before authenticated API requests.
 export async function getFreshToken(): Promise<string | null> {
+  const supabase = getSupabaseBrowser();
   try {
-    const { data, error } = await getSupabaseBrowser().auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
     const token = data.session?.access_token ?? null;
     if (token) setToken(token);
     return token;
   } catch {
-    // Invalid/expired refresh token — clear stale keys so the user can log in fresh.
+    // Invalid/expired refresh token. Sign out to stop Supabase's background
+    // auto-refresh loop (which otherwise keeps throwing AuthApiError in the
+    // console), then clear stale keys so the user can log in fresh.
+    try { await supabase.auth.signOut({ scope: "local" }); } catch { /* ignore */ }
     if (typeof window !== "undefined") {
-      Object.keys(localStorage)
-        .filter((k) => k.startsWith("sb-"))
-        .forEach((k) => localStorage.removeItem(k));
+      [window.localStorage, window.sessionStorage].forEach((store) => {
+        Object.keys(store)
+          .filter((k) => k.startsWith("sb-"))
+          .forEach((k) => store.removeItem(k));
+      });
     }
     return null;
   }

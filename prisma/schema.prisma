@@ -460,6 +460,8 @@ model Storefront {
   geoLat          Float?
   geoLng          Float?
   mapsUrl         String?  // optional Google Maps link the salon pastes manually (overrides geo)
+  audience        String?  // who they serve: "men" | "women" | "unisex"
+  googleReviewUrl String?  // salon's Google "write a review" link (for the happy-customer funnel)
   gbpLocationId   String?
   gbpConnected    Boolean  @default(false)
   createdAt       DateTime @default(now())

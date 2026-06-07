@@ -27,8 +27,8 @@ export function ServiceMixDonut({ data = [], hasData = false }: { data?: MixSlic
       <p className="mt-0.5 text-xs text-biz-muted">This month · {formatINR(total)} total</p>
 
       <div className="mt-4 grid grid-cols-[1fr_1.1fr] items-center gap-4">
-        <div className="relative aspect-square">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="relative h-44 w-full">
+          <ResponsiveContainer width="100%" height={176} minWidth={0}>
             <PieChart>
               <Pie
                 data={data}

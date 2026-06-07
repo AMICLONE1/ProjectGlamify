@@ -40,7 +40,7 @@ export function BookingsBarChart({ data = [], hasData = false }: { data?: Bookin
         </div>
       ) : (
       <div className="mt-5 h-64 w-full">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height={256} minWidth={0}>
           <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
             <CartesianGrid stroke="#ebe9f1" strokeDasharray="3 6" vertical={false} />
             <XAxis

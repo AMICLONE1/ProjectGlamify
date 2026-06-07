@@ -8,10 +8,11 @@ type Props = {
   storefront: Storefront;
   isOpen: boolean;
   pricesFromLabel: string;
+  googleRating?: { rating: number; total: number } | null;
   onBookClick: () => void;
 };
 
-export function StorefrontHeader({ storefront, isOpen, pricesFromLabel, onBookClick }: Props) {
+export function StorefrontHeader({ storefront, isOpen, pricesFromLabel, googleRating, onBookClick }: Props) {
   const [copied, setCopied] = useState(false);
 
   function handleShare() {
@@ -36,7 +37,7 @@ export function StorefrontHeader({ storefront, isOpen, pricesFromLabel, onBookCl
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-surface-2 px-3 py-0.5 text-xs font-medium text-muted uppercase tracking-[0.15em]">
-                {storefront.businessType}
+                {storefront.audience && storefront.audience !== "unisex" ? `${storefront.audience}'s ` : storefront.audience === "unisex" ? "Unisex " : ""}{storefront.businessType}
               </span>
               <span
                 className={`rounded-full px-3 py-0.5 text-xs font-semibold tracking-tight ${
@@ -84,6 +85,16 @@ export function StorefrontHeader({ storefront, isOpen, pricesFromLabel, onBookCl
             <span className="font-semibold text-ink">{storefront.rating}</span>
             <span className="text-muted">({storefront.reviewCount} reviews)</span>
           </div>
+          {googleRating && (
+            <>
+              <span className="h-1 w-1 rounded-full bg-border-strong" />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-0.5">
+                <svg width="13" height="13" viewBox="0 0 48 48" aria-hidden><path fill="#4285F4" d="M45 24c0-1.6-.1-3.1-.4-4.6H24v9.1h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1C42.7 36.9 45 31 45 24z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.4l-7.1-5.5c-2 1.3-4.5 2.1-7.4 2.1-5.7 0-10.5-3.8-12.2-9H4.5v5.7C8.1 41.1 15.5 46 24 46z"/><path fill="#FBBC05" d="M11.8 28.2c-.4-1.3-.7-2.7-.7-4.2s.2-2.9.7-4.2v-5.7H4.5C3 17.1 2.1 20.4 2.1 24s.9 6.9 2.4 9.9l7.3-5.7z"/><path fill="#EA4335" d="M24 10.8c3.2 0 6.1 1.1 8.4 3.3l6.3-6.3C34.9 4.1 29.9 2 24 2 15.5 2 8.1 6.9 4.5 14.1l7.3 5.7c1.7-5.2 6.5-9 12.2-9z"/></svg>
+                <span className="font-semibold text-ink">{googleRating.rating.toFixed(1)}</span>
+                <span className="text-muted">on Google ({googleRating.total})</span>
+              </span>
+            </>
+          )}
           <span className="h-1 w-1 rounded-full bg-border-strong" />
           <span className="text-muted">{storefront.priceRange} · from {pricesFromLabel}</span>
           <span className="h-1 w-1 rounded-full bg-border-strong" />

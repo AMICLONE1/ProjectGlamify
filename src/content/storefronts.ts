@@ -79,6 +79,7 @@ export type Storefront = {
   geoLat: number;
   geoLng: number;
   mapsUrl?: string; // optional manual Google Maps link (overrides geo)
+  audience?: "men" | "women" | "unisex";
   rating: number;
   reviewCount: number;
   photos: string[]; // URLs

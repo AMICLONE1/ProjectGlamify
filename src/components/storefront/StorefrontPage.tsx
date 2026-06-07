@@ -16,9 +16,10 @@ type Props = {
   isOpen: boolean;
   pricesFrom: number;
   pricesFromLabel: string;
+  googleRating?: { rating: number; total: number } | null;
 };
 
-export function StorefrontPage({ storefront, isOpen, pricesFromLabel }: Props) {
+export function StorefrontPage({ storefront, isOpen, pricesFromLabel, googleRating }: Props) {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [preselectedServiceId, setPreselectedServiceId] = useState<string | null>(null);
 
@@ -45,6 +46,7 @@ export function StorefrontPage({ storefront, isOpen, pricesFromLabel }: Props) {
         storefront={storefront}
         isOpen={isOpen}
         pricesFromLabel={pricesFromLabel}
+        googleRating={googleRating}
         onBookClick={() => openBooking()}
       />
 
@@ -70,6 +72,8 @@ export function StorefrontPage({ storefront, isOpen, pricesFromLabel }: Props) {
         reviews={storefront.reviews}
         rating={storefront.rating}
         reviewCount={storefront.reviewCount}
+        city={storefront.city}
+        slug={storefront.slug}
       />
 
       <LocationHours storefront={storefront} />

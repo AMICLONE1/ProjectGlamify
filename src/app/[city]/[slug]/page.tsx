@@ -10,6 +10,7 @@ import {
 import { StorefrontPage } from "@/components/storefront/StorefrontPage";
 import { db } from "@/lib/db";
 import { absoluteUrl } from "@/lib/site";
+import { getGoogleRating } from "@/lib/google-places";
 
 // ISR: revalidate every hour; on-demand via /api/revalidate
 export const revalidate = 3600;
@@ -98,6 +99,7 @@ async function getStorefrontFromDB(city: string, slug: string): Promise<Storefro
       geoLat: sf.geoLat ?? 0,
       geoLng: sf.geoLng ?? 0,
       mapsUrl: sf.mapsUrl ?? undefined,
+      audience: (sf.audience as "men" | "women" | "unisex" | null) ?? undefined,
       rating,
       reviewCount,
       photos,
@@ -139,10 +141,21 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const topServices = storefront.services.slice(0, 3).map(s => s.name).join(", ");
   const areaLabel = storefront.area.split("-").map(w => w[0].toUpperCase() + w.slice(1)).join(" ");
   const cityLabel = city[0].toUpperCase() + city.slice(1);
+  const typeLabel = storefront.businessType
+    ? storefront.businessType[0].toUpperCase() + storefront.businessType.slice(1)
+    : "Salon";
+  const audLabel = storefront.audience === "men" ? "Men's " : storefront.audience === "women" ? "Women's " : "Unisex ";
 
   return {
-    title: `${storefront.name} — ${topServices || "Beauty & Wellness"} in ${areaLabel}, ${cityLabel}`,
-    description: `Book at ${storefront.name} in ${areaLabel} ${cityLabel}. OTP-verified bookings. Book online now.`,
+    // Targets local-intent queries like "unisex salon near me in Shahunagar, Pune".
+    title: `${storefront.name} — ${audLabel}${typeLabel} in ${areaLabel}, ${cityLabel}`,
+    description: `${storefront.name}, a ${storefront.audience ?? ""} ${storefront.businessType ?? "salon"} in ${areaLabel}, ${cityLabel}. ${topServices ? topServices + ". " : ""}Book online with OTP-verified appointments on Clitell.`,
+    keywords: [
+      `${storefront.businessType ?? "salon"} in ${areaLabel}`,
+      `${storefront.businessType ?? "salon"} near me ${cityLabel}`,
+      `${audLabel.trim()} ${storefront.businessType ?? "salon"} ${cityLabel}`,
+      ...storefront.services.slice(0, 5).map(s => `${s.name} ${areaLabel}`),
+    ],
     openGraph: {
       title: storefront.name,
       description: storefront.tagline,
@@ -174,6 +187,10 @@ function buildJsonLd(storefront: Storefront) {
     address: { "@type":"PostalAddress", streetAddress:storefront.address, addressLocality:areaLabel, addressRegion:cityLabel, addressCountry:"IN" },
     geo: { "@type":"GeoCoordinates", latitude:storefront.geoLat, longitude:storefront.geoLng },
     url: absoluteUrl(`/${storefront.city}/${storefront.slug}`),
+    ...(storefront.audience ? {
+      audience: { "@type": "PeopleAudience", audienceType:
+        storefront.audience === "unisex" ? "Men and Women" : storefront.audience === "men" ? "Men" : "Women" },
+    } : {}),
     ...(storefront.reviewCount > 0 ? { aggregateRating: { "@type":"AggregateRating", ratingValue:storefront.rating.toString(), reviewCount:storefront.reviewCount.toString() } } : {}),
     priceRange: storefront.priceRange,
     openingHoursSpecification: openingHours,
@@ -190,10 +207,22 @@ export default async function Page({ params }: { params: Promise<Params> }) {
   const isOpen = isOpenNow(storefront.hours);
   const pricesFrom = storefront.services.length > 0 ? Math.min(...storefront.services.map(s => s.price)) : 0;
 
+  // Live Google rating badge (compliant: aggregate only, links to Google).
+  const sfRow = await db.storefront.findFirst({
+    where: { city, slug, isPublished: true },
+    select: { mapsUrl: true, googleReviewUrl: true },
+  }).catch(() => null);
+  const cityLabel = city[0].toUpperCase() + city.slice(1);
+  const googleRating = await getGoogleRating({
+    reviewUrl: sfRow?.googleReviewUrl,
+    mapsUrl: sfRow?.mapsUrl,
+    queryFallback: `${storefront.name} ${storefront.area} ${cityLabel}`,
+  });
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <StorefrontPage storefront={storefront} isOpen={isOpen} pricesFrom={pricesFrom} pricesFromLabel={formatPrice(pricesFrom)} />
+      <StorefrontPage storefront={storefront} isOpen={isOpen} pricesFrom={pricesFrom} pricesFromLabel={formatPrice(pricesFrom)} googleRating={googleRating} />
     </>
   );
 }

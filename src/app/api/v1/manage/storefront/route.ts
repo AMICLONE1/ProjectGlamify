@@ -20,6 +20,11 @@ const patchSchema = z.object({
     (v) => v === undefined || v === "" || /^https?:\/\/(www\.)?(google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl\/maps|maps\.google\.[a-z.]+)/i.test(v),
     { message: "Enter a valid Google Maps link" }
   ),
+  audience:    z.enum(["men", "women", "unisex"]).optional(),
+  googleReviewUrl: z.string().max(2000).optional().refine(
+    (v) => v === undefined || v === "" || /^https?:\/\//i.test(v),
+    { message: "Enter a valid link" }
+  ),
   isPublished: z.boolean().optional(),
 }).strict();
 
@@ -60,7 +65,7 @@ export async function PATCH(req: NextRequest) {
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) return fail("VALIDATION_ERROR", "Invalid input", 422);
 
-  const { tagline, description, area, phone, address, geoLat, geoLng, mapsUrl, isPublished } = parsed.data;
+  const { tagline, description, area, phone, address, geoLat, geoLng, mapsUrl, audience, googleReviewUrl, isPublished } = parsed.data;
 
   const sf = await db.storefront.findUnique({ where: { tenantId: auth.tenantId } });
   if (!sf) return fail("NOT_FOUND", "Storefront not found", 404);
@@ -74,6 +79,8 @@ export async function PATCH(req: NextRequest) {
       ...(geoLat      !== undefined ? { geoLat }      : {}),
       ...(geoLng      !== undefined ? { geoLng }      : {}),
       ...(mapsUrl     !== undefined ? { mapsUrl: mapsUrl.trim() || null } : {}),
+      ...(audience    !== undefined ? { audience } : {}),
+      ...(googleReviewUrl !== undefined ? { googleReviewUrl: googleReviewUrl.trim() || null } : {}),
       ...(isPublished !== undefined ? { isPublished, publishedAt: isPublished ? new Date() : null } : {}),
       updatedAt: new Date(),
     },

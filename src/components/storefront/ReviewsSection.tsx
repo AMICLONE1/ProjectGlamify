@@ -1,9 +1,12 @@
+import Link from "next/link";
 import type { Storefront } from "@/content/storefronts";
 
 type Props = {
   reviews: Storefront["reviews"];
   rating: number;
   reviewCount: number;
+  city: string;
+  slug: string;
 };
 
 function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
@@ -18,19 +21,39 @@ function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
   );
 }
 
-export function ReviewsSection({ reviews, rating, reviewCount }: Props) {
-  if (reviews.length === 0) return null;
+export function ReviewsSection({ reviews, rating, reviewCount, city, slug }: Props) {
+  const reviewUrl = `/${city}/${slug}/review`;
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8 border-t border-border">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="eyebrow">Reviews</h2>
-        <div className="flex items-center gap-2">
-          <StarRow rating={rating} />
-          <span className="font-semibold text-ink">{rating}</span>
-          <span className="text-sm text-muted">({reviewCount})</span>
+        <div className="flex items-center gap-3">
+          {reviews.length > 0 && (
+            <div className="flex items-center gap-2">
+              <StarRow rating={rating} />
+              <span className="font-semibold text-ink">{rating}</span>
+              <span className="text-sm text-muted">({reviewCount})</span>
+            </div>
+          )}
+          <Link
+            href={reviewUrl}
+            className="rounded-full border border-brand-500 bg-white px-4 py-1.5 text-sm font-semibold text-brand-600 transition-colors hover:bg-brand-500 hover:text-white"
+          >
+            ★ Leave a review
+          </Link>
         </div>
       </div>
+
+      {reviews.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-border-strong bg-surface-2 px-4 py-10 text-center">
+          <p className="text-sm font-medium text-ink">No reviews yet</p>
+          <p className="mt-1 text-xs text-muted">Be the first to share your experience.</p>
+          <Link href={reviewUrl} className="mt-4 inline-block rounded-full bg-brand-500 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-600">
+            Write a review
+          </Link>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {reviews.map((review) => (

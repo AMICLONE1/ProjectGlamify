@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { getFreshToken } from "@/lib/session";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { ReviewQrCard } from "./ReviewQrCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,6 +24,8 @@ type StorefrontData = {
   id: string; slug: string; city: string; area: string;
   tagline: string | null; description: string | null;
   mapsUrl: string | null;
+  audience: string | null;
+  googleReviewUrl: string | null;
   isPublished: boolean;
   photos: Photo[];
   reviews: Review[];
@@ -80,6 +83,8 @@ function TabOverview({ data, onSaved }: { data: StorefrontData; onSaved: () => v
     phone:       loc?.phone ?? "",
     address:     loc?.address ?? "",
     mapsUrl:     data.mapsUrl ?? "",
+    audience:    data.audience ?? "unisex",
+    googleReviewUrl: data.googleReviewUrl ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -108,6 +113,20 @@ function TabOverview({ data, onSaved }: { data: StorefrontData; onSaved: () => v
           <input value={form.area} onChange={e => setForm(f => ({...f, area: e.target.value}))} placeholder="Bandra West" className={iCls} />
         </div>
       </div>
+      <div>
+        <label className="label">Who do you serve?</label>
+        <div className="flex gap-2">
+          {[{v:"unisex",l:"Unisex"},{v:"women",l:"Women"},{v:"men",l:"Men"}].map(opt => (
+            <button key={opt.v} type="button" onClick={() => setForm(f => ({...f, audience: opt.v}))}
+              className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors ${
+                form.audience === opt.v ? "border-brand-400 bg-brand-50 text-brand-700" : "border-border-strong text-muted hover:border-ink"
+              }`}>
+              {opt.l}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-2 mt-1">Shown on your storefront and helps customers find the right salon.</p>
+      </div>
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <label className="label">Phone</label>
@@ -125,6 +144,11 @@ function TabOverview({ data, onSaved }: { data: StorefrontData; onSaved: () => v
         <label className="label">Google Maps link <span className="text-muted-2 font-normal normal-case tracking-normal text-[11px]">(optional)</span></label>
         <input value={form.mapsUrl} onChange={e => setForm(f => ({...f, mapsUrl: e.target.value}))} placeholder="Paste your Google Maps link for an exact pin" className={iCls} />
         <p className="text-xs text-muted-2 mt-1">Search your salon on Google Maps → Share → Copy link. Leave blank and we&apos;ll locate you from your address automatically.</p>
+      </div>
+      <div>
+        <label className="label">Google review link <span className="text-muted-2 font-normal normal-case tracking-normal text-[11px]">(optional)</span></label>
+        <input value={form.googleReviewUrl} onChange={e => setForm(f => ({...f, googleReviewUrl: e.target.value}))} placeholder="Your Google 'write a review' link" className={iCls} />
+        <p className="text-xs text-muted-2 mt-1">Happy customers (4-5★) are sent here to post on Google — boosting your &quot;near me&quot; ranking. Get it from your Google Business Profile → Ask for reviews.</p>
       </div>
       <div>
         <label className="label">Tagline <span className="text-muted-2 font-normal normal-case tracking-normal text-[11px]">({form.tagline.length}/160)</span></label>
@@ -542,7 +566,7 @@ function TabPhotos({ photos: initial, storefrontName, onChanged }: { photos: Pho
 type ReviewForm = { authorName: string; rating: number; text: string; date: string; verified: boolean };
 const EMPTY_REVIEW: ReviewForm = { authorName: "", rating: 5, text: "", date: new Date().toISOString().split("T")[0], verified: true };
 
-function TabReviews({ reviews: initial, onChanged }: { reviews: Review[]; onChanged: () => void }) {
+function TabReviews({ reviews: initial, city, slug, salonName, onChanged }: { reviews: Review[]; city: string; slug: string; salonName: string; onChanged: () => void }) {
   const [reviews, setReviews] = useState<Review[]>(initial);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState<ReviewForm>(EMPTY_REVIEW);
@@ -590,6 +614,9 @@ function TabReviews({ reviews: initial, onChanged }: { reviews: Review[]; onChan
 
   return (
     <div className="space-y-5">
+      {/* Collect reviews via QR */}
+      <ReviewQrCard city={city} slug={slug} salonName={salonName} />
+
       {/* Summary bar */}
       <div className="flex items-center gap-4 rounded-2xl border border-border bg-white px-5 py-4">
         <div className="text-center">
@@ -962,7 +989,7 @@ export function StorefrontManager() {
       {tab === "overview" && <TabOverview data={data} onSaved={load} />}
       {tab === "services" && <TabServices services={data.tenant.services} onChanged={load} />}
       {tab === "photos"   && <TabPhotos photos={data.photos} storefrontName={data.tenant.name} onChanged={load} />}
-      {tab === "reviews"  && <TabReviews reviews={data.reviews} onChanged={load} />}
+      {tab === "reviews"  && <TabReviews reviews={data.reviews} city={data.city} slug={data.slug} salonName={data.tenant.name} onChanged={load} />}
     </div>
   );
 }
