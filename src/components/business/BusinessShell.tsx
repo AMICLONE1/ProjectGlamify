@@ -81,7 +81,6 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
       tag: "Growth",
       body: `${dashData!.kpis.newClientsThisMonth} new client${dashData!.kpis.newClientsThisMonth > 1 ? "s" : ""} joined this month.`,
     },
-    { tag: "AI insight", body: "Enable AI alerts in Phase E for churn predictions and slot recommendations." },
   ].filter(Boolean) as { tag: string; body: string }[];
 
   useEffect(() => {

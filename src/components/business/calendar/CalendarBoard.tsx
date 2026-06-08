@@ -911,14 +911,17 @@ function AppointmentPanel({ eventId, source, onClose, onUpdated }: {
 
                 {checkinPhase === "code-sent" && (
                   <>
-                    <p className="text-xs text-biz-green-600 font-medium">✓ Code sent to customer's phone</p>
-                    {devCode && (
-                      <div className="rounded-xl bg-biz-yellow-300/20 px-3 py-2 text-xs">
-                        <span className="text-biz-muted-2">Dev mode — code: </span>
-                        <span className="font-mono font-bold text-biz-ink">{devCode}</span>
+                    {devCode ? (
+                      // No SMS configured: show the code so staff can read it to the
+                      // customer (or skip — "Customer arrived" already works one-tap).
+                      <div className="rounded-xl bg-biz-violet-50 px-3 py-2 text-xs">
+                        <span className="text-biz-muted-2">Check-in code (share with customer): </span>
+                        <span className="font-mono text-base font-bold tracking-widest text-biz-ink">{devCode}</span>
                       </div>
+                    ) : (
+                      <p className="text-xs text-biz-green-600 font-medium">✓ Code sent to customer&apos;s phone</p>
                     )}
-                    <p className="text-xs text-biz-muted">Ask the customer to read the 6-digit code from their phone:</p>
+                    <p className="text-xs text-biz-muted">Enter the 6-digit code to confirm arrival:</p>
                     <input
                       type="text" inputMode="numeric" maxLength={6}
                       placeholder="Enter 6-digit code"

@@ -14,7 +14,7 @@ const createSchema = z.object({
   body: z.string().min(1).max(2000),
   scheduleMode: z.enum(["now", "later"]),
   scheduleAt: z.string().optional(),
-  recipientIds: z.array(z.string()),
+  recipientIds: z.array(z.string()).max(5000), // cap to prevent abuse / runaway sends
 });
 
 export async function GET(req: NextRequest) {

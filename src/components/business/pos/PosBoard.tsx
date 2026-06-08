@@ -33,6 +33,11 @@ export function PosBoard() {
   const [search, setSearch] = useState("");
   const [invoiceResult, setInvoiceResult] = useState<{ invoiceNumber: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Quick walk-in client creation (bill someone not yet saved).
+  const [showWalkin, setShowWalkin] = useState(false);
+  const [walkinName, setWalkinName] = useState("");
+  const [walkinPhone, setWalkinPhone] = useState("");
+  const [walkinError, setWalkinError] = useState<string | null>(null);
 
   // ── Real data ──
   const { data: servicesData } = useQuery({ queryKey: ["services"], queryFn: () => servicesApi.list() });
@@ -50,6 +55,21 @@ export function PosBoard() {
     setClient, addService, addProduct, updateQuantity, updatePrice, removeItem,
     setDiscountPercent, setTip, addPayment, removePayment, setNotes, reset,
   } = usePosStore();
+
+  // Create a walk-in client on the fly and select them for billing.
+  const createWalkin = useMutation({
+    mutationFn: () => clientsApi.create({
+      fullName: walkinName.trim(),
+      ...(walkinPhone.trim() ? { phone: walkinPhone.trim() } : {}),
+      tags: ["new"],
+    }),
+    onSuccess: async (c) => {
+      await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      setClient(c.id);
+      setShowWalkin(false); setWalkinName(""); setWalkinPhone(""); setWalkinError(null);
+    },
+    onError: (e) => setWalkinError(e instanceof Error ? e.message : "Could not add client"),
+  });
 
   // Auto-select client when arriving from calendar
   useEffect(() => {
@@ -300,21 +320,59 @@ export function PosBoard() {
 
         <aside className="space-y-4">
           <div className="rounded-3xl bg-biz-surface p-5 shadow-sm">
-            <p className="text-xs font-medium text-biz-violet-600">Client</p>
-            <select
-              value={clientId ?? ""}
-              onChange={(e) => setClient(e.target.value || null)}
-              className="mt-3 w-full appearance-none rounded-2xl bg-biz-bg px-4 py-3 text-sm text-biz-ink focus:outline-none focus:ring-2 focus:ring-biz-violet-300"
-            >
-              <option value="">Select a client…</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.fullName}{c.phone ? ` · ${c.phone}` : ""}
-                </option>
-              ))}
-            </select>
-            {clients.length === 0 && (
-              <p className="mt-2 text-xs text-biz-muted">No clients yet. Add one in the Clients tab to bill them.</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-biz-violet-600">Client</p>
+              <button
+                type="button"
+                onClick={() => setShowWalkin((s) => !s)}
+                className="rounded-full bg-biz-bg px-2.5 py-1 text-[11px] font-semibold text-biz-violet-600 hover:bg-biz-border"
+              >
+                {showWalkin ? "Cancel" : "+ New walk-in"}
+              </button>
+            </div>
+
+            {showWalkin ? (
+              <div className="mt-3 space-y-2">
+                <input
+                  value={walkinName}
+                  onChange={(e) => setWalkinName(e.target.value)}
+                  placeholder="Customer name *"
+                  className="w-full rounded-2xl bg-biz-bg px-4 py-2.5 text-sm text-biz-ink focus:outline-none focus:ring-2 focus:ring-biz-violet-300"
+                  autoFocus
+                />
+                <input
+                  value={walkinPhone}
+                  onChange={(e) => setWalkinPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="Phone (optional)"
+                  inputMode="numeric"
+                  className="w-full rounded-2xl bg-biz-bg px-4 py-2.5 text-sm text-biz-ink focus:outline-none focus:ring-2 focus:ring-biz-violet-300"
+                />
+                {walkinError && <p className="text-xs text-biz-pink-500">{walkinError}</p>}
+                <button
+                  type="button"
+                  disabled={createWalkin.isPending || !walkinName.trim()}
+                  onClick={() => createWalkin.mutate()}
+                  className="w-full rounded-2xl bg-biz-violet-500 py-2.5 text-sm font-semibold text-white hover:bg-biz-violet-600 disabled:opacity-40"
+                >
+                  {createWalkin.isPending ? "Adding…" : "Add & select"}
+                </button>
+              </div>
+            ) : (
+              <select
+                value={clientId ?? ""}
+                onChange={(e) => setClient(e.target.value || null)}
+                className="mt-3 w-full appearance-none rounded-2xl bg-biz-bg px-4 py-3 text-sm text-biz-ink focus:outline-none focus:ring-2 focus:ring-biz-violet-300"
+              >
+                <option value="">Select a client…</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.fullName}{c.phone ? ` · ${c.phone}` : ""}
+                  </option>
+                ))}
+              </select>
+            )}
+            {clients.length === 0 && !showWalkin && (
+              <p className="mt-2 text-xs text-biz-muted">No clients yet — tap “+ New walk-in” to bill someone right away.</p>
             )}
             {cartClient && (
               <div className="mt-3 rounded-2xl bg-biz-violet-50 p-3 text-xs">
@@ -735,7 +793,7 @@ function InvoiceHistory() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["invoices", page, statusFilter],
-    queryFn: () => api.get<{ invoices: InvoiceSummary[] }>(
+    queryFn: () => api.get<{ invoices: InvoiceSummary[]; hasMore: boolean }>(
       `/invoices?page=${page}&limit=20${statusFilter !== "all" ? `&status=${statusFilter}` : ""}`
     ),
   });
@@ -852,7 +910,7 @@ function InvoiceHistory() {
           ← Previous
         </button>
         <span className="text-xs text-biz-muted-2">Page {page}</span>
-        <button type="button" disabled={invoices.length < 20} onClick={() => setPage((p) => p + 1)}
+        <button type="button" disabled={!data?.hasMore} onClick={() => setPage((p) => p + 1)}
           className="rounded-full bg-biz-bg px-4 py-1.5 text-xs font-semibold text-biz-muted disabled:opacity-40 hover:bg-biz-border">
           Next →
         </button>

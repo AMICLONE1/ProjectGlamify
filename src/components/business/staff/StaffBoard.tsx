@@ -43,7 +43,7 @@ export function StaffBoard() {
       <div className="flex w-fit items-center gap-1 rounded-full bg-biz-bg p-1">
         <TabButton active={tab === "roster"} onClick={() => setTab("roster")}>Team</TabButton>
         <TabButton active={tab === "commissions"} onClick={() => setTab("commissions")}>Commissions</TabButton>
-        <TabButton active={tab === "leave"} onClick={() => setTab("leave")}>Leave</TabButton>
+        {/* Leave management not built yet — hidden until ready to avoid a dead tab. */}
       </div>
 
       {tab === "roster" && (

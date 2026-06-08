@@ -82,6 +82,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid date/time" }, { status: 400 });
   }
 
+  // Reject bookings outside the salon's opening hours (defence in depth — the slot
+  // API already filters, but never trust the client). Evaluate the weekday in IST.
+  const hours = storefront.openingHours as Record<string, { open: string; close: string; closed?: boolean }> | null;
+  if (hours) {
+    const dayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+    const [yy, mm, dd] = date.split("-").map(Number);
+    const istWeekday = new Date(Date.UTC(yy, mm - 1, dd, 12, 0, 0)).getUTCDay();
+    const dayHours = hours[dayNames[istWeekday]];
+    if (dayHours && !dayHours.closed) {
+      const toMins = (t: string) => { const [a, b] = t.split(":").map(Number); return a * 60 + b; };
+      const startMins = toMins(dayHours.open);
+      const closeMins = toMins(dayHours.close);
+      const reqMins = h * 60 + m;
+      const endMins = reqMins + durationMins;
+      if (Number.isFinite(startMins) && Number.isFinite(closeMins) &&
+          (reqMins < startMins || endMins > closeMins)) {
+        return NextResponse.json({ error: "That time is outside the salon's opening hours." }, { status: 422 });
+      }
+    } else if (dayHours?.closed) {
+      return NextResponse.json({ error: "The salon is closed on that day." }, { status: 422 });
+    }
+  }
+
   // Slot conflict check
   if (staffDetailId) {
     const slotEnd = new Date(scheduledAt.getTime() + durationMins * 60_000);
@@ -98,9 +121,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Generate OTP and create booking
+  // Generate OTP and create booking.
   const otp = generateOtp();
-  const isConsoleMode = process.env.OTP_PROVIDER !== "msg91";
 
   const booking = await db.onlineBooking.create({
     data: {
@@ -115,15 +137,16 @@ export async function POST(req: NextRequest) {
       totalAmount,
       status: "pending_otp",
       bookingOtpSentAt: new Date(),
-      // Store OTP in notes in console mode (no Redis) — cleared on verify
-      notes: isConsoleMode ? `otp:${otp}|services:${servicesLabel}` : `services:${servicesLabel}`,
+      // Never persist the OTP to the database. The in-process store (below) holds
+      // it with a TTL; if SMS is configured the customer receives it out-of-band.
+      notes: `services:${servicesLabel}`,
     },
   });
 
-  // Store OTP in-process map as backup (prod: Redis with TTL)
+  // Store OTP in-process map with a 10-min TTL (swap for Redis at scale).
   storeOtpDev(`booking:${booking.id}`, otp, 600);
 
-  // Send OTP via MSG91 or console
+  // Send OTP via MSG91 (or no-op console in dev). Never logs the code in prod.
   await sendOtp(customerPhone, otp, "booking");
 
   return NextResponse.json({ bookingId: booking.id, otpRequired: true }, { status: 201 });

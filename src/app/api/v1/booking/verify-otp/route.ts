@@ -31,11 +31,11 @@ export async function POST(req: NextRequest) {
   const bookingResult = await rateLimit(`otp:booking:${bookingId}`, 5, 15 * 60 * 1000);
   if (!bookingResult.allowed) return rateLimitResponse(bookingResult.retryAfter);
 
-  // Dev fallback: seed storefronts use the in-process OTP store
-  const isDevFallback = bookingId.startsWith("BKG-");
-  if (isDevFallback) {
+  // Seed/demo storefronts (BKG-… ids) have no DB row — accept any 6-digit code.
+  const isDemoBooking = bookingId.startsWith("BKG-");
+  if (isDemoBooking) {
     const result = verifyOtpDev(`booking:${bookingId}`, otp);
-    if (result === "valid" || otp.length === 6) { // accept any 6-digit for pure demo
+    if (result === "valid" || otp.length === 6) {
       return NextResponse.json({
         confirmed: true,
         booking: { id: bookingId, status: "confirmed", customerName: "Demo customer" },
@@ -59,24 +59,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Booking already confirmed or cancelled" }, { status: 409 });
   }
 
-  // Verify OTP — two strategies:
-  // 1. Console mode (dev): OTP stored in booking.notes as "otp:XXXXXX"
-  // 2. Prod (Redis): verifyOtpDev from in-process store (replace with Redis GETDEL)
-  const isConsoleMode = process.env.OTP_PROVIDER !== "msg91";
+  // ── OTP verification ──────────────────────────────────────────────────────
+  // NOTE: SMS (MSG91) is not yet configured, so a real OTP can't be delivered to
+  // the customer. Until SMS is live, we accept any valid 6-digit code so booking
+  // still works end-to-end. When OTP_PROVIDER=msg91 is set, this automatically
+  // switches to strict verification of the code that was actually sent.
+  //   TODO(security): enforce strict OTP once MSG91 is configured.
+  const smsConfigured = process.env.OTP_PROVIDER === "msg91";
 
-  if (isConsoleMode) {
-    // Dev/console mode: accept any valid 6-digit code — no SMS credentials needed.
-    // The real OTP is printed to the server console via sendOtp() for reference.
-    console.log(`[OTP] Console mode — accepting any 6-digit code for booking ${bookingId}`);
-  } else {
-    const otpResult = verifyOtpDev(`booking:${bookingId}`, otp);
-    if (otpResult === "not_found") {
-      console.warn(`[OTP] Key not found for ${bookingId} — accepting in dev`);
-    } else if (otpResult !== "valid") {
-      const msg = otpResult === "expired" ? "OTP has expired. Please request a new one." : "Incorrect OTP.";
-      return NextResponse.json({ error: msg }, { status: 400 });
+  if (smsConfigured) {
+    // Strict: verify the exact code that was sent (held in the in-process store).
+    const storeResult = verifyOtpDev(`booking:${bookingId}`, otp);
+    if (storeResult !== "valid") {
+      return NextResponse.json(
+        { error: storeResult === "expired" ? "OTP has expired. Please request a new one." : "Incorrect OTP." },
+        { status: 400 }
+      );
     }
   }
+  // else: SMS not configured — accept the 6-digit code (already validated by schema).
 
   // Confirm booking
   const confirmed = await db.onlineBooking.update({

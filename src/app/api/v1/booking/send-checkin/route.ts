@@ -53,7 +53,10 @@ export async function POST(req: NextRequest) {
   const isConsole = process.env.OTP_PROVIDER !== "msg91";
 
   if (isConsole) {
-    console.log(`[CHECK-IN CODE] Booking ${bookingId} | Customer: ${booking.customerName} | Code: ${code}`);
+    // Do NOT log PII (customer name) or the code in production-bound logs.
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[CHECK-IN CODE] Booking ${bookingId} | Code: ${code}`);
+    }
   } else {
     await sendWhatsApp({
       type: "checkin_code",

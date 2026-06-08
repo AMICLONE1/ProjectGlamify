@@ -73,10 +73,11 @@ export async function GET(req: NextRequest) {
     },
     orderBy: { createdAt: "desc" },
     skip: (page - 1) * limit,
-    take: limit,
+    take: limit + 1, // fetch one extra to detect if there's a next page
   });
 
-  return ok({ invoices });
+  const hasMore = invoices.length > limit;
+  return ok({ invoices: hasMore ? invoices.slice(0, limit) : invoices, hasMore });
 }
 
 export async function POST(req: NextRequest) {
