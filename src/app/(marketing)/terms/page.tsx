@@ -13,7 +13,7 @@ const sections: LegalSection[] = [
     heading: "Agreement to these Terms",
     clauses: [
       { type: "p", text: "These Terms of Service (“Terms”) form a binding agreement between you and Clitell (“Clitell”, “we”, “us”) governing your access to and use of the Clitell website, business platform, consumer application, and related services (the “Services”)." },
-      { type: "p", text: "Clitell is a product in development. Upon incorporation, the Services will be operated by PowerNetPro Private Limited, proposed to be incorporated under the Companies Act, 2013. By creating an account, accessing, or using the Services, you agree to be bound by these Terms and our Privacy Policy. If you do not agree, do not use the Services." },
+      { type: "p", text: "The Services are operated by PowerNetPro Private Limited, incorporated under the Companies Act, 2013, with its registered office at Kashyap 509, MITWPU TBI, Paud Rd, Rambaug Colony, Kothrud, Pune, Maharashtra 411038. By creating an account, accessing, or using the Services, you agree to be bound by these Terms and our Privacy Policy. If you do not agree, do not use the Services." },
       { type: "p", text: "If you accept these Terms on behalf of a business or other legal entity, you represent that you are authorised to bind that entity, and “you” refers to that entity." },
     ],
   },
@@ -29,7 +29,7 @@ const sections: LegalSection[] = [
     heading: "Accounts & security",
     clauses: [
       { type: "p", text: "You are responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your account. You agree to provide accurate information and to keep it up to date." },
-      { type: "p", text: "You must notify us immediately of any unauthorised use of your account or any other security breach at security@clitell.in. Clitell is not liable for any loss arising from your failure to safeguard your credentials." },
+      { type: "p", text: "You must notify us immediately of any unauthorised use of your account or any other security breach at info@powernetpro.com. Clitell is not liable for any loss arising from your failure to safeguard your credentials." },
     ],
   },
   {
@@ -140,7 +140,7 @@ const sections: LegalSection[] = [
     heading: "Governing law & dispute resolution",
     clauses: [
       { type: "p", text: "These Terms are governed by and construed in accordance with the laws of India. The parties will first attempt to resolve any dispute amicably through good-faith discussions." },
-      { type: "p", text: "Failing resolution, disputes shall be referred to arbitration by a sole arbitrator under the Arbitration and Conciliation Act, 1996, seated in Pune, Maharashtra, conducted in English. Subject to arbitration, the courts at Pune, Maharashtra shall have exclusive jurisdiction. (Seat and venue will be confirmed against the operator's registered office upon incorporation.)" },
+      { type: "p", text: "Failing resolution, disputes shall be referred to arbitration by a sole arbitrator under the Arbitration and Conciliation Act, 1996, seated in Pune, Maharashtra, conducted in English. Subject to arbitration, the courts at Pune, Maharashtra shall have exclusive jurisdiction." },
     ],
   },
   {
@@ -151,8 +151,8 @@ const sections: LegalSection[] = [
       { type: "sub", label: "Severability.", text: "If any provision is held unenforceable, the remaining provisions remain in full effect." },
       { type: "sub", label: "Waiver.", text: "Our failure to enforce any right is not a waiver of that right." },
       { type: "sub", label: "Assignment.", text: "You may not assign these Terms without our consent; we may assign them in connection with a merger, acquisition, or sale of assets." },
-      { type: "sub", label: "Contact.", text: "For questions about these Terms, email legal@clitell.in." },
-      { type: "p", text: "Note: Clitell is a pre-incorporation product. Entity name, registered address, CIN, and statutory references will be finalised, and these Terms reviewed by legal counsel, before commercial launch." },
+      { type: "sub", label: "Contact.", text: "For questions about these Terms, email info@powernetpro.com." },
+      { type: "p", text: "Note: Clitell is a product operated by PowerNetPro Private Limited. Registered address: Kashyap 509, MITWPU TBI, Paud Rd, Rambaug Colony, Kothrud, Pune, Maharashtra 411038. CIN and statutory references will be updated upon completion of incorporation formalities." },
     ],
   },
 ];
@@ -164,7 +164,7 @@ export default function TermsPage() {
       lastUpdated="June 7, 2026"
       intro="These Terms govern your use of Clitell. Please read them carefully — they set out your rights and responsibilities, and ours."
       sections={sections}
-      contactEmail="legal@clitell.in"
+      contactEmail="info@powernetpro.com"
       contactLabel="Questions about these Terms?"
     />
   );

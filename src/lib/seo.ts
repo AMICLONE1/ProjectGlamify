@@ -11,7 +11,7 @@ export const ORG = {
   legalName: "Clitell Technologies Pvt Ltd",
   url: SITE_URL,
   logo: absoluteUrl("/icon-512.png"),
-  email: "hello@clitell.in",
+  email: "info@powernetpro.com",
   foundingDate: "2026",
   description:
     "Clitell is the AI-first operating system for India's beauty and wellness businesses — online booking, GST billing, CRM, inventory, marketing, and a branded storefront.",
@@ -41,8 +41,10 @@ export function organizationSchema() {
     sameAs: ORG.sameAs,
     address: {
       "@type": "PostalAddress",
-      addressLocality: "Mumbai",
+      streetAddress: "Kashyap 509, MITWPU TBI, Paud Rd, Rambaug Colony",
+      addressLocality: "Kothrud, Pune",
       addressRegion: "Maharashtra",
+      postalCode: "411038",
       addressCountry: "IN",
     },
     areaServed: { "@type": "Country", name: "India" },

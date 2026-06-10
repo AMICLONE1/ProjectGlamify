@@ -70,7 +70,7 @@ export default function AboutPage() {
             <div className="space-y-6 text-base sm:text-lg text-muted leading-relaxed max-w-3xl">
               <p>
                 The founders spent six months visiting salons before writing a line
-                of code. Mumbai, Pune, Bengaluru, Hyderabad. Single-chair shops and
+                of code. Pune, Mumbai, Bengaluru, Hyderabad. Single-chair shops and
                 15-staff spas. The pattern was the same everywhere — beautiful
                 spaces running on technology that didn&apos;t match their craft.
               </p>

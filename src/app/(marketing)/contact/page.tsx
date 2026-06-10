@@ -6,14 +6,12 @@ import { ContactForm } from "@/components/sections/ContactForm";
 export const metadata: Metadata = {
   title: "Contact — Talk to the Clitell team",
   description:
-    "Sales, support, partnerships, or just to say hi. We're based in Mumbai and reply within one business day.",
+    "Sales, support, partnerships, or just to say hi. We're based in Pune and reply within one business day.",
   alternates: { canonical: "/contact" },
 };
 
 const channels = [
-  { label: "Sales", value: "hello@clitell.in", href: "mailto:hello@clitell.in", hint: "Enterprise quotes, partnerships, custom plans." },
-  { label: "Support", value: "support@clitell.in", href: "mailto:support@clitell.in", hint: "Existing customers: bug reports and questions." },
-  { label: "Press & media", value: "press@clitell.in", href: "mailto:press@clitell.in", hint: "Media inquiries and brand assets." },
+  { label: "General", value: "info@powernetpro.com", href: "mailto:info@powernetpro.com", hint: "Sales, support, partnerships, press, and all other enquiries." },
 ];
 
 export default function ContactPage() {
@@ -28,7 +26,7 @@ export default function ContactPage() {
             </h1>
             <p className="mt-8 text-lg sm:text-xl text-muted leading-relaxed max-w-2xl">
               Questions about Clitell, partnership ideas, press requests, or feedback
-              — we&apos;re a small team in Mumbai and we reply within one business day.
+              — we&apos;re a small team in Pune and we reply within one business day.
             </p>
           </div>
         </Container>
@@ -62,13 +60,15 @@ export default function ContactPage() {
                 <p className="text-[10px] uppercase tracking-[0.18em] font-semibold text-brand-600 mb-2">
                   Our office
                 </p>
-                <p className="font-display text-lg font-bold text-ink mb-1">Mumbai, India</p>
+                <p className="font-display text-lg font-bold text-ink mb-1">Pune, India</p>
                 <p className="text-sm text-muted leading-relaxed">
-                  Clitell Technologies Pvt Ltd
+                  PowerNetPro Private Limited
                   <br />
-                  Bandra Kurla Complex
+                  Kashyap 509, MITWPU TBI
                   <br />
-                  Mumbai 400051
+                  Paud Rd, Rambaug Colony
+                  <br />
+                  Kothrud, Pune, Maharashtra 411038
                 </p>
               </div>
             </div>

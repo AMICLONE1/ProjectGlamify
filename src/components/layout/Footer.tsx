@@ -143,7 +143,7 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="flex flex-col gap-3 border-t border-white/10 py-7 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between">
-          <p>&copy; {new Date().getFullYear()} Clitell Technologies Pvt Ltd. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} PowerNetPro Private Limited. All rights reserved.</p>
           <p className="flex items-center gap-2">
             <span>For salons, spas, clinics, barbershops &amp; studios.</span>
             <span aria-hidden className="hidden h-1 w-1 rounded-full bg-white/20 sm:inline-block" />
