@@ -208,6 +208,85 @@ body {
   }
 }
 
+/* ─── Landing decor animations ──────────────────────────────────────────────
+   Used by the ornament SVGs (src/components/decor/Ornaments.tsx) and the
+   marketing sections. All guarded by prefers-reduced-motion below. */
+
+@keyframes twinkle {
+  0%, 100% { transform: scale(0.55) rotate(0deg); opacity: 0.3; }
+  50% { transform: scale(1) rotate(14deg); opacity: 1; }
+}
+.twinkle {
+  animation: twinkle 3.4s ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0) rotate(var(--float-rotate, 0deg)); }
+  50% { transform: translateY(-12px) rotate(var(--float-rotate, 0deg)); }
+}
+.float-soft {
+  animation: float-soft 7s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+.spin-slow {
+  animation: spin-slow 24s linear infinite;
+  transform-origin: center;
+}
+
+/* Sheen sweep across a card on hover */
+.card-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.card-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.32) 50%,
+    transparent 58%
+  );
+  transform: translateX(-130%);
+  transition: transform 0.2s ease;
+}
+.card-sheen:hover::after {
+  transform: translateX(130%);
+  transition-duration: 0.9s;
+}
+
+/* Business app: content enter transition (keyed by pathname in BusinessShell) */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.page-enter {
+  animation: page-enter 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .twinkle,
+  .float-soft,
+  .spin-slow {
+    animation: none !important;
+  }
+  .card-sheen::after {
+    display: none;
+  }
+  .page-enter {
+    animation: none;
+  }
+}
+
 .eyebrow {
   display: inline-flex;
   align-items: center;

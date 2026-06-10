@@ -4,8 +4,9 @@ import { getFeatureSlugs } from "@/content/features";
 import { getSolutionSlugs } from "@/content/solutions";
 import { getAllStorefrontSlugs } from "@/content/storefronts";
 import { SITE_URL } from "@/lib/site";
+import { db } from "@/lib/db";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -47,12 +48,37 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.5,
   }));
 
-  const storefrontRoutes: MetadataRoute.Sitemap = getAllStorefrontSlugs().map(({ city, slug }) => ({
-    url: `${SITE_URL}/${city}/${slug}`,
-    lastModified: now,
-    changeFrequency: "daily",
-    priority: 0.9,
-  }));
+  // Storefronts: seed/demo entries + every published storefront in the DB.
+  // DB storefronts are the real customer pages — missing them from the
+  // sitemap means Google may never discover a new salon's page.
+  const seedSlugs = getAllStorefrontSlugs();
+  let dbSlugs: { city: string; slug: string; updatedAt: Date }[] = [];
+  try {
+    dbSlugs = await db.storefront.findMany({
+      where: { isPublished: true },
+      select: { city: true, slug: true, updatedAt: true },
+    });
+  } catch {
+    // DB unreachable (e.g. build without env) — fall back to seed slugs only.
+  }
+
+  const seen = new Set<string>();
+  const storefrontRoutes: MetadataRoute.Sitemap = [
+    ...dbSlugs.map(({ city, slug, updatedAt }) => ({ city, slug, lastModified: updatedAt })),
+    ...seedSlugs.map(({ city, slug }) => ({ city, slug, lastModified: now })),
+  ]
+    .filter(({ city, slug }) => {
+      const key = `${city}/${slug}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map(({ city, slug, lastModified }) => ({
+      url: `${SITE_URL}/${city}/${slug}`,
+      lastModified,
+      changeFrequency: "daily" as const,
+      priority: 0.9,
+    }));
 
   return [...staticRoutes, ...featureRoutes, ...solutionRoutes, ...blogRoutes, ...storefrontRoutes];
 }

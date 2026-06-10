@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Magnetic } from "@/components/effects/Magnetic";
 import { HeroPreview } from "./HeroPreview";
 import { TrustStrip } from "./TrustStrip";
+import { ScissorsMark, CombMark, Sparkle, Squiggle } from "@/components/decor/Ornaments";
 
 const HERO_LINES = [
   ["Your", "salon.", "Online."],
@@ -131,6 +132,27 @@ export function Hero() {
       <div aria-hidden className="absolute right-[-10%] top-[10%] -z-10 h-120 w-120 rounded-full bg-plum-500/10 blur-[160px]" />
       <div aria-hidden className="absolute bottom-[-18%] left-1/2 -z-10 h-96 w-96 -translate-x-1/2 rounded-full bg-gold-500/10 blur-[150px]" />
 
+      {/* Salon line-art ornaments — desktop only, purely decorative */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 hidden lg:block">
+        <ScissorsMark
+          className="float-soft absolute left-[6%] top-[30%] h-16 w-16 text-brand-300/50"
+          style={{ "--float-rotate": "-14deg", animationDelay: "0.6s" } as React.CSSProperties}
+        />
+        <CombMark
+          className="float-soft absolute right-[7%] top-[44%] h-14 w-14 text-gold-400/45"
+          style={{ "--float-rotate": "18deg", animationDelay: "1.4s" } as React.CSSProperties}
+        />
+        <Sparkle className="twinkle absolute left-[20%] top-[12%] h-5 w-5 text-gold-400/80" />
+        <Sparkle
+          className="twinkle absolute right-[18%] top-[20%] h-4 w-4 text-brand-400/80"
+          style={{ animationDelay: "1.2s" }}
+        />
+        <Sparkle
+          className="twinkle absolute right-[30%] top-[8%] h-3 w-3 text-plum-500/60"
+          style={{ animationDelay: "2.1s" }}
+        />
+      </div>
+
       <div aria-hidden className="hero-dot-layer absolute inset-0 -z-10">
         {floatingDots.map((dot) => (
           <span
@@ -179,6 +201,10 @@ export function Hero() {
               <SplitLine words={HERO_LINES[1]} tone="text-brand-500" />
             </span>
           </h1>
+
+          <div aria-hidden className="mt-3 w-36 text-brand-400 sm:mt-4 sm:w-52">
+            <Squiggle delay={1.0} />
+          </div>
 
           <div className="mt-8 max-w-3xl sm:mt-10">
             <p

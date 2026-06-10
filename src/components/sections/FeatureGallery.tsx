@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
+import { Sparkle } from "@/components/decor/Ornaments";
 
 type Feature = {
   eyebrow: string;
@@ -64,10 +65,13 @@ export function FeatureGallery() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.6, delay: i * 0.08 }}
-              className={`group relative rounded-3xl border border-border bg-surface overflow-hidden hover:border-border-strong transition-colors ${f.span ?? ""}`}
+              className={`group card-sheen relative rounded-3xl border border-border bg-surface overflow-hidden hover:border-brand-300 hover:shadow-[0_18px_40px_rgba(255,88,64,0.08)] transition-all duration-300 ${f.span ?? ""}`}
             >
-              <div className="aspect-[16/10] sm:aspect-[16/9] relative overflow-hidden bg-surface-2 border-b border-border">
-                {f.visual}
+              <div className="aspect-16/10 sm:aspect-video relative overflow-hidden bg-surface-2 border-b border-border">
+                <div className="absolute inset-0 transition-transform duration-500 ease-out group-hover:scale-[1.03]">
+                  {f.visual}
+                </div>
+                <Sparkle className="twinkle absolute right-4 top-4 h-4 w-4 text-brand-400/70" />
               </div>
               <div className="p-7">
                 <p className="text-[11px] uppercase tracking-[0.18em] font-semibold text-brand-600 mb-3">

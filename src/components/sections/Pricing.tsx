@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
+import { Sparkle } from "@/components/decor/Ornaments";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
@@ -62,16 +63,21 @@ export function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className={`relative rounded-3xl p-7 ${
+              whileHover={reduceMotion ? undefined : { y: -6 }}
+              className={`relative rounded-3xl p-7 transition-shadow ${
                 tier.highlight
-                  ? "bg-ink text-white"
-                  : "border border-border bg-surface text-ink"
+                  ? "bg-ink text-white shadow-[0_24px_60px_rgba(13,6,8,0.18)] hover:shadow-[0_28px_70px_rgba(255,88,64,0.22)]"
+                  : "border border-border bg-surface text-ink hover:shadow-[0_18px_40px_rgba(255,88,64,0.08)]"
               }`}
             >
               {tier.highlight && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-[0.18em] px-3 py-1 rounded-full bg-brand-500 text-white font-semibold">
-                  Most popular
-                </span>
+                <>
+                  <span className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] px-3 py-1 rounded-full bg-brand-500 text-white font-semibold whitespace-nowrap">
+                    <Sparkle className="h-2.5 w-2.5" />
+                    Most popular
+                  </span>
+                  <Sparkle className="twinkle absolute right-5 top-5 h-4 w-4 text-brand-300/80" />
+                </>
               )}
 
               <div className="mb-6">

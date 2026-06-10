@@ -3,12 +3,18 @@
 import { motion, useReducedMotion } from "motion/react";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
+import { Squiggle, Sparkle } from "@/components/decor/Ornaments";
 
 export function Intro() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <Section className="py-20 sm:py-24">
+    <Section className="relative py-20 sm:py-24">
+      <Sparkle className="twinkle pointer-events-none absolute right-[10%] top-16 hidden h-6 w-6 text-gold-400/70 lg:block" />
+      <Sparkle
+        className="twinkle pointer-events-none absolute right-[16%] top-28 hidden h-3.5 w-3.5 text-brand-400/70 lg:block"
+        style={{ animationDelay: "1.4s" }}
+      />
       <Container>
         <div className="max-w-4xl">
           <motion.p
@@ -28,7 +34,14 @@ export function Intro() {
             transition={{ duration: 0.8 }}
             className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-[-0.02em] leading-[0.95] text-ink"
           >
-            Rasper and Dingg give you a POS. We give you customers.
+            Rasper and Dingg give you a POS. We give you{" "}
+            <span className="relative inline-block text-brand-500">
+              customers.
+              <Squiggle
+                className="absolute -bottom-2 left-0 w-full text-brand-300 sm:-bottom-3"
+                delay={0.3}
+              />
+            </span>
           </motion.h2>
 
           <motion.div

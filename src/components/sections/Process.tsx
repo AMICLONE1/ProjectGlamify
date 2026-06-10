@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
+import { DashedConnector, Sparkle } from "@/components/decor/Ornaments";
 
 const steps = [
   { num: "01", label: "Sign up", time: "2 min", desc: "Business name, city, phone. No card. Free forever for solo professionals." },
@@ -24,7 +25,11 @@ export function Process() {
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="relative">
+          {/* Draw-on connector behind the cards — desktop only */}
+          <DashedConnector className="pointer-events-none absolute -top-5 left-[6%] hidden h-6 w-[88%] text-brand-300 lg:block" />
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {steps.map((step, i) => (
             <motion.div
               key={step.num}
@@ -32,8 +37,12 @@ export function Process() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="relative rounded-2xl border border-border bg-surface p-6"
+              whileHover={reduceMotion ? undefined : { y: -4 }}
+              className="relative rounded-2xl border border-border bg-surface p-6 transition-shadow hover:shadow-[0_14px_34px_rgba(255,88,64,0.08)]"
             >
+              {i === steps.length - 1 && (
+                <Sparkle className="twinkle absolute -right-2 -top-2 h-5 w-5 text-gold-400" />
+              )}
               <div className="flex items-start justify-between mb-6">
                 <span className="font-display text-4xl font-extrabold text-brand-500">
                   {step.num}
@@ -46,6 +55,7 @@ export function Process() {
               <p className="text-sm text-muted leading-relaxed">{step.desc}</p>
             </motion.div>
           ))}
+          </div>
         </div>
       </Container>
     </Section>

@@ -4,9 +4,15 @@ import { motion, useReducedMotion } from "motion/react";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 import Link from "next/link";
+import {
+  StorefrontIcon,
+  OtpShieldIcon,
+  SearchSparkIcon,
+} from "@/components/decor/Ornaments";
 
 const services = [
   {
+    icon: StorefrontIcon,
     eyebrow: "Branded Storefront",
     title: "Your salon, online in 15 minutes.",
     blurb:
@@ -15,6 +21,7 @@ const services = [
     href: "/features",
   },
   {
+    icon: OtpShieldIcon,
     eyebrow: "OTP-Verified Bookings",
     title: "Trusted bookings, zero no-shows.",
     blurb:
@@ -23,6 +30,7 @@ const services = [
     href: "/features",
   },
   {
+    icon: SearchSparkIcon,
     eyebrow: "Google Growth Engine",
     title: "Show up when they search.",
     blurb:
@@ -55,8 +63,11 @@ export function Services() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.6, delay: i * 0.1 }}
-              className="group relative rounded-3xl border border-border bg-surface hover:border-border-strong p-7 transition-all hover:-translate-y-0.5"
+              className="group relative rounded-3xl border border-border bg-surface hover:border-brand-300 hover:shadow-[0_18px_40px_rgba(255,88,64,0.08)] p-7 transition-all duration-300 hover:-translate-y-1"
             >
+              <div className="mb-5 inline-grid h-13 w-13 place-items-center rounded-2xl border border-brand-200 bg-brand-50 text-brand-600 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110">
+                <s.icon className="h-7 w-7" />
+              </div>
               <p className="text-[11px] uppercase tracking-[0.18em] font-semibold text-brand-600 mb-4">
                 {s.eyebrow}
               </p>
@@ -78,7 +89,10 @@ export function Services() {
                 href={s.href}
                 className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors"
               >
-                Learn more <span aria-hidden>→</span>
+                Learn more{" "}
+                <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
+                  →
+                </span>
               </Link>
             </motion.div>
           ))}

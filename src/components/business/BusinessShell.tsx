@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { motion } from "motion/react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/cn";
@@ -166,7 +167,7 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex items-center gap-3 rounded-3xl bg-biz-surface px-4 py-3 shadow-sm sm:px-5">
+          <header className="sticky top-3 z-30 flex items-center gap-3 rounded-3xl bg-biz-surface/90 px-4 py-3 shadow-sm backdrop-blur-md sm:px-5 lg:static lg:bg-biz-surface lg:backdrop-blur-none">
             {/* Mobile brand mark (drawer is opened from the bottom "More" tab) */}
             <Link
               href="/business/dashboard"
@@ -361,7 +362,7 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          <main className="mt-4 flex-1 pb-24 lg:pb-0">{children}</main>
+          <main key={pathname} className="page-enter mt-4 flex-1 pb-24 lg:pb-0">{children}</main>
         </div>
       </div>
 
@@ -377,17 +378,19 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 transition-colors",
+                "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 transition-all active:scale-95",
                 active ? "text-biz-violet-600" : "text-biz-muted-2 active:text-biz-ink"
               )}
             >
-              <span
-                className={cn(
-                  "flex h-8 w-12 items-center justify-center rounded-full transition-colors",
-                  active && "bg-biz-violet-50"
+              <span className="relative flex h-8 w-12 items-center justify-center">
+                {active && (
+                  <motion.span
+                    layoutId="biz-tab-pill"
+                    className="absolute inset-0 rounded-full bg-biz-violet-50"
+                    transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                  />
                 )}
-              >
-                <NavIcon name={item.icon as IconName} className="h-5 w-5" />
+                <NavIcon name={item.icon as IconName} className="relative h-5 w-5" />
               </span>
               <span className="text-[10px] font-semibold">{item.label}</span>
             </Link>
@@ -398,7 +401,7 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
           type="button"
           onClick={() => setMenuOpen(true)}
           className={cn(
-            "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 transition-colors",
+            "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 transition-all active:scale-95",
             menuOpen ? "text-biz-violet-600" : "text-biz-muted-2 active:text-biz-ink"
           )}
           aria-label="More sections"

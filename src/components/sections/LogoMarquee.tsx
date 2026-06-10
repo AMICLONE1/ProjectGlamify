@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
+import { Sparkle } from "@/components/decor/Ornaments";
 
 const businesses = [
   "Lakmé Salon",
@@ -34,11 +35,11 @@ export function LogoMarquee() {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div aria-hidden className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-surface to-transparent z-10" />
-        <div aria-hidden className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-surface to-transparent z-10" />
+        <div aria-hidden className="absolute left-0 top-0 bottom-0 w-24 bg-linear-to-r from-surface to-transparent z-10" />
+        <div aria-hidden className="absolute right-0 top-0 bottom-0 w-24 bg-linear-to-l from-surface to-transparent z-10" />
 
         <motion.div
-          className="flex gap-16 whitespace-nowrap"
+          className="flex gap-10 whitespace-nowrap"
           animate={reduceMotion ? undefined : { x: ["0%", "-50%"] }}
           transition={{
             duration: isHovered ? 100 : 35,
@@ -47,11 +48,11 @@ export function LogoMarquee() {
           }}
         >
           {doubled.map((name, i) => (
-            <span
-              key={i}
-              className="font-display text-xl font-semibold tracking-tight text-muted hover:text-ink transition-colors shrink-0"
-            >
-              {name}
+            <span key={i} className="flex shrink-0 items-center gap-10">
+              <span className="font-display text-xl font-semibold tracking-tight text-muted hover:text-ink transition-colors">
+                {name}
+              </span>
+              <Sparkle className="h-2.5 w-2.5 text-brand-300" />
             </span>
           ))}
         </motion.div>

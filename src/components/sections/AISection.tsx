@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
+import { AISpark, OrbitRing } from "@/components/decor/Ornaments";
 
 const insights = [
   { tag: "Scheduling", text: "Your Tuesdays are 23% underbooked vs the rest of the week. Try a Tuesday-only offer to fill 8–11 AM slots." },
@@ -44,7 +45,8 @@ export function AISection() {
             </ul>
           </div>
 
-          <div className="space-y-3">
+          <div className="relative space-y-3">
+            <OrbitRing className="pointer-events-none absolute -right-10 -top-12 hidden h-28 w-28 text-brand-300/60 lg:block" />
             {insights.map((insight, i) => (
               <motion.div
                 key={i}
@@ -52,10 +54,12 @@ export function AISection() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: "-80px" }}
                 transition={{ duration: 0.5, delay: i * 0.08 }}
-                className="rounded-2xl border border-border bg-surface p-5"
+                whileHover={reduceMotion ? undefined : { x: -4 }}
+                className="relative rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-brand-300"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-brand-600 px-2 py-0.5 rounded-full bg-brand-50 border border-brand-200">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-semibold text-brand-600 px-2 py-0.5 rounded-full bg-brand-50 border border-brand-200">
+                    <AISpark className="h-2.5 w-2.5" />
                     {insight.tag}
                   </span>
                   <span className="text-[10px] text-muted-2">Just now</span>
