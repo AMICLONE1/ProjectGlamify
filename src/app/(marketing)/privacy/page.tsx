@@ -13,7 +13,7 @@ const sections: LegalSection[] = [
     heading: "Introduction & scope",
     clauses: [
       { type: "p", text: "This Privacy Policy explains how Clitell (“Clitell”, “we”, “us”, or “our”) collects, uses, discloses, stores, and protects personal data when you access or use our website at clitell.in, the Clitell business platform, the Clitell consumer application, and any related services (together, the “Services”)." },
-      { type: “p”, text: “The Services are owned and operated by PowerNetPro Private Limited, a company incorporated under the Companies Act, 2013 (“the Company”), with its registered office at Kashyap 509, MITWPU TBI, Paud Rd, Rambaug Colony, Kothrud, Pune, Maharashtra 411038. References to “Clitell” in this Policy mean the Services and the operator of those Services.” },
+      { type: "p", text: "The Services are owned and operated by PowerNetPro Private Limited, a company incorporated under the Companies Act, 2013 (“the Company”), with its registered office at Kashyap 509, MITWPU TBI, Paud Rd, Rambaug Colony, Kothrud, Pune, Maharashtra 411038. References to “Clitell” in this Policy mean the Services and the operator of those Services." },
       { type: "p", text: "This Policy is published in accordance with the Information Technology Act, 2000, the rules made thereunder, and India's Digital Personal Data Protection Act, 2023 (“DPDPA”). By using the Services, you acknowledge that you have read and understood this Policy." },
     ],
   },
