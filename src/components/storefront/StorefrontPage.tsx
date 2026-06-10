@@ -32,8 +32,8 @@ export function StorefrontPage({ storefront, isOpen, pricesFromLabel, google }: 
   }
 
   return (
-    // pb-20 on mobile leaves room above the sticky Book CTA so it never overlaps content
-    <div className="min-h-screen bg-background pb-20 sm:pb-0">
+    // pb-24 on mobile leaves room above the sticky Book CTA so it never overlaps content
+    <div className="min-h-screen bg-background pb-24 sm:pb-0">
 
       {/* Top Clitell attribution strip */}
       <div className="sticky top-0 z-40 border-b border-border bg-white/95 backdrop-blur-sm py-2 text-center text-[11px] text-muted-2">
@@ -97,13 +97,25 @@ export function StorefrontPage({ storefront, isOpen, pricesFromLabel, google }: 
       </div>
 
       {/* Sticky bottom CTA — mobile only */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-white px-4 py-3 sm:hidden">
-        <button
-          onClick={() => openBooking()}
-          className="w-full rounded-full bg-brand-500 py-3.5 text-base font-semibold text-white transition-colors active:bg-brand-600"
-        >
-          Book appointment
-        </button>
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-white/90 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md sm:hidden">
+        <div className="flex items-center gap-2.5">
+          <a
+            href={`tel:${storefront.phone}`}
+            aria-label={`Call ${storefront.name}`}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border-strong bg-white text-ink transition-colors active:bg-surface-2"
+          >
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+              <path d="M3 2.5c.5-.5 1.5-.5 2 0l1.5 1.5c.5.5.5 1.5 0 2l-.5.5c.5 1 1.5 2 2.5 2.5l.5-.5c.5-.5 1.5-.5 2 0l1.5 1.5c.5.5.5 1.5 0 2l-.5.5c-1 1-2.5.5-4-1S4.5 8 3 6.5 1.5 3 2.5 2l.5-.5z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </a>
+          <button
+            onClick={() => openBooking()}
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-brand-500 text-base font-semibold text-white transition-all active:scale-[0.99] active:bg-brand-600"
+          >
+            Book appointment
+            <span className="text-sm font-medium text-white/80">· from {pricesFromLabel}</span>
+          </button>
+        </div>
       </div>
 
       {bookingOpen && (

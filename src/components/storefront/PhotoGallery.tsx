@@ -7,14 +7,65 @@ type Props = { photos: string[]; salonName: string };
 
 export function PhotoGallery({ photos, salonName }: Props) {
   const [lightbox, setLightbox] = useState<number | null>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
   const visible = photos.slice(0, 5);
   const count = visible.length;
 
   if (count === 0) return null;
 
+  // Track the centred slide in the mobile carousel for the counter badge.
+  function onCarouselScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    const slideWidth = el.scrollWidth / photos.length;
+    setActiveSlide(Math.min(photos.length - 1, Math.round(el.scrollLeft / slideWidth)));
+  }
+
   return (
     <>
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-5">
+      {/* Mobile: full-width swipe carousel — one photo per swipe */}
+      <div className="relative py-4 sm:hidden">
+        <div
+          onScroll={onCarouselScroll}
+          className="scrollbar-hide flex snap-x snap-mandatory gap-2 overflow-x-auto px-4"
+        >
+          {photos.map((src, i) => (
+            <div
+              key={src}
+              className="relative h-64 w-[88%] shrink-0 snap-center overflow-hidden rounded-2xl"
+              onClick={() => setLightbox(i)}
+            >
+              <Image
+                src={src}
+                alt={`${salonName} — photo ${i + 1}`}
+                fill
+                priority={i === 0}
+                className="object-cover"
+                sizes="88vw"
+              />
+            </div>
+          ))}
+        </div>
+        {photos.length > 1 && (
+          <>
+            <span className="pointer-events-none absolute bottom-7 right-7 rounded-full bg-ink/60 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
+              {activeSlide + 1} / {photos.length}
+            </span>
+            <div className="mt-3 flex justify-center gap-1.5" aria-hidden>
+              {photos.map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    activeSlide === i ? "w-5 bg-brand-500" : "w-1.5 bg-border-strong"
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Desktop: collage grids */}
+      <div className="mx-auto hidden max-w-4xl px-4 py-5 sm:block sm:px-6">
         {/* 1 photo — full width */}
         {count === 1 && (
           <div className="relative h-64 w-full overflow-hidden rounded-2xl sm:h-80">

@@ -31,6 +31,8 @@ export function PosBoard() {
   const [tab, setTab] = useState<Tab>("services");
   const [category, setCategory] = useState<string>("All");
   const [search, setSearch] = useState("");
+  // Mobile: the client/cart/payment column lives in a bottom sheet (<xl).
+  const [cartOpen, setCartOpen] = useState(false);
   const [invoiceResult, setInvoiceResult] = useState<{ invoiceNumber: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Quick walk-in client creation (bill someone not yet saved).
@@ -158,6 +160,7 @@ export function PosBoard() {
     onSuccess: (inv) => {
       setInvoiceResult({ invoiceNumber: inv.invoiceNumber });
       setError(null);
+      setCartOpen(false);
       // Refresh dashboard + clients so revenue/charts update
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-charts"] });
@@ -175,15 +178,16 @@ export function PosBoard() {
     reset();
     setInvoiceResult(null);
     setError(null);
+    setCartOpen(false);
   }
 
   return (
     <div className="space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-4 rounded-3xl bg-biz-surface p-6 shadow-sm sm:p-7">
+      <header className="flex flex-wrap items-end justify-between gap-3 rounded-3xl bg-biz-surface p-4 shadow-sm sm:gap-4 sm:p-7">
         <div>
           <p className="text-xs font-medium text-biz-violet-600">POS · Checkout</p>
-          <h1 className="mt-1 font-display text-2xl font-bold text-biz-ink sm:text-3xl">New sale</h1>
-          <p className="mt-1.5 text-sm text-biz-muted">
+          <h1 className="mt-1 font-display text-xl font-bold text-biz-ink sm:text-3xl">New sale</h1>
+          <p className="mt-1.5 hidden text-sm text-biz-muted sm:block">
             Pick a client, add services and products, take payment, generate a GST invoice.
           </p>
         </div>
@@ -261,14 +265,14 @@ export function PosBoard() {
               )}
             </div>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-5 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
               {tab === "services" &&
                 filteredServices.map((s) => (
                   <button
                     key={s.id}
                     type="button"
                     onClick={() => addService({ id: s.id, name: s.name, price: s.price, taxRate: s.taxPct, priceType: s.priceType, priceMax: s.priceMax })}
-                    className="group rounded-2xl bg-biz-bg p-4 text-left transition-colors hover:bg-biz-violet-50"
+                    className="group rounded-2xl bg-biz-bg p-3.5 text-left transition-all hover:bg-biz-violet-50 active:scale-[0.98] active:bg-biz-violet-50 sm:p-4"
                   >
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-biz-violet-600">
                       {s.category?.name ?? "Service"}
@@ -291,7 +295,7 @@ export function PosBoard() {
                     key={p.id}
                     type="button"
                     onClick={() => addProduct({ id: p.id, name: p.name, retailPrice: p.sellPrice || p.costPrice, taxRate: 18 })}
-                    className="group rounded-2xl bg-biz-bg p-4 text-left transition-colors hover:bg-biz-violet-50"
+                    className="group rounded-2xl bg-biz-bg p-3.5 text-left transition-all hover:bg-biz-violet-50 active:scale-[0.98] active:bg-biz-violet-50 sm:p-4"
                   >
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-biz-violet-600">
                       {p.category ?? "Product"}
@@ -318,7 +322,38 @@ export function PosBoard() {
           </div>
         </section>
 
-        <aside className="space-y-4">
+        {/* Backdrop for the mobile cart sheet */}
+        {cartOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm xl:hidden"
+            onClick={() => setCartOpen(false)}
+            aria-hidden
+          />
+        )}
+
+        <aside
+          className={cn(
+            "space-y-4",
+            // <xl: slide-up bottom sheet; xl+: normal sidebar column
+            "max-xl:fixed max-xl:inset-x-0 max-xl:bottom-0 max-xl:z-50 max-xl:max-h-[88vh] max-xl:overflow-y-auto max-xl:rounded-t-3xl max-xl:bg-biz-bg max-xl:p-4 max-xl:pb-[max(1rem,env(safe-area-inset-bottom))] max-xl:shadow-2xl max-xl:transition-transform max-xl:duration-300 max-xl:ease-out",
+            cartOpen ? "max-xl:translate-y-0" : "max-xl:translate-y-full"
+          )}
+          role="dialog"
+          aria-label="Cart and payment"
+        >
+          {/* Sheet handle + close — mobile only */}
+          <div className="flex items-center justify-between xl:hidden">
+            <div className="mx-auto h-1.5 w-10 rounded-full bg-biz-border" />
+            <button
+              type="button"
+              onClick={() => setCartOpen(false)}
+              className="absolute right-4 top-3 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-biz-surface text-biz-muted"
+              aria-label="Close cart"
+            >
+              ✕
+            </button>
+          </div>
+
           <div className="rounded-3xl bg-biz-surface p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium text-biz-violet-600">Client</p>
@@ -555,6 +590,32 @@ export function PosBoard() {
         </aside>
       </div>}
 
+      {/* Sticky checkout bar — mobile only, sits above the shell's bottom tabs */}
+      {posView === "new" && !cartOpen && !invoiceResult && (
+        <button
+          type="button"
+          onClick={() => setCartOpen(true)}
+          className={cn(
+            "fixed inset-x-3 z-30 flex items-center justify-between gap-3 rounded-2xl px-4 py-3 shadow-lg transition-all active:scale-[0.99] xl:hidden",
+            "bottom-[calc(4.5rem+env(safe-area-inset-bottom))]",
+            items.length > 0 ? "bg-biz-violet-500 text-white" : "bg-biz-ink/90 text-white backdrop-blur"
+          )}
+        >
+          <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-white/20 px-1.5 text-xs font-bold">
+              {items.length}
+            </span>
+            <span className="truncate">
+              {items.length === 0 ? "Cart empty — view cart & client" : formatINR(totals.grandTotal)}
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-1 text-sm font-bold">
+            {items.length > 0 ? "Checkout" : "Open"}
+            <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5"><path d="M3 11l5-5 5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </span>
+        </button>
+      )}
+
       {invoiceResult && (
         <InvoiceConfirmation
           invoiceNumber={invoiceResult.invoiceNumber}
@@ -619,7 +680,7 @@ function InvoiceConfirmation({
   const loyaltyEarned = Math.round(totals.grandTotal / 10);
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center">
+    <div className="fixed inset-0 z-60 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center">
       <div className="print-receipt w-full max-w-xl rounded-3xl bg-biz-surface shadow-2xl">
         {/* Screen-only header */}
         <div className="flex items-center justify-between border-b border-biz-border px-6 py-4 print:hidden">

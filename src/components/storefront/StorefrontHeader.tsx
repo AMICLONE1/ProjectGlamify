@@ -106,8 +106,8 @@ export function StorefrontHeader({ storefront, isOpen, pricesFromLabel, googleRa
           </a>
         </div>
 
-        {/* CTA row */}
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+        {/* CTA row — desktop only; the sticky bottom bar covers Book + Call on mobile */}
+        <div className="mt-5 hidden gap-3 sm:flex sm:flex-row sm:items-center">
           <Button onClick={onBookClick} size="lg" className="w-full sm:w-auto">
             Book appointment
           </Button>
