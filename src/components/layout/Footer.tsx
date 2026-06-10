@@ -75,7 +75,7 @@ export function Footer() {
               Book a demo
             </Link>
             <Link
-              href="/signup"
+              href="/book-demo"
               className="inline-flex h-11 items-center justify-center rounded-full bg-brand-500 px-6 text-sm font-semibold text-white transition-colors hover:bg-brand-600"
             >
               Get started

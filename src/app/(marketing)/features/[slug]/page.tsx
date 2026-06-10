@@ -75,11 +75,8 @@ export default async function FeatureDetailPage({ params }: { params: Params }) 
               {feature.description}
             </p>
             <div className="mt-10 flex flex-col sm:flex-row gap-3">
-              <Button href="/signup" size="lg" variant="primary">
-                Start free <span aria-hidden>→</span>
-              </Button>
-              <Button href="/book-demo" variant="secondary" size="lg">
-                See it in action
+              <Button href="/book-demo" size="lg" variant="primary">
+                Get started free <span aria-hidden>→</span>
               </Button>
             </div>
           </div>

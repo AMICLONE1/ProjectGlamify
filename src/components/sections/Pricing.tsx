@@ -13,7 +13,7 @@ const tiers = [
     description: "For solo professionals and single-chair shops.",
     features: ["1 staff seat", "Basic booking & billing", "50 appointments / month", "Client app access"],
     cta: "Start free",
-    href: "/signup",
+    href: "/book-demo",
     highlight: false,
   },
   {
@@ -23,7 +23,7 @@ const tiers = [
     description: "Small salons ready to grow.",
     features: ["Up to 5 staff seats", "Unlimited appointments", "CRM + Loyalty", "Remove Clitell branding", "Basic reports"],
     cta: "Start 14-day trial",
-    href: "/signup",
+    href: "/book-demo",
     highlight: true,
   },
   {
@@ -33,7 +33,7 @@ const tiers = [
     description: "Mid-size salons & spas.",
     features: ["Up to 15 staff seats", "Full AI suite", "Inventory management", "Marketing campaigns", "Multi-location (2)"],
     cta: "Start 14-day trial",
-    href: "/signup",
+    href: "/book-demo",
     highlight: false,
   },
 ];

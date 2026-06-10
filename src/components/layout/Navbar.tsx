@@ -115,7 +115,7 @@ export function Navbar() {
           <Button href="/login" variant="ghost" size="sm">
             Log in
           </Button>
-          <Button href="/signup" variant="primary" size="sm">
+          <Button href="/book-demo" variant="primary" size="sm">
             Get started
           </Button>
         </div>
@@ -166,7 +166,7 @@ export function Navbar() {
                 Log in
               </Link>
               <Link
-                href="/signup"
+                href="/book-demo"
                 onClick={closeMenu}
                 className="inline-flex h-11 items-center justify-center rounded-full bg-brand-500 px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-600"
               >

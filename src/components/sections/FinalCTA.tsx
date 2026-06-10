@@ -29,11 +29,8 @@ export function FinalCTA() {
             No commission. No app needed for customers.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button href="/signup" size="lg" variant="primary">
-              Start free <span aria-hidden>→</span>
-            </Button>
-            <Button href="/book-demo" size="lg" className="bg-white/10 text-white border border-white/20 hover:bg-white/20">
-              Book a demo
+            <Button href="/book-demo" size="lg" variant="primary">
+              Get started free <span aria-hidden>→</span>
             </Button>
           </div>
         </motion.div>

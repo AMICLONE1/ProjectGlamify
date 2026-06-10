@@ -97,11 +97,8 @@ export default async function BlogPostPage({ params }: { params: Params }) {
               </p>
 
               <div className="mt-10 flex flex-col sm:flex-row gap-3">
-                <Button href="/signup" size="lg" variant="primary">
-                  Start free <span aria-hidden>→</span>
-                </Button>
-                <Button href="/book-demo" variant="secondary" size="lg">
-                  Book a demo
+                <Button href="/book-demo" size="lg" variant="primary">
+                  Get started free <span aria-hidden>→</span>
                 </Button>
               </div>
             </div>
@@ -136,11 +133,8 @@ export default async function BlogPostPage({ params }: { params: Params }) {
                   Clitell gives you the booking, billing, CRM, loyalty, and AI workflows described here.
                 </p>
                 <div className="mt-5 flex flex-col gap-3">
-                  <Button href="/signup" size="sm" variant="primary" className="w-full">
-                    Start free
-                  </Button>
-                  <Button href="/book-demo" size="sm" className="w-full bg-white/10 text-white border border-white/15 hover:bg-white/15">
-                    Book a demo
+                  <Button href="/book-demo" size="sm" variant="primary" className="w-full">
+                    Get started free
                   </Button>
                 </div>
               </div>

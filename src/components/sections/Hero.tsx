@@ -194,8 +194,8 @@ export function Hero() {
               className="hero-fade-element mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center"
             >
               <Magnetic strength={0.4}>
-                <Button href="/signup" size="lg" variant="primary" className="w-full sm:w-auto">
-                  Start free <span aria-hidden>→</span>
+                <Button href="/book-demo" size="lg" variant="primary" className="w-full sm:w-auto">
+                  Get started free <span aria-hidden>→</span>
                 </Button>
               </Magnetic>
               <Magnetic strength={0.3}>
