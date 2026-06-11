@@ -91,10 +91,31 @@ export async function rateLimit(key: string, limit: number, windowMs: number): P
 
 /**
  * Extract the real client IP from a Next.js / Vercel request.
+ *
+ * SECURITY: `X-Forwarded-For` is a client-supplied header. A naive read of the
+ * LEFTMOST entry lets an attacker spoof a new IP per request and walk straight
+ * past IP-based rate limits. We therefore:
+ *   1. Trust Vercel's own `x-vercel-forwarded-for` first (set by the platform,
+ *      not forwardable by the client).
+ *   2. Otherwise take the RIGHTMOST XFF entry — the hop appended by our trusted
+ *      proxy — which an external client cannot forge.
+ * Behind a different proxy topology, set TRUSTED_PROXY_HOPS to adjust how many
+ * trailing hops to skip.
  */
 export function getClientIp(req: Request): string {
+  const vercel = req.headers.get("x-vercel-forwarded-for");
+  if (vercel) return vercel.split(",")[0].trim();
+
   const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
+  if (xff) {
+    const parts = xff.split(",").map((s) => s.trim()).filter(Boolean);
+    if (parts.length) {
+      const hops = Math.max(1, Number(process.env.TRUSTED_PROXY_HOPS ?? 1));
+      // Rightmost = closest to our infra and hardest to spoof.
+      return parts[Math.max(0, parts.length - hops)];
+    }
+  }
+
   const realIp = req.headers.get("x-real-ip");
   if (realIp) return realIp.trim();
   return "unknown";

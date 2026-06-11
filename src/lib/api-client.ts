@@ -108,6 +108,7 @@ export interface SettingsData {
     revenueGoal: number | null;
   };
   tax: {
+    gstEnabled: boolean;
     gstin: string;
     hsnServices: string;
     hsnRetail: string;

@@ -753,7 +753,7 @@ export function BookingModal({ storefront, preselectedServiceId, onClose }: Prop
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-ink/50 backdrop-blur-sm"
@@ -761,7 +761,7 @@ export function BookingModal({ storefront, preselectedServiceId, onClose }: Prop
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[85vh]">
+      <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[85vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0 border-b border-border">
           <div>

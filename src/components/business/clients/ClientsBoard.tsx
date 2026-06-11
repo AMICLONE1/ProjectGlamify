@@ -500,7 +500,7 @@ function AddClientModal({ onClose, onCreated }: { onClose: () => void; onCreated
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center" onClick={onClose}>
-      <div className="w-full max-w-lg rounded-t-3xl bg-biz-surface p-6 shadow-2xl sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-lg overflow-y-auto rounded-t-3xl bg-biz-surface p-6 shadow-2xl sm:rounded-3xl max-sm:max-h-[calc(100dvh-5.5rem)] max-sm:mb-[calc(4.5rem+env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h2 className="font-display text-xl font-bold text-biz-ink">New client</h2>
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-biz-bg text-biz-muted hover:text-biz-ink" aria-label="Close">✕</button>
@@ -603,7 +603,7 @@ function QuickBookModal({ client, onClose, onBooked }: { client: ClientSummary; 
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center" onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-3xl bg-biz-surface p-6 shadow-2xl sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md overflow-y-auto rounded-t-3xl bg-biz-surface p-6 shadow-2xl sm:rounded-3xl max-sm:max-h-[calc(100dvh-5.5rem)] max-sm:mb-[calc(4.5rem+env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-lg font-bold text-biz-ink">Book — {client.fullName}</h2>
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-biz-bg text-biz-muted hover:text-biz-ink">✕</button>
@@ -659,7 +659,7 @@ function SendOfferSheet({ client, onClose }: { client: ClientSummary; onClose: (
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center" onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-3xl bg-biz-surface p-6 shadow-2xl sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md overflow-y-auto rounded-t-3xl bg-biz-surface p-6 shadow-2xl sm:rounded-3xl max-sm:max-h-[calc(100dvh-5.5rem)] max-sm:mb-[calc(4.5rem+env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-lg font-bold text-biz-ink">Send offer — {client.fullName}</h2>
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-biz-bg text-biz-muted hover:text-biz-ink">✕</button>

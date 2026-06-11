@@ -43,24 +43,54 @@ export type GooglePlace = {
   reviews: GoogleReview[];
 } | null;
 
-// Parse a Place ID directly out of a Google URL when present.
+// Parse a Place ID directly out of a Google URL when present (no HTTP call).
+// Only returns a value if it looks like a real Places API place_id (ChIJ...).
+// Hex CIDs (0x...:0x...) embedded in Maps URLs are NOT valid place_ids.
 export function extractPlaceId(url: string | null | undefined): string | null {
   if (!url) return null;
+  // ?place_id= param or place_id: in URL
   const q = url.match(/[?&]place_?id=([^&]+)/i) || url.match(/place_id:([A-Za-z0-9_-]+)/);
   if (q) return decodeURIComponent(q[1]);
+  // ChIJ... Place ID embedded directly in URL
   const chij = url.match(/(ChIJ[A-Za-z0-9_-]{10,})/);
   if (chij) return chij[1];
   return null;
 }
 
-// Resolve name + address → Place ID. Address is included so a generic salon
-// name doesn't match the wrong business.
-async function findPlaceId(query: string, key: string): Promise<string | null> {
+// Resolve a short Google URL (maps.app.goo.gl, share.google, goo.gl) to its
+// final destination by following the redirect, then extract the Place ID.
+// Returns null if the URL isn't a known short form or the redirect fails.
+async function resolveShortUrl(url: string | null | undefined): Promise<string | null> {
+  if (!url) return null;
+  // Try direct extraction first (works for full Maps URLs)
+  const direct = extractPlaceId(url);
+  if (direct) return direct;
+  // Only attempt HTTP follow for known short-link domains
+  const isShort = /maps\.app\.goo\.gl|share\.google|goo\.gl/i.test(url);
+  if (!isShort) return null;
   try {
+    const res = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      signal: AbortSignal.timeout(6000),
+      // Don't cache redirects — we want the real final URL
+    });
+    const final = res.url;
+    return extractPlaceId(final);
+  } catch {
+    return null;
+  }
+}
+
+// Resolve name + address → Place ID. Address is included so a generic salon
+// name doesn't match the wrong business. locationbias improves precision.
+async function findPlaceId(query: string, key: string, lat?: number, lng?: number): Promise<string | null> {
+  try {
+    const bias = lat && lng ? `&locationbias=circle:2000@${lat},${lng}` : "";
     const url =
       "https://maps.googleapis.com/maps/api/place/findplacefromtext/json" +
       `?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id` +
-      `&key=${key}`;
+      `${bias}&key=${key}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(6000), next: { revalidate: 604800 } });
     const data = await res.json();
     return data?.candidates?.[0]?.place_id ?? null;
@@ -72,7 +102,9 @@ async function findPlaceId(query: string, key: string): Promise<string | null> {
 export async function getGooglePlace(opts: {
   reviewUrl?: string | null;
   mapsUrl?: string | null;
-  nameQuery?: string | null; // "Salon Name, Address, City"
+  nameQuery?: string | null;
+  lat?: number;
+  lng?: number;
 }): Promise<GooglePlace> {
   const key = process.env.GOOGLE_PLACES_API_KEY;
   if (!key) return null;
@@ -81,9 +113,17 @@ export async function getGooglePlace(opts: {
   // ISR's 24h cache means already-fetched salons keep showing their badge.
   if (!(await withinMonthlyBudget())) return null;
 
-  let placeId = extractPlaceId(opts.reviewUrl) || extractPlaceId(opts.mapsUrl);
+  // Short URLs (maps.app.goo.gl, share.google) redirect to full Maps URLs but
+  // those contain hex CIDs, not ChIJ place IDs — so we always fall through to
+  // findPlaceId which returns the canonical ChIJ ID.
+  let placeId =
+    (await resolveShortUrl(opts.reviewUrl ?? null)) ||
+    (await resolveShortUrl(opts.mapsUrl ?? null));
   if (!placeId && opts.nameQuery && opts.nameQuery.trim().length > 4) {
-    placeId = await findPlaceId(opts.nameQuery, key);
+    placeId = await findPlaceId(opts.nameQuery, key, opts.lat, opts.lng);
+  }
+  if (process.env.NODE_ENV === "development") {
+    console.log("[google-places] placeId resolved:", placeId, { reviewUrl: opts.reviewUrl, mapsUrl: opts.mapsUrl });
   }
   if (!placeId) return null;
 

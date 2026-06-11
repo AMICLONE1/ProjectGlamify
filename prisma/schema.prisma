@@ -259,6 +259,7 @@ model Service {
   appointmentItems AppointmentItem[]
   invoiceLineItems InvoiceLineItem[]
 
+  @@index([tenantId, isActive])
   @@map("services")
 }
 
@@ -333,6 +334,7 @@ model Invoice {
   appointment Appointment?     @relation(fields: [appointmentId], references: [id])
   lineItems   InvoiceLineItem[]
   loyaltyTxns LoyaltyTransaction[]
+  onlineBookings OnlineBooking[]
 
   @@unique([tenantId, invoiceNumber])
   @@index([tenantId, clientId])
@@ -514,6 +516,7 @@ enum OnlineBookingStatus {
   pending_otp
   confirmed
   visited
+  completed
   no_show
   cancelled
 }
@@ -536,6 +539,8 @@ model OnlineBooking {
   checkinCodeSentAt DateTime?
   checkedInAt      DateTime?
   cancelledAt      DateTime?
+  completedAt      DateTime?
+  invoiceId        String?
   notes            String?
   source           String              @default("storefront")
   createdAt        DateTime            @default(now())
@@ -543,8 +548,12 @@ model OnlineBooking {
 
   storefront  Storefront   @relation(fields: [storefrontId], references: [id])
   staffDetail StaffDetail? @relation(fields: [staffDetailId], references: [id])
+  // The POS invoice this booking was billed into. SetNull so deleting an
+  // invoice doesn't orphan the booking pointing at a ghost id.
+  invoice     Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, scheduledAt])
+  @@index([tenantId, status])
   @@index([customerPhone])
   @@map("online_bookings")
 }

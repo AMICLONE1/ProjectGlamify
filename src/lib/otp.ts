@@ -54,8 +54,21 @@ function sendViaConsole(phone: string, otp: string, type: OtpType): void {
 
 const OTP_STORE = new Map<string, { otp: string; expiresAt: number; attempts: number }>();
 
+import { randomInt, timingSafeEqual } from "node:crypto";
+
 export function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  // Cryptographically-secure RNG (Math.random is predictable and unsuitable
+  // for security codes). randomInt is uniform over the range.
+  return randomInt(100000, 1000000).toString();
+}
+
+// Constant-time string compare to avoid leaking the OTP one digit at a time
+// through response-timing differences.
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
 }
 
 export function storeOtpDev(key: string, otp: string, ttlSeconds = 600): void {
@@ -72,7 +85,7 @@ export function verifyOtpDev(
   if (Date.now() > entry.expiresAt) { OTP_STORE.delete(key); return "expired"; }
   entry.attempts += 1;
   if (entry.attempts > 5) { OTP_STORE.delete(key); return "invalid"; }
-  if (entry.otp !== otp) return "invalid";
+  if (!safeEqual(entry.otp, otp)) return "invalid";
   OTP_STORE.delete(key); // single-use
   return "valid";
 }

@@ -351,21 +351,25 @@ function TabServices({ services: initial, onChanged }: { services: Service[]; on
                     </div>
                   </div>
                 ) : (
-                  <div className={`flex items-center justify-between px-4 py-3.5 gap-3 ${!svc.isActive ? "opacity-50" : ""}`}>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-ink text-sm truncate">{svc.name}</p>
-                      <p className="text-xs text-muted">{fmtDur(svc.durationMinutes)}{svc.description ? ` · ${svc.description}` : ""}</p>
+                  <div className={`px-4 py-3.5 ${!svc.isActive ? "opacity-50" : ""}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-ink text-sm">{svc.name}</p>
+                        <p className="text-xs text-muted mt-0.5">{fmtDur(svc.durationMinutes)}{svc.description ? ` · ${svc.description}` : ""}</p>
+                      </div>
+                      <span className="shrink-0 font-semibold text-sm text-ink whitespace-nowrap">{fmtPriceLabel(svc)}</span>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-semibold text-sm text-ink whitespace-nowrap">{fmtPriceLabel(svc)}</span>
-                      <button onClick={()=>{setEditId(svc.id);setEditForm({name:svc.name,categoryName:svc.category?.name??"Hair",durationMinutes:svc.durationMinutes,price:svc.price,priceType:(svc.priceType as PriceType)??"fixed",priceMax:svc.priceMax??0,description:svc.description??""});}} className="h-7 w-7 flex items-center justify-center rounded-full border border-border-strong text-muted hover:border-ink hover:text-ink transition-colors" title="Edit">
-                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9 2L11 4M2 10l1-3L9 2l2 2-6 6-3 1z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <div className="mt-2.5 flex items-center gap-1.5">
+                      <button onClick={()=>{setEditId(svc.id);setEditForm({name:svc.name,categoryName:svc.category?.name??"Hair",durationMinutes:svc.durationMinutes,price:svc.price,priceType:(svc.priceType as PriceType)??"fixed",priceMax:svc.priceMax??0,description:svc.description??""});}} className="h-7 px-2.5 flex items-center gap-1 rounded-full border border-border-strong text-xs text-muted hover:border-ink hover:text-ink transition-colors" title="Edit">
+                        <svg width="11" height="11" viewBox="0 0 13 13" fill="none"><path d="M9 2L11 4M2 10l1-3L9 2l2 2-6 6-3 1z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        Edit
                       </button>
-                      <button onClick={()=>toggleActive(svc)} disabled={busy===svc.id} className={`h-7 px-2 rounded-full border text-xs font-medium transition-colors ${svc.isActive ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50" : "border-border-strong text-muted hover:border-ink"}`} title={svc.isActive?"Hide from storefront":"Show on storefront"}>
+                      <button onClick={()=>toggleActive(svc)} disabled={busy===svc.id} className={`h-7 px-2.5 rounded-full border text-xs font-medium transition-colors ${svc.isActive ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50" : "border-border-strong text-muted hover:border-ink"}`} title={svc.isActive?"Hide from storefront":"Show on storefront"}>
                         {svc.isActive ? "Live" : "Hidden"}
                       </button>
                       <button onClick={()=>deleteService(svc.id)} disabled={busy===svc.id} className={btnDanger} title="Remove">
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+                        Remove
                       </button>
                     </div>
                   </div>
@@ -496,11 +500,12 @@ function TabPhotos({ photos: initial, storefrontName, onChanged }: { photos: Pho
               {i === 0 && (
                 <div className="absolute top-2 left-2 bg-ink/80 text-white text-[10px] font-semibold rounded-full px-2 py-0.5">Main</div>
               )}
-              <div className="absolute inset-0 bg-ink/0 group-hover:bg-ink/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+              {/* Desktop: show on hover; mobile: always visible in corner */}
+              <div className="absolute inset-0 bg-ink/0 transition-colors sm:group-hover:bg-ink/30 flex items-end justify-end p-2 sm:items-center sm:justify-center sm:opacity-0 sm:group-hover:opacity-100">
                 <button
                   onClick={() => deletePhoto(photo.id)}
                   disabled={deleting === photo.id}
-                  className="h-9 w-9 flex items-center justify-center rounded-full bg-white/90 text-red-600 hover:bg-white shadow-md transition-colors"
+                  className="h-9 w-9 flex items-center justify-center rounded-full bg-white/95 text-red-600 shadow-md transition-colors hover:bg-white sm:bg-white/90"
                   aria-label="Delete photo"
                 >
                   {deleting === photo.id ? (
@@ -916,23 +921,23 @@ export function StorefrontManager() {
   return (
     <div>
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
         <div>
           <p className="eyebrow mb-1">Storefront</p>
           <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-ink">
             {data.tenant.name}
           </h2>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="mt-1 flex flex-wrap items-center gap-2">
             <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${data.isPublished ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${data.isPublished ? "bg-emerald-500" : "bg-amber-500"}`} />
               {data.isPublished ? "Live" : "Draft"}
             </span>
-            <a href={storefrontUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-600 hover:underline font-mono truncate max-w-[200px] sm:max-w-none">
+            <a href={storefrontUrl} target="_blank" rel="noopener noreferrer" className="max-w-[200px] truncate font-mono text-xs text-brand-600 hover:underline sm:max-w-none">
               clitell.in{storefrontUrl}
             </a>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2">
           <a href={storefrontUrl} target="_blank" rel="noopener noreferrer" className={btnSecondary + " text-xs"}>
             Preview →
           </a>
@@ -953,12 +958,12 @@ export function StorefrontManager() {
       {publishError && <p className="mb-4 text-sm text-red-600">{publishError}</p>}
 
       {/* Tab bar */}
-      <div className="flex border-b border-border mb-6 -mx-1 overflow-x-auto scrollbar-hide">
+      <div className="mb-6 flex overflow-x-auto scrollbar-hide border-b border-border">
         {TABS.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors shrink-0 ${
+            className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-3 text-sm font-medium whitespace-nowrap transition-colors sm:px-4 ${
               tab === t.id
                 ? "border-brand-500 text-brand-600"
                 : "border-transparent text-muted hover:text-ink"

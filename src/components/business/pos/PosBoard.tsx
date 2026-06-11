@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/cn";
 import { SearchIcon } from "../icons";
-import { api, clientsApi, servicesApi, inventoryApi, onboardingApi, type ClientSummary, type Service, type Product } from "@/lib/api-client";
+import { api, clientsApi, servicesApi, inventoryApi, onboardingApi, settingsApi, type ClientSummary, type Service, type Product } from "@/lib/api-client";
 import { getUser } from "@/lib/session";
 import { calculateTotals, usePosStore, type PaymentMethod } from "./posStore";
 
@@ -27,12 +27,32 @@ const methodTone: Record<PaymentMethod, string> = {
 export function PosBoard() {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  // Clear the ?phone&name&serviceIds context once a sale wraps up, so the
+  // "arrived from booking" banner doesn't linger into the next sale.
+  function clearBookingContext() {
+    if (searchParams.get("phone") || searchParams.get("name") || searchParams.get("serviceIds") || searchParams.get("bookingId")) {
+      router.replace("/business/pos");
+    }
+  }
   const [posView, setPosView] = useState<PosView>("new");
   const [tab, setTab] = useState<Tab>("services");
   const [category, setCategory] = useState<string>("All");
   const [search, setSearch] = useState("");
   // Mobile: the client/cart/payment column lives in a bottom sheet (<xl).
   const [cartOpen, setCartOpen] = useState(false);
+  // Animate the sheet: mount collapsed, then expand on next frame.
+  const [sheetVisible, setSheetVisible] = useState(false);
+
+  useEffect(() => {
+    if (cartOpen) {
+      // Allow DOM to paint the sheet in translate-y-full state first, then animate in.
+      const raf = requestAnimationFrame(() => setSheetVisible(true));
+      return () => cancelAnimationFrame(raf);
+    } else {
+      setSheetVisible(false);
+    }
+  }, [cartOpen]);
   const [invoiceResult, setInvoiceResult] = useState<{ invoiceNumber: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Quick walk-in client creation (bill someone not yet saved).
@@ -47,6 +67,9 @@ export function PosBoard() {
   const { data: clientsData } = useQuery({ queryKey: ["clients"], queryFn: () => clientsApi.list({ limit: 100 }) });
   // Storefront review link for the post-sale review nudge.
   const { data: onboarding } = useQuery({ queryKey: ["onboarding-progress"], queryFn: () => onboardingApi.progress(), staleTime: 5 * 60_000 });
+  // Tax mode — salons without GST registration bill tax-free (simple billing).
+  const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: () => settingsApi.get(), staleTime: 5 * 60_000 });
+  const gstEnabled = settings?.tax.gstEnabled ?? true;
 
   const services: Service[] = servicesData?.services ?? [];
   const products: Product[] = productsData?.products ?? [];
@@ -105,8 +128,8 @@ export function PosBoard() {
   );
 
   const totals = useMemo(
-    () => calculateTotals(items, discountPercent, tip, payments),
-    [items, discountPercent, tip, payments]
+    () => calculateTotals(items, discountPercent, tip, payments, gstEnabled),
+    [items, discountPercent, tip, payments, gstEnabled]
   );
   // Range/"from" services must have a final price entered before billing.
   const hasUnpriced = items.some((it) => it.openPrice && (!it.unitPrice || it.unitPrice <= 0));
@@ -146,9 +169,13 @@ export function PosBoard() {
       }));
 
       const method = payments[0]?.method ?? "cash";
-      return api.post<{ invoiceNumber: string }>("/invoices", {
+      // If we arrived here from an online booking, link it so the server marks
+      // the booking completed and won't let it be billed twice.
+      const onlineBookingId = searchParams.get("bookingId") || undefined;
+      return api.post<{ id: string; invoiceNumber: string; status: string }>("/invoices", {
         locationId: user.locationId,
         clientId,
+        ...(onlineBookingId ? { onlineBookingId } : {}),
         lineItems,
         discountAmt: totals.discountAmount,
         tipAmt: totals.tip,
@@ -157,7 +184,7 @@ export function PosBoard() {
         markPaid: true,
       });
     },
-    onSuccess: (inv) => {
+    onSuccess: async (inv) => {
       setInvoiceResult({ invoiceNumber: inv.invoiceNumber });
       setError(null);
       setCartOpen(false);
@@ -165,6 +192,18 @@ export function PosBoard() {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-charts"] });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
+
+      // Server-side cross-check before dropping the "arrived from booking"
+      // banner: re-read the invoice and confirm it's actually persisted as
+      // paid. We don't trust the create response alone — only a confirmed
+      // server state clears the booking context.
+      try {
+        const verified = await api.get<{ status: string }>(`/invoices/${inv.id}`);
+        if (verified.status === "paid") clearBookingContext();
+      } catch {
+        // Verification failed (network/transient) — leave the banner so the
+        // staff member knows this booking still needs billing confirmation.
+      }
     },
     onError: (e) => setError(e instanceof Error ? e.message : "Failed to create invoice"),
   });
@@ -179,33 +218,36 @@ export function PosBoard() {
     setInvoiceResult(null);
     setError(null);
     setCartOpen(false);
+    clearBookingContext();
   }
 
   return (
     <div className="space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-3 rounded-3xl bg-biz-surface p-4 shadow-sm sm:gap-4 sm:p-7">
-        <div>
-          <p className="text-xs font-medium text-biz-violet-600">POS · Checkout</p>
-          <h1 className="mt-1 font-display text-xl font-bold text-biz-ink sm:text-3xl">New sale</h1>
-          <p className="mt-1.5 hidden text-sm text-biz-muted sm:block">
-            Pick a client, add services and products, take payment, generate a GST invoice.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <div className="flex items-center gap-1 rounded-full bg-biz-bg p-1">
-            <PosViewBtn active={posView === "new"} onClick={() => setPosView("new")}>New sale</PosViewBtn>
-            <PosViewBtn active={posView === "history"} onClick={() => setPosView("history")}>Invoice history</PosViewBtn>
+      <header className="rounded-3xl bg-biz-surface p-4 shadow-sm sm:p-7">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium text-biz-violet-600">POS · Checkout</p>
+            <h1 className="mt-1 font-display text-xl font-bold text-biz-ink sm:text-3xl">New sale</h1>
           </div>
-          {posView === "new" && (
-            <button
-              type="button"
-              onClick={handleResetSale}
-              className="rounded-full bg-biz-bg px-4 py-2 text-xs font-semibold text-biz-ink hover:bg-biz-border"
-            >
-              Reset
-            </button>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 rounded-full bg-biz-bg p-1">
+              <PosViewBtn active={posView === "new"} onClick={() => setPosView("new")}>New sale</PosViewBtn>
+              <PosViewBtn active={posView === "history"} onClick={() => setPosView("history")}>History</PosViewBtn>
+            </div>
+            {posView === "new" && (
+              <button
+                type="button"
+                onClick={handleResetSale}
+                className="rounded-full bg-biz-bg px-4 py-2 text-xs font-semibold text-biz-ink hover:bg-biz-border"
+              >
+                Reset
+              </button>
+            )}
+          </div>
         </div>
+        <p className="mt-1.5 hidden text-sm text-biz-muted sm:block">
+          Pick a client, add services and products, take payment, generate a GST invoice.
+        </p>
       </header>
 
       {/* Banner when arriving from calendar check-in */}
@@ -265,21 +307,21 @@ export function PosBoard() {
               )}
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
+            <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
               {tab === "services" &&
                 filteredServices.map((s) => (
                   <button
                     key={s.id}
                     type="button"
                     onClick={() => addService({ id: s.id, name: s.name, price: s.price, taxRate: s.taxPct, priceType: s.priceType, priceMax: s.priceMax })}
-                    className="group rounded-2xl bg-biz-bg p-3.5 text-left transition-all hover:bg-biz-violet-50 active:scale-[0.98] active:bg-biz-violet-50 sm:p-4"
+                    className="group rounded-2xl bg-biz-bg p-3 text-left transition-all hover:bg-biz-violet-50 active:scale-[0.98] active:bg-biz-violet-50 sm:p-4"
                   >
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-biz-violet-600">
+                    <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-biz-violet-600">
                       {s.category?.name ?? "Service"}
                     </p>
-                    <p className="mt-1 font-semibold text-biz-ink">{s.name}</p>
-                    <div className="mt-3 flex items-center justify-between text-xs">
-                      <span className="text-biz-muted">{s.durationMinutes} min</span>
+                    <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-biz-ink">{s.name}</p>
+                    <div className="mt-2.5 flex flex-wrap items-center justify-between gap-1 text-xs">
+                      <span className="text-biz-muted">{s.durationMinutes}m</span>
                       <span className="font-bold text-biz-ink">
                         {s.priceType === "from" ? `${formatINR(s.price)}+`
                           : s.priceType === "range" && s.priceMax != null ? `${formatINR(s.price)}–${formatINR(s.priceMax)}`
@@ -295,14 +337,14 @@ export function PosBoard() {
                     key={p.id}
                     type="button"
                     onClick={() => addProduct({ id: p.id, name: p.name, retailPrice: p.sellPrice || p.costPrice, taxRate: 18 })}
-                    className="group rounded-2xl bg-biz-bg p-3.5 text-left transition-all hover:bg-biz-violet-50 active:scale-[0.98] active:bg-biz-violet-50 sm:p-4"
+                    className="group rounded-2xl bg-biz-bg p-3 text-left transition-all hover:bg-biz-violet-50 active:scale-[0.98] active:bg-biz-violet-50 sm:p-4"
                   >
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-biz-violet-600">
+                    <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-biz-violet-600">
                       {p.category ?? "Product"}
                     </p>
-                    <p className="mt-1 font-semibold text-biz-ink">{p.name}</p>
-                    <div className="mt-3 flex items-center justify-between text-xs">
-                      <span className="font-mono text-biz-muted">{p.sku ?? "—"}</span>
+                    <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-biz-ink">{p.name}</p>
+                    <div className="mt-2.5 flex flex-wrap items-center justify-between gap-1 text-xs">
+                      <span className="truncate font-mono text-biz-muted">{p.sku ?? "—"}</span>
                       <span className="font-bold text-biz-ink">{formatINR(p.sellPrice || p.costPrice)}</span>
                     </div>
                   </button>
@@ -322,37 +364,235 @@ export function PosBoard() {
           </div>
         </section>
 
-        {/* Backdrop for the mobile cart sheet */}
+        {/* Mobile bottom sheet — only mounted when open so the drag library can't capture events on a hidden element */}
         {cartOpen && (
-          <div
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm xl:hidden"
-            onClick={() => setCartOpen(false)}
-            aria-hidden
-          />
+          <>
+            <div
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm xl:hidden"
+              onPointerDown={(e) => { e.stopPropagation(); setCartOpen(false); }}
+              aria-hidden
+            />
+            <div
+              className={cn(
+                // Sits above the bottom tab bar (h ~4.5rem + safe-area).
+                "fixed inset-x-0 z-50 flex flex-col rounded-t-3xl bg-biz-bg shadow-2xl xl:hidden",
+                "bottom-[calc(4.5rem+env(safe-area-inset-bottom))]",
+                "max-h-[calc(90dvh-4.5rem-env(safe-area-inset-bottom))]",
+                "transition-transform duration-300 ease-out",
+                sheetVisible ? "translate-y-0" : "translate-y-full"
+              )}
+              role="dialog"
+              aria-label="Cart and payment"
+            >
+              {/* Sheet handle + close */}
+              <div className="relative flex shrink-0 items-center justify-center py-3">
+                <div className="h-1.5 w-10 rounded-full bg-biz-border" />
+                <button
+                  type="button"
+                  onClick={() => setCartOpen(false)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-biz-bg text-xl text-biz-muted active:bg-biz-border"
+                  aria-label="Close cart"
+                  style={{ touchAction: "manipulation" }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Scrollable content */}
+              <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-2">
+                <div className="space-y-3 pb-2">
+
+                <div className="rounded-3xl bg-biz-surface p-5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-biz-violet-600">Client</p>
+                    <button type="button" onClick={() => setShowWalkin((s) => !s)}
+                      className="rounded-full bg-biz-bg px-2.5 py-1 text-[11px] font-semibold text-biz-violet-600 hover:bg-biz-border">
+                      {showWalkin ? "Cancel" : "+ New walk-in"}
+                    </button>
+                  </div>
+                  {showWalkin ? (
+                    <div className="mt-3 space-y-2">
+                      <input value={walkinName} onChange={(e) => setWalkinName(e.target.value)}
+                        placeholder="Customer name *" autoFocus
+                        className="w-full rounded-2xl bg-biz-bg px-4 py-2.5 text-sm text-biz-ink focus:outline-none focus:ring-2 focus:ring-biz-violet-300" />
+                      <input value={walkinPhone} onChange={(e) => setWalkinPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                        placeholder="Phone (optional)" inputMode="numeric"
+                        className="w-full rounded-2xl bg-biz-bg px-4 py-2.5 text-sm text-biz-ink focus:outline-none focus:ring-2 focus:ring-biz-violet-300" />
+                      {walkinError && <p className="text-xs text-biz-pink-500">{walkinError}</p>}
+                      <button type="button" disabled={createWalkin.isPending || !walkinName.trim()}
+                        onClick={() => createWalkin.mutate()}
+                        className="w-full rounded-2xl bg-biz-violet-500 py-2.5 text-sm font-semibold text-white hover:bg-biz-violet-600 disabled:opacity-40">
+                        {createWalkin.isPending ? "Adding…" : "Add & select"}
+                      </button>
+                    </div>
+                  ) : (
+                    <select value={clientId ?? ""} onChange={(e) => setClient(e.target.value || null)}
+                      className="mt-3 w-full appearance-none rounded-2xl bg-biz-bg px-4 py-3 text-sm text-biz-ink focus:outline-none focus:ring-2 focus:ring-biz-violet-300">
+                      <option value="">Select a client…</option>
+                      {clients.map((c) => (
+                        <option key={c.id} value={c.id}>{c.fullName}{c.phone ? ` · ${c.phone}` : ""}</option>
+                      ))}
+                    </select>
+                  )}
+                  {clients.length === 0 && !showWalkin && (
+                    <p className="mt-2 text-xs text-biz-muted">No clients yet — tap "+ New walk-in" to bill someone right away.</p>
+                  )}
+                  {cartClient && (
+                    <div className="mt-3 rounded-2xl bg-biz-violet-50 p-3 text-xs">
+                      <p className="font-semibold text-biz-ink">{cartClient.fullName}</p>
+                      <p className="mt-0.5 text-biz-muted">
+                        {cartClient.totalVisits} visits · {formatINR(cartClient.totalSpend)} lifetime · {cartClient.loyaltyPoints} pts
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-3xl bg-biz-surface p-5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-biz-violet-600">Cart</p>
+                    <span className="text-xs text-biz-muted-2">{items.length} {items.length === 1 ? "item" : "items"}</span>
+                  </div>
+                  {items.length === 0 ? (
+                    <p className="mt-4 rounded-2xl border border-dashed border-biz-border p-5 text-center text-sm text-biz-muted">
+                      Add services or products to start a sale.
+                    </p>
+                  ) : (
+                    <ul className="mt-3 space-y-2">
+                      {items.map((it) => (
+                        <li key={it.key} className="rounded-2xl bg-biz-bg p-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-[10px] uppercase tracking-wider text-biz-muted-2">{it.kind}</p>
+                              <p className="mt-0.5 truncate text-sm font-semibold text-biz-ink">{it.name}</p>
+                              {it.openPrice ? (
+                                <div className="mt-1.5">
+                                  <div className="inline-flex items-center gap-1 rounded-lg bg-biz-surface px-2 py-1">
+                                    <span className="text-xs text-biz-muted">₹</span>
+                                    <input type="number" min={0} value={it.unitPrice || ""}
+                                      onChange={(e) => updatePrice(it.key, Number(e.target.value))}
+                                      placeholder="Enter price"
+                                      className="w-20 bg-transparent text-sm font-semibold text-biz-ink focus:outline-none" />
+                                  </div>
+                                  <p className="mt-0.5 text-[10px] text-biz-violet-600">
+                                    {it.priceMax ? `Range ₹${it.priceMin?.toLocaleString("en-IN")}–₹${it.priceMax.toLocaleString("en-IN")}` : `From ₹${it.priceMin?.toLocaleString("en-IN")}`} · set final price
+                                  </p>
+                                </div>
+                              ) : (
+                                <p className="mt-0.5 text-xs text-biz-muted">{formatINR(it.unitPrice)}{gstEnabled ? ` · GST ${it.taxRate}%` : ""}</p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-biz-ink">{formatINR(it.unitPrice * it.quantity)}</p>
+                              <button type="button" onClick={() => removeItem(it.key)}
+                                className="mt-1 text-[10px] uppercase tracking-wider text-biz-pink-500 hover:text-biz-magenta-600">
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                          <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-biz-surface">
+                            <QtyButton onClick={() => updateQuantity(it.key, -1)}>−</QtyButton>
+                            <span className="min-w-[2rem] px-2 text-center text-sm font-semibold text-biz-ink">{it.quantity}</span>
+                            <QtyButton onClick={() => updateQuantity(it.key, 1)}>+</QtyButton>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <label className="block text-xs">
+                      <span className="uppercase tracking-wider text-biz-muted-2">Discount %</span>
+                      <input type="number" min={0} max={100} value={discountPercent}
+                        onChange={(e) => setDiscountPercent(Number(e.target.value) || 0)}
+                        className="mt-1.5 w-full rounded-2xl bg-biz-bg px-3 py-2 text-sm text-biz-ink focus:outline-none focus:ring-2 focus:ring-biz-violet-300" />
+                    </label>
+                    <label className="block text-xs">
+                      <span className="uppercase tracking-wider text-biz-muted-2">Tip ₹</span>
+                      <input type="number" min={0} value={tip}
+                        onChange={(e) => setTip(Number(e.target.value) || 0)}
+                        className="mt-1.5 w-full rounded-2xl bg-biz-bg px-3 py-2 text-sm text-biz-ink focus:outline-none focus:ring-2 focus:ring-biz-violet-300" />
+                    </label>
+                  </div>
+                  <div className="mt-5 space-y-2 rounded-2xl bg-biz-bg p-4 text-sm">
+                    <Row label="Subtotal" value={formatINR(totals.subtotal)} />
+                    {totals.discountAmount > 0 && (
+                      <Row label={`Discount (${discountPercent}%)`} value={`- ${formatINR(totals.discountAmount)}`} tone="pink" />
+                    )}
+                    {gstEnabled && <Row label="CGST" value={formatINR(totals.cgst)} />}
+                    {gstEnabled && <Row label="SGST" value={formatINR(totals.sgst)} />}
+                    {totals.tip > 0 && <Row label="Tip" value={formatINR(totals.tip)} />}
+                    <div className="mt-3 flex items-center justify-between border-t border-biz-border pt-3 text-base font-bold text-biz-ink">
+                      <span>Total</span>
+                      <span>{formatINR(totals.grandTotal)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-3xl bg-biz-surface p-5 shadow-sm">
+                  <p className="text-xs font-medium text-biz-violet-600">Payment</p>
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                    {(["cash", "upi", "card"] as PaymentMethod[]).map((m) => (
+                      <button key={m} type="button" disabled={totals.due <= 0}
+                        onClick={() => handleSettleRemaining(m)}
+                        className={cn("rounded-full px-3 py-2 font-semibold uppercase tracking-wider transition-colors",
+                          methodTone[m], "disabled:cursor-not-allowed disabled:opacity-50 hover:brightness-110")}>
+                        {methodLabel[m]}
+                      </button>
+                    ))}
+                  </div>
+                  {payments.length > 0 && (
+                    <ul className="mt-3 space-y-2">
+                      {payments.map((p) => (
+                        <li key={p.id} className="flex items-center justify-between rounded-2xl bg-biz-bg px-3 py-2 text-xs">
+                          <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider", methodTone[p.method])}>
+                            {methodLabel[p.method]}
+                          </span>
+                          <span className="font-semibold text-biz-ink">{formatINR(p.amount)}</span>
+                          <button type="button" onClick={() => removePayment(p.id)}
+                            className="text-[10px] uppercase tracking-wider text-biz-pink-500 hover:text-biz-magenta-600">
+                            Remove
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="mt-3 flex items-center justify-between rounded-2xl bg-biz-bg px-3 py-2 text-xs">
+                    <span className="uppercase tracking-wider text-biz-muted-2">Due</span>
+                    <span className={cn("font-bold", totals.due > 0.01 ? "text-biz-orange-600" : "text-biz-green-500")}>
+                      {formatINR(Math.max(0, totals.due))}
+                    </span>
+                  </div>
+                  <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Notes for this sale (optional)…" rows={2}
+                    className="mt-3 w-full rounded-2xl bg-biz-bg px-3 py-2 text-sm text-biz-ink placeholder:text-biz-muted-2 focus:outline-none focus:ring-2 focus:ring-biz-violet-300" />
+                  {error && <p className="mt-3 text-xs font-medium text-biz-pink-500">{error}</p>}
+                </div>
+
+                </div>{/* end space-y-3 */}
+              </div>
+
+              {/* Sticky invoice button */}
+              <div className="shrink-0 border-t border-biz-border bg-biz-bg px-4 pb-4 pt-3">
+                <button
+                  type="button"
+                  onClick={() => createInvoice.mutate()}
+                  disabled={items.length === 0 || totals.due > 0.01 || !clientId || hasUnpriced || createInvoice.isPending}
+                  className="w-full rounded-full bg-biz-violet-500 px-4 py-3.5 text-sm font-semibold text-white hover:bg-biz-violet-600 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {createInvoice.isPending ? "Saving…"
+                    : items.length === 0 ? "Add items to begin"
+                    : hasUnpriced ? "Set price for ranged services"
+                    : !clientId ? "Select a client"
+                    : totals.due > 0.01 ? `Collect ${formatINR(totals.due)} to finish`
+                    : "Generate GST invoice"}
+                </button>
+              </div>
+            </div>
+          </>
         )}
 
-        <aside
-          className={cn(
-            "space-y-4",
-            // <xl: slide-up bottom sheet; xl+: normal sidebar column
-            "max-xl:fixed max-xl:inset-x-0 max-xl:bottom-0 max-xl:z-50 max-xl:max-h-[88vh] max-xl:overflow-y-auto max-xl:rounded-t-3xl max-xl:bg-biz-bg max-xl:p-4 max-xl:pb-[max(1rem,env(safe-area-inset-bottom))] max-xl:shadow-2xl max-xl:transition-transform max-xl:duration-300 max-xl:ease-out",
-            cartOpen ? "max-xl:translate-y-0" : "max-xl:translate-y-full"
-          )}
-          role="dialog"
-          aria-label="Cart and payment"
-        >
-          {/* Sheet handle + close — mobile only */}
-          <div className="flex items-center justify-between xl:hidden">
-            <div className="mx-auto h-1.5 w-10 rounded-full bg-biz-border" />
-            <button
-              type="button"
-              onClick={() => setCartOpen(false)}
-              className="absolute right-4 top-3 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-biz-surface text-biz-muted"
-              aria-label="Close cart"
-            >
-              ✕
-            </button>
-          </div>
+        {/* Desktop sidebar — always in DOM, xl breakpoint only */}
+        <aside className="hidden xl:block xl:space-y-4">
+          <div className="space-y-4">
 
           <div className="rounded-3xl bg-biz-surface p-5 shadow-sm">
             <div className="flex items-center justify-between">
@@ -453,7 +693,7 @@ export function PosBoard() {
                             </p>
                           </div>
                         ) : (
-                          <p className="mt-0.5 text-xs text-biz-muted">{formatINR(it.unitPrice)} · GST {it.taxRate}%</p>
+                          <p className="mt-0.5 text-xs text-biz-muted">{formatINR(it.unitPrice)}{gstEnabled ? ` · GST ${it.taxRate}%` : ""}</p>
                         )}
                       </div>
                       <div className="text-right">
@@ -501,8 +741,8 @@ export function PosBoard() {
               {totals.discountAmount > 0 && (
                 <Row label={`Discount (${discountPercent}%)`} value={`- ${formatINR(totals.discountAmount)}`} tone="pink" />
               )}
-              <Row label="CGST" value={formatINR(totals.cgst)} />
-              <Row label="SGST" value={formatINR(totals.sgst)} />
+              {gstEnabled && <Row label="CGST" value={formatINR(totals.cgst)} />}
+              {gstEnabled && <Row label="SGST" value={formatINR(totals.sgst)} />}
               {totals.tip > 0 && <Row label="Tip" value={formatINR(totals.tip)} />}
               <div className="mt-3 flex items-center justify-between border-t border-biz-border pt-3 text-base font-bold text-biz-ink">
                 <span>Total</span>
@@ -568,6 +808,7 @@ export function PosBoard() {
 
             {error && <p className="mt-3 text-xs font-medium text-biz-pink-500">{error}</p>}
 
+            {/* Invoice button — desktop sidebar only */}
             <button
               type="button"
               onClick={() => createInvoice.mutate()}
@@ -587,6 +828,8 @@ export function PosBoard() {
                 : "Generate GST invoice"}
             </button>
           </div>
+
+          </div>{/* end space-y-4 */}
         </aside>
       </div>}
 
@@ -680,8 +923,8 @@ function InvoiceConfirmation({
   const loyaltyEarned = Math.round(totals.grandTotal / 10);
 
   return (
-    <div className="fixed inset-0 z-60 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center">
-      <div className="print-receipt w-full max-w-xl rounded-3xl bg-biz-surface shadow-2xl">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 p-4 pb-[calc(4.5rem+max(1rem,env(safe-area-inset-bottom)))] backdrop-blur-sm sm:items-center sm:pb-4">
+      <div className="print-receipt w-full max-w-xl overflow-y-auto rounded-3xl bg-biz-surface shadow-2xl" style={{ maxHeight: "92dvh" }}>
         {/* Screen-only header */}
         <div className="flex items-center justify-between border-b border-biz-border px-6 py-4 print:hidden">
           <div className="flex items-center gap-2">
@@ -713,7 +956,7 @@ function InvoiceConfirmation({
           {/* Salon header */}
           <div className="mb-4 text-center">
             <p className="font-display text-xl font-bold lowercase text-biz-ink">clitell</p>
-            <p className="mt-0.5 text-xs text-biz-muted">Tax Invoice</p>
+            <p className="mt-0.5 text-xs text-biz-muted">{totals.cgst + totals.sgst > 0 ? "Tax Invoice" : "Invoice"}</p>
           </div>
 
           <div className="mb-4 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
@@ -740,18 +983,17 @@ function InvoiceConfirmation({
               <tr className="border-y border-biz-border text-[10px] uppercase tracking-wider text-biz-muted-2">
                 <th className="py-2 text-left font-semibold">Item</th>
                 <th className="py-2 text-center font-semibold">Qty</th>
-                <th className="py-2 text-right font-semibold">Rate</th>
-                <th className="py-2 text-right font-semibold">GST%</th>
                 <th className="py-2 text-right font-semibold">Amount</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-biz-border/50">
               {items.map((it) => (
                 <tr key={it.key}>
-                  <td className="py-2 font-medium text-biz-ink">{it.name}</td>
+                  <td className="py-2">
+                    <p className="font-medium text-biz-ink">{it.name}</p>
+                    <p className="text-[10px] text-biz-muted-2">{formatINR(it.unitPrice)} · GST {it.taxRate}%</p>
+                  </td>
                   <td className="py-2 text-center text-biz-muted">{it.quantity}</td>
-                  <td className="py-2 text-right text-biz-muted">{formatINR(it.unitPrice)}</td>
-                  <td className="py-2 text-right text-biz-muted">{it.taxRate}%</td>
                   <td className="py-2 text-right font-semibold text-biz-ink">{formatINR(it.unitPrice * it.quantity)}</td>
                 </tr>
               ))}
@@ -763,8 +1005,8 @@ function InvoiceConfirmation({
             {totals.discountAmount > 0 && (
               <TaxRow label="Discount" value={`− ${formatINR(totals.discountAmount)}`} tone="pink" />
             )}
-            <TaxRow label="CGST" value={formatINR(totals.cgst)} />
-            <TaxRow label="SGST" value={formatINR(totals.sgst)} />
+            {totals.cgst > 0 && <TaxRow label="CGST" value={formatINR(totals.cgst)} />}
+            {totals.sgst > 0 && <TaxRow label="SGST" value={formatINR(totals.sgst)} />}
             {totals.tip > 0 && <TaxRow label="Tip" value={formatINR(totals.tip)} />}
             <div className="mt-2 flex items-center justify-between border-t border-biz-border pt-2 text-sm font-bold text-biz-ink">
               <span>Total paid</span>
@@ -896,72 +1138,59 @@ function InvoiceHistory() {
       )}
 
       {!isLoading && invoices.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-biz-border text-[10px] uppercase tracking-wider text-biz-muted-2">
-                <th className="px-3 py-2 font-semibold">Invoice</th>
-                <th className="px-3 py-2 font-semibold">Client</th>
-                <th className="px-3 py-2 font-semibold">Date</th>
-                <th className="px-3 py-2 font-semibold">Method</th>
-                <th className="px-3 py-2 font-semibold">Status</th>
-                <th className="px-3 py-2 font-semibold text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((inv) => (
-                <>
-                  <tr key={inv.id}
-                    onClick={() => setExpandedId(expandedId === inv.id ? null : inv.id)}
-                    className="cursor-pointer border-b border-biz-border transition-colors hover:bg-biz-bg">
-                    <td className="px-3 py-3">
+        <div className="space-y-2">
+          {invoices.map((inv) => (
+            <div key={inv.id} className="rounded-2xl border border-biz-border bg-biz-bg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setExpandedId(expandedId === inv.id ? null : inv.id)}
+                className="w-full px-4 py-3.5 text-left"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <p className="font-mono text-xs font-semibold text-biz-ink">{inv.invoiceNumber}</p>
-                    </td>
-                    <td className="px-3 py-3">
-                      <p className="font-medium text-biz-ink">{inv.client.fullName}</p>
-                      <p className="text-[11px] text-biz-muted-2">{inv.client.phone ?? ""}</p>
-                    </td>
-                    <td className="px-3 py-3 text-biz-muted">
-                      {new Date(inv.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                    </td>
-                    <td className="px-3 py-3 capitalize text-biz-muted">
-                      {methodLabel[inv.paymentMethod] ?? inv.paymentMethod}
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className={cn("rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider", statusStyle[inv.status] ?? "bg-biz-bg text-biz-muted")}>
+                      <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider", statusStyle[inv.status] ?? "bg-biz-bg text-biz-muted")}>
                         {inv.status}
                       </span>
-                    </td>
-                    <td className="px-3 py-3 text-right font-bold text-biz-ink">
-                      ₹{inv.totalAmt.toLocaleString("en-IN")}
-                    </td>
-                  </tr>
-                  {expandedId === inv.id && (
-                    <tr key={`${inv.id}-detail`} className="border-b border-biz-border bg-biz-bg">
-                      <td colSpan={6} className="px-6 py-3">
-                        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-biz-muted-2">Line items</p>
-                        <ul className="space-y-1">
-                          {inv.lineItems.map((li, i) => (
-                            <li key={i} className="flex items-center justify-between text-xs text-biz-ink">
-                              <span>{li.qty > 1 ? `${li.qty}× ` : ""}{li.label}</span>
-                              <span className="font-semibold">₹{(li.qty * li.unitPrice).toLocaleString("en-IN")}</span>
-                            </li>
-                          ))}
-                        </ul>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setPrintId(inv.id); }}
-                          className="mt-3 rounded-full bg-biz-surface px-3 py-1.5 text-xs font-semibold text-biz-ink hover:bg-biz-border"
-                        >
-                          🖨 Print bill
-                        </button>
-                      </td>
-                    </tr>
-                  )}
-                </>
-              ))}
-            </tbody>
-          </table>
+                      <span className="rounded-full bg-biz-surface px-2 py-0.5 text-[10px] font-semibold capitalize text-biz-muted">
+                        {methodLabel[inv.paymentMethod] ?? inv.paymentMethod}
+                      </span>
+                    </div>
+                    <p className="mt-1 font-medium text-biz-ink">{inv.client.fullName}</p>
+                    <p className="mt-0.5 text-xs text-biz-muted-2">
+                      {new Date(inv.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      {inv.client.phone ? ` · ${inv.client.phone}` : ""}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="font-bold text-biz-ink">₹{inv.totalAmt.toLocaleString("en-IN")}</p>
+                    <p className="mt-0.5 text-[10px] text-biz-muted-2">{expandedId === inv.id ? "▲ less" : "▼ details"}</p>
+                  </div>
+                </div>
+              </button>
+              {expandedId === inv.id && (
+                <div className="border-t border-biz-border bg-biz-surface px-4 py-3">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-biz-muted-2">Line items</p>
+                  <ul className="space-y-1.5">
+                    {inv.lineItems.map((li, i) => (
+                      <li key={i} className="flex items-center justify-between text-xs text-biz-ink">
+                        <span>{li.qty > 1 ? `${li.qty}× ` : ""}{li.label}</span>
+                        <span className="font-semibold">₹{(li.qty * li.unitPrice).toLocaleString("en-IN")}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    onClick={() => setPrintId(inv.id)}
+                    className="mt-3 rounded-full bg-biz-bg px-3 py-1.5 text-xs font-semibold text-biz-ink hover:bg-biz-border"
+                  >
+                    🖨 Print bill
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -1014,8 +1243,8 @@ function PastInvoiceReceipt({ invoiceId, onClose }: { invoiceId: string; onClose
   const b = inv?.business;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center">
-      <div className="print-receipt w-full max-w-xl rounded-3xl bg-biz-surface shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 pb-[calc(4.5rem+max(1rem,env(safe-area-inset-bottom)))] backdrop-blur-sm sm:items-center sm:pb-4">
+      <div className="print-receipt w-full max-w-xl overflow-y-auto rounded-3xl bg-biz-surface shadow-2xl" style={{ maxHeight: "92dvh" }}>
         <div className="flex items-center justify-between border-b border-biz-border px-6 py-4 print:hidden">
           <p className="text-sm font-semibold text-biz-ink">Bill · {inv?.invoiceNumber ?? "…"}</p>
           <div className="flex items-center gap-2">
@@ -1039,7 +1268,7 @@ function PastInvoiceReceipt({ invoiceId, onClose }: { invoiceId: string; onClose
               <p className="text-[11px] text-biz-muted">
                 {[b.phone, b.gstin ? `GSTIN: ${b.gstin}` : ""].filter(Boolean).join(" · ")}
               </p>
-              <p className="mt-1 text-xs font-semibold text-biz-muted-2">TAX INVOICE</p>
+              <p className="mt-1 text-xs font-semibold text-biz-muted-2">{inv.cgstAmt + inv.sgstAmt > 0 ? "TAX INVOICE" : "INVOICE"}</p>
             </div>
 
             <div className="mb-4 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
@@ -1054,18 +1283,17 @@ function PastInvoiceReceipt({ invoiceId, onClose }: { invoiceId: string; onClose
                 <tr className="border-y border-biz-border text-[10px] uppercase tracking-wider text-biz-muted-2">
                   <th className="py-2 text-left font-semibold">Item</th>
                   <th className="py-2 text-center font-semibold">Qty</th>
-                  <th className="py-2 text-right font-semibold">Rate</th>
-                  <th className="py-2 text-right font-semibold">GST%</th>
                   <th className="py-2 text-right font-semibold">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-biz-border/50">
                 {inv.lineItems.map((li, i) => (
                   <tr key={i}>
-                    <td className="py-2 font-medium text-biz-ink">{li.label}</td>
+                    <td className="py-2">
+                      <p className="font-medium text-biz-ink">{li.label}</p>
+                      <p className="text-[10px] text-biz-muted-2">{formatINR(li.unitPrice)} · GST {li.taxPct}%</p>
+                    </td>
                     <td className="py-2 text-center text-biz-muted">{li.qty}</td>
-                    <td className="py-2 text-right text-biz-muted">{formatINR(li.unitPrice)}</td>
-                    <td className="py-2 text-right text-biz-muted">{li.taxPct}%</td>
                     <td className="py-2 text-right font-semibold text-biz-ink">{formatINR(li.lineTotal)}</td>
                   </tr>
                 ))}
@@ -1075,8 +1303,8 @@ function PastInvoiceReceipt({ invoiceId, onClose }: { invoiceId: string; onClose
             <div className="mt-3 space-y-1.5 rounded-2xl bg-biz-bg p-3 text-xs print:bg-transparent print:px-0">
               <TaxRow label="Subtotal" value={formatINR(inv.subtotal)} />
               {inv.discountAmt > 0 && <TaxRow label="Discount" value={`− ${formatINR(inv.discountAmt)}`} tone="pink" />}
-              <TaxRow label="CGST" value={formatINR(inv.cgstAmt)} />
-              <TaxRow label="SGST" value={formatINR(inv.sgstAmt)} />
+              {inv.cgstAmt > 0 && <TaxRow label="CGST" value={formatINR(inv.cgstAmt)} />}
+              {inv.sgstAmt > 0 && <TaxRow label="SGST" value={formatINR(inv.sgstAmt)} />}
               {inv.tipAmt > 0 && <TaxRow label="Tip" value={formatINR(inv.tipAmt)} />}
               <div className="mt-2 flex items-center justify-between border-t border-biz-border pt-2 text-sm font-bold text-biz-ink">
                 <span>Total</span>

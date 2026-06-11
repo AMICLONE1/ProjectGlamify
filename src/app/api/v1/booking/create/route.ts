@@ -29,7 +29,9 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
     const issues = parsed.error.flatten();
-    console.error("[booking/create] Validation failed:", JSON.stringify(issues), "body:", JSON.stringify(body));
+    // Log only which fields failed — never the raw body (it carries the
+    // customer's name and phone number; PII must not land in server logs).
+    console.error("[booking/create] Validation failed for fields:", Object.keys(issues.fieldErrors).join(", ") || "(form)");
     return NextResponse.json({
       error: "Invalid request",
       details: issues,

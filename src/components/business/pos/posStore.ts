@@ -193,17 +193,22 @@ export function calculateTotals(
   items: CartItem[],
   discountPercent: number,
   tip: number,
-  payments: Payment[]
+  payments: Payment[],
+  // Salons not registered for GST bill without tax (simple billing). When false
+  // we zero out all tax so the total is just (subtotal − discount + tip).
+  gstEnabled = true
 ): CartTotals {
   const subtotal = items.reduce((sum, it) => sum + (Number(it.unitPrice) || 0) * (Number(it.quantity) || 0), 0);
   const discountAmount = (subtotal * discountPercent) / 100;
   const taxableBase = Math.max(0, subtotal - discountAmount);
 
   let totalTax = 0;
-  for (const it of items) {
-    const linePostDiscount =
-      (Number(it.unitPrice) || 0) * (Number(it.quantity) || 0) * (1 - discountPercent / 100);
-    totalTax += (linePostDiscount * (Number(it.taxRate) || 0)) / 100;
+  if (gstEnabled) {
+    for (const it of items) {
+      const linePostDiscount =
+        (Number(it.unitPrice) || 0) * (Number(it.quantity) || 0) * (1 - discountPercent / 100);
+      totalTax += (linePostDiscount * (Number(it.taxRate) || 0)) / 100;
+    }
   }
 
   const cgst = totalTax / 2;

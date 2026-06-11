@@ -22,7 +22,7 @@ type Props = {
   google?: GooglePlace;
 };
 
-export function StorefrontPage({ storefront, isOpen, pricesFromLabel, google }: Props) {
+export function StorefrontPage({ storefront, isOpen, pricesFrom, pricesFromLabel, google }: Props) {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [preselectedServiceId, setPreselectedServiceId] = useState<string | null>(null);
 
@@ -32,7 +32,7 @@ export function StorefrontPage({ storefront, isOpen, pricesFromLabel, google }: 
   }
 
   return (
-    // pb-24 on mobile leaves room above the sticky Book CTA so it never overlaps content
+    // pb-24 on mobile leaves room above the sticky Book CTA
     <div className="min-h-screen bg-background pb-24 sm:pb-0">
 
       {/* Top Clitell attribution strip */}
@@ -55,11 +55,14 @@ export function StorefrontPage({ storefront, isOpen, pricesFromLabel, google }: 
 
       <PhotoGallery photos={storefront.photos} salonName={storefront.name} />
 
-      {/* About */}
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8 border-t border-border">
-        <h2 className="eyebrow mb-3">About</h2>
-        <p className="text-muted leading-relaxed max-w-2xl">{storefront.description}</p>
-      </div>
+      {storefront.description && (
+        <div className="border-t border-border">
+          <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
+            <h2 className="eyebrow mb-3">About</h2>
+            <p className="text-muted leading-relaxed max-w-2xl">{storefront.description}</p>
+          </div>
+        </div>
+      )}
 
       <OffersBar offers={storefront.offers} loyalty={storefront.loyalty} />
 
@@ -97,7 +100,7 @@ export function StorefrontPage({ storefront, isOpen, pricesFromLabel, google }: 
       </div>
 
       {/* Sticky bottom CTA — mobile only */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-white/90 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md sm:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md sm:hidden">
         <div className="flex items-center gap-2.5">
           <a
             href={`tel:${storefront.phone}`}

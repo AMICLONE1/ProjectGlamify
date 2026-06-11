@@ -20,6 +20,9 @@ const createSchema = z.object({
   locationId: z.string(),
   clientId: z.string(),
   appointmentId: z.string().optional(),
+  // When billing an online booking from POS, link it so we can mark the booking
+  // completed and stop the calendar from offering to bill it again.
+  onlineBookingId: z.string().optional(),
   lineItems: z.array(lineItemSchema).min(1),
   discountAmt: z.number().min(0).default(0),
   tipAmt: z.number().min(0).default(0),
@@ -28,18 +31,20 @@ const createSchema = z.object({
   markPaid: z.boolean().default(false),
 });
 
-function calcTotals(lineItems: z.infer<typeof lineItemSchema>[], discountAmt: number, tipAmt: number) {
+function calcTotals(lineItems: z.infer<typeof lineItemSchema>[], discountAmt: number, tipAmt: number, gstEnabled: boolean) {
   let subtotal = 0;
   let taxTotal = 0;
   const items = lineItems.map((li) => {
     const base = li.qty * li.unitPrice * (1 - li.discountPct / 100);
-    const tax = base * (li.taxPct / 100);
+    // GST-exempt salon → no tax line, taxPct forced to 0 on the persisted item.
+    const effectiveTaxPct = gstEnabled ? li.taxPct : 0;
+    const tax = base * (effectiveTaxPct / 100);
     subtotal += base;
     taxTotal += tax;
     const lineTotal = parseFloat((base + tax).toFixed(2));
     // Defensive: a non-finite lineTotal would crash the Prisma Float write.
     if (!Number.isFinite(lineTotal)) throw new Error("Invalid line item amount");
-    return { ...li, lineTotal };
+    return { ...li, taxPct: effectiveTaxPct, lineTotal };
   });
   const taxableAmt = parseFloat((subtotal - discountAmt).toFixed(2));
   const cgstAmt = parseFloat((taxTotal / 2).toFixed(2));
@@ -92,11 +97,34 @@ export async function POST(req: NextRequest) {
     return Response.json({ success: false, error: { code: "VALIDATION_ERROR", issues: parsed.error.issues } }, { status: 422 });
   }
 
-  const { locationId, clientId, appointmentId, lineItems, discountAmt, tipAmt, paymentMethod, notes, markPaid } = parsed.data;
+  const { locationId, clientId, appointmentId, onlineBookingId, lineItems, discountAmt, tipAmt, paymentMethod, notes, markPaid } = parsed.data;
+
+  // Guard: if this online booking has already been billed, refuse — prevents
+  // the same booking being charged multiple times (the bug where "Go to POS &
+  // bill" kept reappearing and staff billed Shyam 4-5 times).
+  if (onlineBookingId) {
+    const existing = await db.onlineBooking.findFirst({
+      where: { id: onlineBookingId, tenantId: auth.tenantId },
+      select: { id: true, status: true, invoiceId: true },
+    });
+    if (!existing) return fail("NOT_FOUND", "Online booking not found", 404);
+    if (existing.status === "completed" || existing.invoiceId) {
+      return fail("ALREADY_BILLED", "This booking has already been billed.", 409);
+    }
+  }
+
+  // Resolve the tenant's GST mode server-side — never trust the client to decide
+  // whether tax applies. Default: GST on only if a GSTIN is set.
+  const tenantTax = await db.tenant.findUnique({
+    where: { id: auth.tenantId },
+    select: { gstin: true, settings: true },
+  });
+  const taxSettings = (tenantTax?.settings as { tax?: { gstEnabled?: boolean } } | null)?.tax;
+  const gstEnabled = taxSettings?.gstEnabled ?? !!tenantTax?.gstin?.trim();
 
   let totals;
   try {
-    totals = calcTotals(lineItems, discountAmt, tipAmt);
+    totals = calcTotals(lineItems, discountAmt, tipAmt, gstEnabled);
   } catch {
     return fail("INVALID_AMOUNT", "One or more line item amounts are invalid. Please re-check the prices.", 422);
   }
@@ -152,6 +180,15 @@ export async function POST(req: NextRequest) {
         },
       }),
     ]);
+  }
+
+  // Link & complete the online booking so the calendar marks it billed and
+  // stops offering "Go to POS & bill" for it.
+  if (onlineBookingId) {
+    await db.onlineBooking.updateMany({
+      where: { id: onlineBookingId, tenantId: auth.tenantId },
+      data: { status: "completed", completedAt: new Date(), invoiceId: invoice.id },
+    });
   }
 
   await writeAudit(auth.tenantId, auth.userId, "create", "invoice", invoice.id);

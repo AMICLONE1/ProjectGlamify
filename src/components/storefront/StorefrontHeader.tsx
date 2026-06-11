@@ -46,10 +46,10 @@ export function StorefrontHeader({ storefront, isOpen, pricesFromLabel, googleRa
                     : "bg-surface-2 text-muted"
                 }`}
               >
-                {isOpen ? "Open now" : "Closed"}
+                {isOpen ? "● Open now" : "Closed"}
               </span>
             </div>
-            <h1 className="font-display text-2xl font-extrabold uppercase leading-tight tracking-[-0.02em] text-ink sm:text-3xl">
+            <h1 className="font-display text-2xl font-extrabold leading-tight tracking-[-0.02em] text-ink sm:text-3xl">
               {storefront.name}
             </h1>
             <p className="mt-1 text-sm text-muted">{storefront.area.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ")}, {storefront.city[0].toUpperCase() + storefront.city.slice(1)}</p>
@@ -65,7 +65,6 @@ export function StorefrontHeader({ storefront, isOpen, pricesFromLabel, googleRa
                 <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             ) : (
-              // Premium iOS-style share glyph: rounded tray + upward arrow.
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path d="M12 3v12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M8.5 6.5L12 3l3.5 3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -76,37 +75,38 @@ export function StorefrontHeader({ storefront, isOpen, pricesFromLabel, googleRa
         </div>
 
         {/* Rating + stats row */}
-        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-          <div className="flex items-center gap-1.5">
-            <span className="flex items-center gap-0.5">
-              {stars.map((filled, i) => (
-                <svg key={i} width="14" height="14" viewBox="0 0 14 14" fill={filled ? "#ff5840" : "none"} className={filled ? "text-brand-500" : "text-border-strong"}>
-                  <path d="M7 1l1.545 3.13 3.455.503-2.5 2.437.59 3.44L7 8.895 3.91 10.51l.59-3.44L2 4.633l3.455-.503z" stroke={filled ? "#ff5840" : "#d9ccc1"} strokeWidth="1" strokeLinejoin="round" />
-                </svg>
-              ))}
-            </span>
-            <span className="font-semibold text-ink">{storefront.rating}</span>
-            <span className="text-muted">({storefront.reviewCount} reviews)</span>
-          </div>
-          {googleRating && (
-            <>
-              <span className="h-1 w-1 rounded-full bg-border-strong" />
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-0.5">
+        <div className="mt-4 flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3">
+          {/* Row 1: stars + google */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <span className="flex items-center gap-0.5">
+                {stars.map((filled, i) => (
+                  <svg key={i} width="14" height="14" viewBox="0 0 14 14" fill={filled ? "#ff5840" : "none"} className={filled ? "text-brand-500" : "text-border-strong"}>
+                    <path d="M7 1l1.545 3.13 3.455.503-2.5 2.437.59 3.44L7 8.895 3.91 10.51l.59-3.44L2 4.633l3.455-.503z" stroke={filled ? "#ff5840" : "#d9ccc1"} strokeWidth="1" strokeLinejoin="round" />
+                  </svg>
+                ))}
+              </span>
+              <span className="font-semibold text-ink">{storefront.rating}</span>
+              <span className="text-muted">({storefront.reviewCount} reviews)</span>
+            </div>
+            {googleRating && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-0.5 text-xs">
                 <svg width="13" height="13" viewBox="0 0 48 48" aria-hidden><path fill="#4285F4" d="M45 24c0-1.6-.1-3.1-.4-4.6H24v9.1h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1C42.7 36.9 45 31 45 24z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.4l-7.1-5.5c-2 1.3-4.5 2.1-7.4 2.1-5.7 0-10.5-3.8-12.2-9H4.5v5.7C8.1 41.1 15.5 46 24 46z"/><path fill="#FBBC05" d="M11.8 28.2c-.4-1.3-.7-2.7-.7-4.2s.2-2.9.7-4.2v-5.7H4.5C3 17.1 2.1 20.4 2.1 24s.9 6.9 2.4 9.9l7.3-5.7z"/><path fill="#EA4335" d="M24 10.8c3.2 0 6.1 1.1 8.4 3.3l6.3-6.3C34.9 4.1 29.9 2 24 2 15.5 2 8.1 6.9 4.5 14.1l7.3 5.7c1.7-5.2 6.5-9 12.2-9z"/></svg>
                 <span className="font-semibold text-ink">{googleRating.rating.toFixed(1)}</span>
                 <span className="text-muted">on Google ({googleRating.total})</span>
               </span>
-            </>
-          )}
-          <span className="h-1 w-1 rounded-full bg-border-strong" />
-          <span className="text-muted">{storefront.priceRange} · from {pricesFromLabel}</span>
-          <span className="h-1 w-1 rounded-full bg-border-strong" />
-          <a href={`tel:${storefront.phone}`} className="text-brand-600 hover:underline">
-            {storefront.phone}
-          </a>
+            )}
+          </div>
+          {/* Row 2: price range + phone */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-muted">{storefront.priceRange} · from {pricesFromLabel}</span>
+            <a href={`tel:${storefront.phone}`} className="font-medium text-brand-600 hover:underline">
+              {storefront.phone}
+            </a>
+          </div>
         </div>
 
-        {/* CTA row — desktop only; the sticky bottom bar covers Book + Call on mobile */}
+        {/* CTA row — desktop only */}
         <div className="mt-5 hidden gap-3 sm:flex sm:flex-row sm:items-center">
           <Button onClick={onBookClick} size="lg" className="w-full sm:w-auto">
             Book appointment

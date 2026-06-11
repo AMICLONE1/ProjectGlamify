@@ -252,7 +252,7 @@ function AddStaffModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center">
-      <div className="w-full max-w-md rounded-3xl bg-biz-surface p-6 shadow-2xl">
+      <div className="w-full max-w-md overflow-y-auto rounded-3xl bg-biz-surface p-6 shadow-2xl max-sm:max-h-[calc(100dvh-6.5rem)] max-sm:mb-[calc(4.5rem+env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg font-bold text-biz-ink">Add team member</h2>
           <button type="button" onClick={onClose} className="rounded-full bg-biz-bg px-3 py-1 text-xs font-semibold text-biz-muted hover:bg-biz-border">Close</button>

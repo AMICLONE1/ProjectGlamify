@@ -435,7 +435,7 @@ function StockAdjustModal({ product, onClose, onSaved }: { product: Product; onC
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center" onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-3xl bg-biz-surface p-6 shadow-2xl sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md overflow-y-auto rounded-t-3xl bg-biz-surface p-6 shadow-2xl sm:rounded-3xl max-sm:max-h-[calc(100dvh-5.5rem)] max-sm:mb-[calc(4.5rem+env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h2 className="font-display text-lg font-bold text-biz-ink">Adjust stock</h2>

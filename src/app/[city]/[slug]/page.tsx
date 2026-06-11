@@ -291,6 +291,8 @@ export default async function Page({ params }: { params: Promise<Params> }) {
       reviewUrl: sfRow?.googleReviewUrl,
       mapsUrl: sfRow?.mapsUrl,
       nameQuery,
+      lat: storefront.geoLat || undefined,
+      lng: storefront.geoLng || undefined,
     });
   }
 

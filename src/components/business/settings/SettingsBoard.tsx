@@ -167,12 +167,13 @@ function TaxForm() {
   const { data, isLoading } = useQuery({ queryKey: ["settings"], queryFn: () => settingsApi.get() });
 
   const [form, setForm] = useState<null | {
-    gstin: string; hsnServices: string; hsnRetail: string; defaultGstPct: string; invoicePrefix: string; showInclusive: boolean;
+    gstEnabled: boolean; gstin: string; hsnServices: string; hsnRetail: string; defaultGstPct: string; invoicePrefix: string; showInclusive: boolean;
   }>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   const f = form ?? (data ? {
+    gstEnabled: data.tax.gstEnabled,
     gstin: data.tax.gstin,
     hsnServices: data.tax.hsnServices,
     hsnRetail: data.tax.hsnRetail,
@@ -185,8 +186,9 @@ function TaxForm() {
     mutationFn: () => {
       if (!f) throw new Error("Not loaded");
       return settingsApi.update({
-        gstin: f.gstin.trim().toUpperCase(),
+        gstin: f.gstEnabled ? f.gstin.trim().toUpperCase() : "",
         tax: {
+          gstEnabled: f.gstEnabled,
           hsnServices: f.hsnServices.trim(),
           hsnRetail: f.hsnRetail.trim(),
           defaultGstPct: f.defaultGstPct ? Number(f.defaultGstPct) : undefined,
@@ -206,11 +208,13 @@ function TaxForm() {
   function validateAndSave() {
     setError(null);
     if (!f) return;
-    if (f.gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}Z[0-9A-Z]{1}$/.test(f.gstin.trim().toUpperCase())) {
-      return setError("Enter a valid 15-character GSTIN, or leave it blank.");
-    }
-    if (f.defaultGstPct && !(Number(f.defaultGstPct) >= 0 && Number(f.defaultGstPct) <= 28)) {
-      return setError("Default GST % must be between 0 and 28.");
+    if (f.gstEnabled) {
+      if (f.gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}Z[0-9A-Z]{1}$/.test(f.gstin.trim().toUpperCase())) {
+        return setError("Enter a valid 15-character GSTIN, or leave it blank.");
+      }
+      if (f.defaultGstPct && !(Number(f.defaultGstPct) >= 0 && Number(f.defaultGstPct) <= 28)) {
+        return setError("Default GST % must be between 0 and 28.");
+      }
     }
     save.mutate();
   }
@@ -219,20 +223,52 @@ function TaxForm() {
 
   return (
     <div className="space-y-5">
-      <SectionTitle eyebrow="Tax" title="GST-compliant invoicing" />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="GSTIN"><input value={f.gstin} onChange={(e) => set("gstin", e.target.value)} placeholder="27ABCDE1234F1Z5" className={inputCls} /></Field>
-        <Field label="Default GST %"><input type="number" min={0} max={28} value={f.defaultGstPct} onChange={(e) => set("defaultGstPct", e.target.value)} placeholder="18" className={inputCls} /></Field>
-        <Field label="HSN · Services"><input value={f.hsnServices} onChange={(e) => set("hsnServices", e.target.value)} placeholder="999721" className={inputCls} /></Field>
-        <Field label="HSN · Retail products"><input value={f.hsnRetail} onChange={(e) => set("hsnRetail", e.target.value)} placeholder="33049000" className={inputCls} /></Field>
-        <Field label="Invoice prefix"><input value={f.invoicePrefix} onChange={(e) => set("invoicePrefix", e.target.value)} placeholder="GLM" className={inputCls} /></Field>
-        <Field label="">
-          <label className="mt-6 inline-flex items-center gap-2 text-sm text-biz-ink">
-            <input type="checkbox" checked={f.showInclusive} onChange={(e) => set("showInclusive", e.target.checked)} className="h-4 w-4 accent-biz-violet-500" />
-            Show prices inclusive of GST on the storefront
-          </label>
-        </Field>
+      <SectionTitle eyebrow="Tax" title="GST &amp; invoicing" />
+
+      {/* Master toggle: GST-registered vs simple billing */}
+      <div className="flex items-start justify-between gap-4 rounded-2xl border border-biz-border bg-biz-bg p-4">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-biz-ink">Charge GST on bills</p>
+          <p className="mt-0.5 text-xs text-biz-muted">
+            {f.gstEnabled
+              ? "Invoices show CGST + SGST and are labelled “Tax Invoice”."
+              : "Simple billing — no tax added. Bills are labelled “Invoice”. Turn this on once your salon is GST-registered."}
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={f.gstEnabled}
+          onClick={() => set("gstEnabled", !f.gstEnabled)}
+          className={cn(
+            "relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors",
+            f.gstEnabled ? "bg-biz-violet-500" : "bg-biz-border"
+          )}
+        >
+          <span className={cn("inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform", f.gstEnabled ? "translate-x-5" : "translate-x-0.5")} />
+        </button>
       </div>
+
+      {f.gstEnabled && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="GSTIN"><input value={f.gstin} onChange={(e) => set("gstin", e.target.value)} placeholder="27ABCDE1234F1Z5" className={inputCls} /></Field>
+          <Field label="Default GST %"><input type="number" min={0} max={28} value={f.defaultGstPct} onChange={(e) => set("defaultGstPct", e.target.value)} placeholder="18" className={inputCls} /></Field>
+          <Field label="HSN · Services"><input value={f.hsnServices} onChange={(e) => set("hsnServices", e.target.value)} placeholder="999721" className={inputCls} /></Field>
+          <Field label="HSN · Retail products"><input value={f.hsnRetail} onChange={(e) => set("hsnRetail", e.target.value)} placeholder="33049000" className={inputCls} /></Field>
+          <Field label="Invoice prefix"><input value={f.invoicePrefix} onChange={(e) => set("invoicePrefix", e.target.value)} placeholder="GLM" className={inputCls} /></Field>
+          <Field label="">
+            <label className="mt-6 inline-flex items-center gap-2 text-sm text-biz-ink">
+              <input type="checkbox" checked={f.showInclusive} onChange={(e) => set("showInclusive", e.target.checked)} className="h-4 w-4 accent-biz-violet-500" />
+              Show prices inclusive of GST on the storefront
+            </label>
+          </Field>
+        </div>
+      )}
+
+      {!f.gstEnabled && (
+        <Field label="Invoice prefix"><input value={f.invoicePrefix} onChange={(e) => set("invoicePrefix", e.target.value)} placeholder="GLM" className={cn(inputCls, "max-w-xs")} /></Field>
+      )}
+
       {error && <p className="text-sm text-biz-pink-500">{error}</p>}
       <SaveBar saved={saved} pending={save.isPending} onSave={validateAndSave} />
     </div>

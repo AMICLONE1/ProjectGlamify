@@ -18,7 +18,7 @@ const STATUS_COLOR: Record<string, EventColor> = {
   visited: "green",
   pending: "yellow",
   pending_otp: "yellow",
-  completed: "gray",
+  completed: "green",
   cancelled: "gray",
   no_show: "pink",
 };
@@ -343,7 +343,13 @@ function WeekGrid({ days, events, bounds, loading, setSelectedEventId }: {
     }
   }, [startHour]);
 
-  const cols = `3rem repeat(${days.length}, 1fr) 3rem`;
+  // Week view gives each day a readable min width so it scrolls sideways on
+  // narrow screens instead of squashing; columns still grow to fill on desktop.
+  // Day view uses a single fluid column.
+  const isWeek = days.length > 1;
+  const cols = isWeek
+    ? `3rem repeat(${days.length}, minmax(8.5rem, 1fr)) 3rem`
+    : `3rem minmax(0, 1fr) 3rem`;
 
   // Group events by day index
   const eventsByDay = useMemo(() => {
@@ -359,95 +365,104 @@ function WeekGrid({ days, events, bounds, loading, setSelectedEventId }: {
 
   const minutesToTop = (minutes: number) => ((minutes - startHour * 60) / SLOT_MINUTES) * ROW_HEIGHT_PX;
 
+  // On mobile, week view scrolls horizontally; the day strip and body share one
+  // horizontal scroll container so their columns stay aligned. min-w forces the
+  // fixed day widths to overflow instead of squashing.
+  const gridMinWidth = isWeek ? `calc(6rem + ${days.length} * 8.5rem)` : "100%";
+
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-      {/* Day strip */}
-      <div className="grid border-b border-biz-border" style={{ gridTemplateColumns: cols }}>
-        <div />
-        {days.map((d, i) => {
-          const isToday = sameDay(d, today);
-          const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-          return (
-            <div key={i} className={cn("border-l border-biz-border py-3 text-center", isWeekend && "bg-biz-bg/40")}>
-              <p className="text-[10px] font-semibold tracking-wider text-biz-muted-2">
-                {d.toLocaleDateString("en-IN", { weekday: "short" }).toUpperCase()}
-              </p>
-              <div className="mt-1 flex items-center justify-center">
-                {isToday ? (
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-biz-violet-500 text-sm font-bold text-white">{d.getDate()}</span>
-                ) : (
-                  <span className="text-sm font-semibold text-biz-ink">{d.getDate()}</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-        <div className="border-l border-biz-border py-3 text-center text-[10px] font-semibold tracking-wider text-biz-muted-2">
-          IST<p className="mt-1 text-[9px] font-normal text-biz-muted-2">GMT+5</p>
-        </div>
-      </div>
-
-      {/* Scrollable body */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        {loading ? (
-          <div className="flex h-40 items-center justify-center">
-            <div className="h-7 w-7 rounded-full border-2 border-biz-violet-500 border-t-transparent animate-spin" />
-          </div>
-        ) : (
-          <div className="grid" style={{ gridTemplateColumns: cols }}>
-            <TimeGutter hours={hours} />
-
+      <div className="flex-1 overflow-x-auto">
+        <div style={{ minWidth: isWeek ? gridMinWidth : undefined }} className="flex h-full min-w-0 flex-col">
+          {/* Day strip */}
+          <div className="grid border-b border-biz-border" style={{ gridTemplateColumns: cols }}>
+            <div />
             {days.map((d, i) => {
-              const dayEvents = eventsByDay.get(i) ?? [];
-              const isWeekend = d.getDay() === 0 || d.getDay() === 6;
               const isToday = sameDay(d, today);
+              const isWeekend = d.getDay() === 0 || d.getDay() === 6;
               return (
-                <div key={i} className={cn("relative border-l border-biz-border", isWeekend && "bg-biz-bg/30", isToday && "bg-biz-violet-50/30")}
-                  style={{ height: ROW_HEIGHT_PX * slotsTotal }}>
-                  {Array.from({ length: slotsTotal }).map((_, idx) => (
-                    <div key={idx}
-                      className={cn("absolute left-0 right-0", idx % 2 === 1 ? "border-b border-dashed border-biz-border/60" : "border-b border-biz-border")}
-                      style={{ top: idx * ROW_HEIGHT_PX, height: ROW_HEIGHT_PX }} />
-                  ))}
-
-                  {dayEvents.map((e) => {
-                    const start = new Date(e.startsAt);
-                    const end = new Date(e.endsAt);
-                    const startMin = start.getHours() * 60 + start.getMinutes();
-                    const endMin = end.getHours() * 60 + end.getMinutes();
-                    const top = minutesToTop(startMin);
-                    const height = Math.max(((endMin - startMin) / SLOT_MINUTES) * ROW_HEIGHT_PX - 2, 28);
-                    const s = eventStyle[STATUS_COLOR[e.status] ?? "violet"];
-                    return (
-                      <button key={e.id} type="button"
-                        onClick={() => setSelectedEventId(e.id, e.source)}
-                        className={cn("absolute left-1 right-1 overflow-hidden rounded-md text-left transition-all hover:shadow-md hover:brightness-105", s.bg)}
-                        style={{ top, height }} title={`${e.title} · ${e.subtitle}`}>
-                        <div className="flex h-full">
-                          <span aria-hidden className={cn("w-1 shrink-0 rounded-l-md", s.bar)} />
-                          <div className="min-w-0 flex-1 px-2 py-1">
-                            <p className={cn("text-[10px] font-medium", s.text)}>{formatLabel(startMin)}</p>
-                            <p className="truncate text-[11px] font-semibold text-biz-ink">{e.title}</p>
-                            {height > 38 && <p className="truncate text-[10px] text-biz-muted">{e.subtitle}</p>}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                <div key={i} className={cn("border-l border-biz-border py-3 text-center", isWeekend && "bg-biz-bg/40")}>
+                  <p className="text-[10px] font-semibold tracking-wider text-biz-muted-2">
+                    {d.toLocaleDateString("en-IN", { weekday: "short" }).toUpperCase()}
+                  </p>
+                  <div className="mt-1 flex items-center justify-center">
+                    {isToday ? (
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-biz-violet-500 text-sm font-bold text-white">{d.getDate()}</span>
+                    ) : (
+                      <span className="text-sm font-semibold text-biz-ink">{d.getDate()}</span>
+                    )}
+                  </div>
                 </div>
               );
             })}
-
-            <TimeGutter hours={hours} side="right" />
+            <div className="border-l border-biz-border py-3 text-center text-[10px] font-semibold tracking-wider text-biz-muted-2">
+              IST<p className="mt-1 text-[9px] font-normal text-biz-muted-2">GMT+5</p>
+            </div>
           </div>
-        )}
 
-        {!loading && events.length === 0 && (
-          <div className="pointer-events-none flex flex-col items-center justify-center py-10 text-center">
-            <p className="text-sm font-medium text-biz-ink">No appointments this {days.length === 1 ? "day" : "week"}</p>
-            <p className="mt-1 text-xs text-biz-muted">Online bookings and appointments will appear here.</p>
+          {/* Vertically-scrollable body */}
+          <div ref={scrollRef} className="flex-1 overflow-y-auto">
+            {loading ? (
+              <div className="flex h-40 items-center justify-center">
+                <div className="h-7 w-7 rounded-full border-2 border-biz-violet-500 border-t-transparent animate-spin" />
+              </div>
+            ) : (
+              <div className="grid" style={{ gridTemplateColumns: cols }}>
+                <TimeGutter hours={hours} />
+
+                {days.map((d, i) => {
+                  const dayEvents = eventsByDay.get(i) ?? [];
+                  const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                  const isToday = sameDay(d, today);
+                  return (
+                    <div key={i} className={cn("relative border-l border-biz-border", isWeekend && "bg-biz-bg/30", isToday && "bg-biz-violet-50/30")}
+                      style={{ height: ROW_HEIGHT_PX * slotsTotal }}>
+                      {Array.from({ length: slotsTotal }).map((_, idx) => (
+                        <div key={idx}
+                          className={cn("absolute left-0 right-0", idx % 2 === 1 ? "border-b border-dashed border-biz-border/60" : "border-b border-biz-border")}
+                          style={{ top: idx * ROW_HEIGHT_PX, height: ROW_HEIGHT_PX }} />
+                      ))}
+
+                      {dayEvents.map((e) => {
+                        const start = new Date(e.startsAt);
+                        const end = new Date(e.endsAt);
+                        const startMin = start.getHours() * 60 + start.getMinutes();
+                        const endMin = end.getHours() * 60 + end.getMinutes();
+                        const top = minutesToTop(startMin);
+                        const height = Math.max(((endMin - startMin) / SLOT_MINUTES) * ROW_HEIGHT_PX - 2, 28);
+                        const s = eventStyle[STATUS_COLOR[e.status] ?? "violet"];
+                        return (
+                          <button key={e.id} type="button"
+                            onClick={() => setSelectedEventId(e.id, e.source)}
+                            className={cn("absolute left-1 right-1 overflow-hidden rounded-md text-left transition-all hover:shadow-md hover:brightness-105", s.bg)}
+                            style={{ top, height }} title={`${e.title} · ${e.subtitle}`}>
+                            <div className="flex h-full">
+                              <span aria-hidden className={cn("w-1 shrink-0 rounded-l-md", s.bar)} />
+                              <div className="min-w-0 flex-1 px-2 py-1">
+                                <p className={cn("text-[10px] font-medium", s.text)}>{formatLabel(startMin)}</p>
+                                <p className="truncate text-[11px] font-semibold text-biz-ink">{e.title}</p>
+                                {height > 38 && <p className="truncate text-[10px] text-biz-muted">{e.subtitle}</p>}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+
+                <TimeGutter hours={hours} side="right" />
+              </div>
+            )}
+
+            {!loading && events.length === 0 && (
+              <div className="pointer-events-none flex flex-col items-center justify-center py-10 text-center">
+                <p className="text-sm font-medium text-biz-ink">No appointments this {days.length === 1 ? "day" : "week"}</p>
+                <p className="mt-1 text-xs text-biz-muted">Online bookings and appointments will appear here.</p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -525,12 +540,16 @@ function NewBookingModal({ defaultDate, onClose, onBooked }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center" onClick={onClose}>
-      <div className="w-full max-w-lg rounded-t-3xl bg-biz-surface p-6 shadow-2xl sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-5 flex items-center justify-between">
+      <div
+        className="flex w-full max-w-lg flex-col rounded-t-3xl bg-biz-surface shadow-2xl sm:max-h-[min(85dvh,44rem)] sm:rounded-3xl max-sm:mb-[calc(4.5rem+env(safe-area-inset-bottom))] max-sm:max-h-[calc(100dvh-4.5rem-env(safe-area-inset-bottom)-1rem)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-biz-border px-6 py-4">
           <h2 className="font-display text-xl font-bold text-biz-ink">New booking</h2>
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-biz-bg text-biz-muted hover:text-biz-ink">✕</button>
         </div>
 
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
         <div className="space-y-3">
           <Field label="Client *">
             <input
@@ -578,8 +597,9 @@ function NewBookingModal({ defaultDate, onClose, onBooked }: {
         </div>
 
         {error && <p className="mt-3 text-xs text-red-500">{error}</p>}
+        </div>{/* end scrollable body */}
 
-        <div className="mt-5 flex gap-3">
+        <div className="flex shrink-0 gap-3 border-t border-biz-border px-6 py-4">
           <button type="button" onClick={onClose} className="flex-1 rounded-2xl bg-biz-bg py-3 text-sm font-semibold text-biz-muted hover:bg-biz-border">
             Cancel
           </button>
@@ -775,8 +795,13 @@ function AppointmentPanel({ eventId, source, onClose, onUpdated }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center" onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-3xl bg-biz-surface p-6 shadow-2xl sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between">
+      {/* Bottom sheet on mobile — capped height with internal scroll, lifted above the tab bar.
+          Mobile height leaves room for the fixed bottom tab bar (~4.5rem + safe area). */}
+      <div
+        className="flex w-full max-w-md flex-col rounded-t-3xl bg-biz-surface shadow-2xl sm:max-h-[min(85dvh,44rem)] sm:rounded-3xl max-sm:mb-[calc(4.5rem+env(safe-area-inset-bottom))] max-sm:max-h-[calc(100dvh-4.5rem-env(safe-area-inset-bottom)-1rem)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-biz-border px-6 py-4">
           <div>
             <h2 className="font-display text-lg font-bold text-biz-ink">Appointment</h2>
             {isOnline && (
@@ -786,6 +811,7 @@ function AppointmentPanel({ eventId, source, onClose, onUpdated }: {
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-biz-bg text-biz-muted hover:text-biz-ink">✕</button>
         </div>
 
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5">
         {isLoading && (
           <div className="flex h-40 items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-biz-violet-500 border-t-transparent" />
@@ -800,52 +826,63 @@ function AppointmentPanel({ eventId, source, onClose, onUpdated }: {
         )}
 
         {panel && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Client */}
-            <div className="rounded-2xl bg-biz-bg p-4 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <p className="font-semibold text-biz-ink text-sm">{panel.customerName}</p>
-                <StatusPill status={panel.status} />
+            <div className="flex items-center gap-3 rounded-2xl border border-biz-border bg-biz-bg p-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-biz-violet-500 text-base font-bold text-white">
+                {panel.customerName.charAt(0).toUpperCase()}
               </div>
-              {panel.phone && <p className="text-xs text-biz-muted-2">{panel.phone}</p>}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-sm font-bold text-biz-ink">{panel.customerName}</p>
+                  <StatusPill status={panel.status} />
+                </div>
+                {panel.phone && (
+                  <a href={`tel:${panel.phone}`} className="mt-0.5 inline-flex items-center gap-1 text-xs text-biz-muted-2 hover:text-biz-violet-600">
+                    {panel.phone}
+                  </a>
+                )}
+              </div>
             </div>
 
             {/* Time + Staff */}
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="rounded-2xl bg-biz-bg p-3">
-                <p className="text-biz-muted-2 uppercase tracking-wider text-[10px]">Time</p>
-                <p className="mt-1 font-semibold text-biz-ink">
+              <div className="rounded-2xl border border-biz-border bg-biz-bg p-3.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-biz-muted-2">Time</p>
+                <p className="mt-1.5 text-sm font-bold text-biz-ink">
                   {new Date(panel.startsAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                  {" – "}
-                  {new Date(panel.endsAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
                 </p>
-                <p className="text-biz-muted-2">{new Date(panel.startsAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</p>
+                <p className="text-[11px] text-biz-muted">
+                  to {new Date(panel.endsAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                </p>
+                <p className="mt-1 text-[11px] font-medium text-biz-violet-600">{new Date(panel.startsAt).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}</p>
               </div>
-              <div className="rounded-2xl bg-biz-bg p-3">
-                <p className="text-biz-muted-2 uppercase tracking-wider text-[10px]">Staff</p>
-                <p className="mt-1 font-semibold text-biz-ink">{panel.staffName ?? "Any stylist"}</p>
+              <div className="rounded-2xl border border-biz-border bg-biz-bg p-3.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-biz-muted-2">Staff</p>
+                <p className="mt-1.5 text-sm font-bold text-biz-ink">{panel.staffName ?? "Any stylist"}</p>
+                {!panel.staffName && <p className="text-[11px] text-biz-muted">No preference</p>}
               </div>
             </div>
 
             {/* Services / Amount */}
-            <div className="rounded-2xl bg-biz-bg p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-biz-muted-2 mb-2">
-                {isOnline ? "Services" : "Services"}
-              </p>
+            <div className="rounded-2xl border border-biz-border bg-biz-bg p-4">
+              <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-wider text-biz-muted-2">Services</p>
               {panel.services.length > 0 ? (
-                panel.services.map((s, i) => (
-                  <div key={i} className="flex items-center justify-between py-1 text-sm">
-                    <span className="text-biz-ink">{s.name}</span>
-                    {s.price > 0 && <span className="font-semibold text-biz-ink">₹{s.price.toLocaleString("en-IN")}</span>}
-                  </div>
-                ))
+                <div className="space-y-1.5">
+                  {panel.services.map((s, i) => (
+                    <div key={i} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="min-w-0 flex-1 truncate text-biz-ink">{s.name}</span>
+                      {s.price > 0 && <span className="shrink-0 font-semibold text-biz-ink">₹{s.price.toLocaleString("en-IN")}</span>}
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <p className="text-xs text-biz-muted">—</p>
               )}
               {panel.amount !== null && panel.amount > 0 && (
-                <div className="mt-2 flex items-center justify-between border-t border-biz-border pt-2 text-sm font-bold text-biz-ink">
+                <div className="mt-3 flex items-center justify-between border-t border-biz-border pt-3 text-sm font-bold text-biz-ink">
                   <span>Total</span>
-                  <span>₹{panel.amount.toLocaleString("en-IN")}</span>
+                  <span className="text-base">₹{panel.amount.toLocaleString("en-IN")}</span>
                 </div>
               )}
             </div>
@@ -949,8 +986,21 @@ function AppointmentPanel({ eventId, source, onClose, onUpdated }: {
               </div>
             )}
 
-            {/* Visited state — service done, go to POS */}
-            {isOnline && (panel.status === "visited" || checkinPhase === "done") && (
+            {/* Billed — service done and invoice generated. Terminal state. */}
+            {isOnline && panel.status === "completed" && (
+              <div className="rounded-2xl bg-biz-green-400/15 p-4">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-biz-green-500 text-white text-sm">✓</span>
+                  <div>
+                    <p className="text-sm font-bold text-biz-ink">Billed &amp; completed</p>
+                    <p className="text-xs text-biz-muted">This booking has already been billed at the POS.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Visited state — service done, go to POS (not yet billed) */}
+            {isOnline && panel.status !== "completed" && (panel.status === "visited" || checkinPhase === "done") && (
               <div className="rounded-2xl bg-biz-violet-50 p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-biz-green-500 text-white text-sm">✓</span>
@@ -968,6 +1018,7 @@ function AppointmentPanel({ eventId, source, onClose, onUpdated }: {
                     const params = new URLSearchParams({
                       phone,
                       name: panel.customerName,
+                      bookingId: eventId,
                       ...(svcIds ? { serviceIds: svcIds } : {}),
                     });
                     router.push(`/business/pos?${params}`);
@@ -1005,6 +1056,7 @@ function AppointmentPanel({ eventId, source, onClose, onUpdated }: {
             )}
           </div>
         )}
+        </div>{/* end scrollable body */}
       </div>
     </div>
   );
@@ -1017,7 +1069,7 @@ function StatusPill({ status }: { status: string }) {
     visited:     "bg-biz-green-400/15 text-biz-green-600",
     pending:     "bg-biz-yellow-300/25 text-biz-yellow-600",
     pending_otp: "bg-biz-yellow-300/25 text-biz-yellow-600",
-    completed:   "bg-biz-bg text-biz-muted",
+    completed:   "bg-biz-green-400/15 text-biz-green-600",
     cancelled:   "bg-biz-bg text-biz-muted line-through",
     no_show:     "bg-biz-pink-200/40 text-biz-pink-500",
   };

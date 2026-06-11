@@ -9,6 +9,7 @@ import { requireAuth, ok, fail } from "@/lib/auth";
 // Shape of the flexible `settings` JSON column.
 type TenantSettings = {
   tax?: {
+    gstEnabled?: boolean;   // false = salon not GST-registered → simple, tax-free billing
     hsnServices?: string;
     hsnRetail?: string;
     defaultGstPct?: number;
@@ -33,6 +34,7 @@ const patchSchema = z.object({
   revenueGoal: z.number().min(0).max(1_000_000_000).optional(),
   // Tax (stored in settings JSON)
   tax: z.object({
+    gstEnabled: z.boolean().optional(),
     hsnServices: z.string().max(20).optional(),
     hsnRetail: z.string().max(20).optional(),
     defaultGstPct: z.number().min(0).max(28).optional(),
@@ -80,6 +82,8 @@ export async function GET(req: NextRequest) {
       revenueGoal: settings.revenueGoal ?? null,
     },
     tax: {
+      // Default: GST on only if a GSTIN is present. An explicit saved value wins.
+      gstEnabled: settings.tax?.gstEnabled ?? !!tenant.gstin?.trim(),
       gstin: tenant.gstin ?? "",
       hsnServices: settings.tax?.hsnServices ?? "",
       hsnRetail: settings.tax?.hsnRetail ?? "",
