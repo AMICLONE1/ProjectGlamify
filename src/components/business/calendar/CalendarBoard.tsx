@@ -372,10 +372,12 @@ function WeekGrid({ days, events, bounds, loading, setSelectedEventId }: {
 
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-      <div className="flex-1 overflow-x-auto">
-        <div style={{ minWidth: isWeek ? gridMinWidth : undefined }} className="flex h-full min-w-0 flex-col">
-          {/* Day strip */}
-          <div className="grid border-b border-biz-border" style={{ gridTemplateColumns: cols }}>
+      {/* Single scroll container owns BOTH axes: vertical (times) and horizontal
+          (week days on mobile). The day strip sticks to the top while scrolling. */}
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
+        <div style={{ minWidth: isWeek ? gridMinWidth : undefined }} className="min-w-0">
+          {/* Day strip — sticky header */}
+          <div className="sticky top-0 z-10 grid border-b border-biz-border bg-biz-surface" style={{ gridTemplateColumns: cols }}>
             <div />
             {days.map((d, i) => {
               const isToday = sameDay(d, today);
@@ -401,7 +403,7 @@ function WeekGrid({ days, events, bounds, loading, setSelectedEventId }: {
           </div>
 
           {/* Vertically-scrollable body */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto">
+          <div>
             {loading ? (
               <div className="flex h-40 items-center justify-center">
                 <div className="h-7 w-7 rounded-full border-2 border-biz-violet-500 border-t-transparent animate-spin" />

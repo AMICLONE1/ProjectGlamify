@@ -93,8 +93,12 @@ async function findPlaceId(query: string, key: string, lat?: number, lng?: numbe
       `${bias}&key=${key}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(6000), next: { revalidate: 604800 } });
     const data = await res.json();
+    if (data?.status && data.status !== "OK" && data.status !== "ZERO_RESULTS") {
+      console.warn(`[google-places] Find Place ${data.status}: ${data.error_message ?? ""}`.trim());
+    }
     return data?.candidates?.[0]?.place_id ?? null;
-  } catch {
+  } catch (err) {
+    console.warn("[google-places] Find Place request failed:", err instanceof Error ? err.message : err);
     return null;
   }
 }
@@ -107,7 +111,12 @@ export async function getGooglePlace(opts: {
   lng?: number;
 }): Promise<GooglePlace> {
   const key = process.env.GOOGLE_PLACES_API_KEY;
-  if (!key) return null;
+  if (!key) {
+    // Logs in prod too — the #1 reason reviews work locally but not on Vercel
+    // is the env var simply not being set in the Vercel project.
+    console.warn("[google-places] GOOGLE_PLACES_API_KEY is not set in this environment — no reviews will load.");
+    return null;
+  }
 
   // Stop calling Google once we hit the monthly budget (stays in free tier).
   // ISR's 24h cache means already-fetched salons keep showing their badge.
@@ -122,10 +131,10 @@ export async function getGooglePlace(opts: {
   if (!placeId && opts.nameQuery && opts.nameQuery.trim().length > 4) {
     placeId = await findPlaceId(opts.nameQuery, key, opts.lat, opts.lng);
   }
-  if (process.env.NODE_ENV === "development") {
-    console.log("[google-places] placeId resolved:", placeId, { reviewUrl: opts.reviewUrl, mapsUrl: opts.mapsUrl });
+  if (!placeId) {
+    console.warn("[google-places] Could not resolve a Place ID", { nameQuery: opts.nameQuery });
+    return null;
   }
-  if (!placeId) return null;
 
   try {
     const url =
@@ -134,6 +143,12 @@ export async function getGooglePlace(opts: {
       `&fields=rating,user_ratings_total,reviews&reviews_sort=newest&key=${key}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(6000), next: { revalidate: 86400 } });
     const data = await res.json();
+    // Surface Google's own error status (REQUEST_DENIED, OVER_QUERY_LIMIT, etc.)
+    // — this is what tells you a key is referrer-restricted or unbilled.
+    if (data?.status && data.status !== "OK") {
+      console.warn(`[google-places] Place Details ${data.status}: ${data.error_message ?? ""}`.trim());
+      return null;
+    }
     const r = data?.result;
     if (!r || typeof r.rating !== "number") return null;
 
@@ -149,7 +164,8 @@ export async function getGooglePlace(opts: {
       }));
 
     return { rating: r.rating, total: r.user_ratings_total ?? 0, placeId, reviews };
-  } catch {
+  } catch (err) {
+    console.warn("[google-places] Place Details request failed:", err instanceof Error ? err.message : err);
     return null;
   }
 }
